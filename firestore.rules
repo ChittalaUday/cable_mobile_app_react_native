@@ -1,0 +1,54 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function role() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    function admin() { return signedIn() && role() == 'admin'; }
+    function staff() { return signedIn() && role() == 'staff'; }
+    function owns(uid) { return signedIn() && request.auth.uid == uid; }
+
+    match /users/{uid} {
+      allow read: if owns(uid) || admin();
+      // Registration never grants staff/admin access. Provision those with a trusted Admin SDK.
+      allow create: if owns(uid)
+        && request.resource.data.keys().hasOnly(['role', 'updatedAt'])
+        && request.resource.data.role == 'subscriber';
+      allow update, delete: if false;
+    }
+    match /subscribers/{uid} {
+      allow read: if admin() || owns(uid)
+        || (staff() && resource.data.collectorId == request.auth.uid);
+      allow write: if admin();
+    }
+    match /customers/{id} {
+      allow read: if signedIn();
+      allow write: if admin();
+    }
+    match /services/{id} {
+      allow read: if signedIn();
+      allow write: if admin();
+    }
+    match /service_providers/{id} {
+      allow read: if signedIn();
+      allow write: if admin();
+
+      match /packages/{packageId} {
+        allow read: if signedIn();
+        allow write: if admin();
+      }
+    }
+    match /payments/{id} {
+      allow read: if admin()
+        || (staff() && resource.data.collectorId == request.auth.uid)
+        || (signedIn() && resource.data.subscriberId == request.auth.uid);
+      // Payments require a trusted backend; clients must not rewrite financial records.
+      allow write: if false;
+    }
+    match /packages/{id} {
+      allow read: if signedIn();
+      allow write: if admin();
+    }
+  }
+}
