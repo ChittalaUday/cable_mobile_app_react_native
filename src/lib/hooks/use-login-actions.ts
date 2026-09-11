@@ -30,10 +30,8 @@ export function useLoginActions({ email, password, confirmPassword, isSignUp }: 
       await (isSignUp ? signUp(email, password) : signIn(email, password));
     }
     catch (error) {
-      showMessage({ message: translate('login.auth_failed'), description: authErrorMessage(error), type: 'danger' });
-    }
-    finally {
       setLoading(false);
+      showMessage({ message: translate('login.auth_failed'), description: authErrorMessage(error), type: 'danger' });
     }
   }
 
@@ -43,10 +41,8 @@ export function useLoginActions({ email, password, confirmPassword, isSignUp }: 
       await continueAsGuest();
     }
     catch (error) {
-      showMessage({ message: translate('login.guest_failed'), description: authErrorMessage(error), type: 'danger' });
-    }
-    finally {
       setLoading(false);
+      showMessage({ message: translate('login.guest_failed'), description: authErrorMessage(error), type: 'danger' });
     }
   }
 
@@ -56,12 +52,10 @@ export function useLoginActions({ email, password, confirmPassword, isSignUp }: 
       await signInWithGoogle();
     }
     catch (error) {
+      setLoading(false);
       if (isErrorWithCode(error) && error.code === statusCodes.SIGN_IN_CANCELLED)
         return;
       showMessage({ message: translate('login.auth_failed'), description: authErrorMessage(error), type: 'danger' });
-    }
-    finally {
-      setLoading(false);
     }
   }
 

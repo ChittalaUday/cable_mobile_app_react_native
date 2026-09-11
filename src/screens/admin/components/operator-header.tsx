@@ -1,15 +1,16 @@
-import { ArrowDown01Icon, Notification03Icon, Tv01Icon } from '@hugeicons/core-free-icons';
+import { ArrowDown01Icon, Notification03Icon, Search01Icon, Tv01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as React from 'react';
 
 import { colors, Image, Pressable, Text, View } from '@/components/ui';
 import { initials } from '@/lib/utils/admin-format';
 
-export function OperatorHeader({ photoURL, name, onProfile, onNotifications }: {
+export function OperatorHeader({ photoURL, name, onProfile, onNotifications, onSearch }: {
   photoURL?: string | null;
   name: string;
   onProfile: () => void;
   onNotifications: () => void;
+  onSearch?: () => void;
 }) {
   return (
     <View className="flex-row items-center gap-3">
@@ -20,6 +21,13 @@ export function OperatorHeader({ photoURL, name, onProfile, onNotifications }: {
         <Text className="text-xl font-bold text-foreground">Satya Cable</Text>
         <Text className="text-xs text-muted-foreground">Operator Panel</Text>
       </View>
+      {onSearch
+        ? (
+            <Pressable accessibilityRole="button" accessibilityLabel="Global Search" onPress={onSearch} className="size-10 items-center justify-center rounded-full bg-card">
+              <HugeiconsIcon icon={Search01Icon} size={19} color={colors.charcoal[800]} strokeWidth={2} />
+            </Pressable>
+          )
+        : null}
       <Pressable accessibilityRole="button" accessibilityLabel="Notifications" onPress={onNotifications} className="size-10 items-center justify-center rounded-full bg-card">
         <HugeiconsIcon icon={Notification03Icon} size={19} color={colors.charcoal[800]} strokeWidth={2} />
         <View className="absolute top-2 right-2.5 size-2 rounded-full bg-primary-600" />

@@ -10,7 +10,7 @@ type ContentProps = {
   metrics: readonly (readonly [string, string])[];
 };
 
-export function SubscriberPlanCard({ content }: { content: ContentProps }) {
+export function CustomerPlanCard({ content }: { content: ContentProps }) {
   return (
     <View className="gap-4">
       <View className="gap-2 rounded-2xl bg-primary-600 p-5">

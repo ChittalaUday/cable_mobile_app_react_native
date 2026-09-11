@@ -82,5 +82,15 @@
     "version": "Version",
     "website": "Website"
   },
+  "tenant": {
+    "address": "Address",
+    "email": "Email",
+    "gst_number": "GST Number",
+    "logo": "Logo",
+    "name": "Network Name",
+    "not_found": "Tenant not found",
+    "phone": "Phone",
+    "website": "Website"
+  },
   "welcome": "Welcome to Satya Cable & Broadband"
 }

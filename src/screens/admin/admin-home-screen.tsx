@@ -6,6 +6,7 @@ import * as React from 'react';
 
 import { RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GlobalSearchModal } from '@/components/common/global-search-modal';
 import { BottomNav, comingSoon, LoadError, Loading } from '@/components/common/shell';
 import { colors, FocusAwareStatusBar, SafeAreaView, ScrollView, View } from '@/components/ui';
 import { useAdminDashboard } from '@/lib/hooks/use-admin-dashboard';
@@ -21,6 +22,7 @@ export function AdminHomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [tab, setTab] = React.useState<TabKey>('home');
+  const [searchVisible, setSearchVisible] = React.useState(false);
   const { data, isPending, isRefetching, error, refetch } = useAdminDashboard();
 
   const now = React.useMemo(() => new Date(), []);
@@ -44,10 +46,13 @@ export function AdminHomeScreen() {
             name={firstName}
             onProfile={() => router.push('/profile')}
             onNotifications={() => comingSoon('Notifications')}
+            onSearch={() => setSearchVisible(true)}
           />
           <Greeting greeting={greeting(now)} name={firstName} />
         </View>
       </SafeAreaView>
+
+      <GlobalSearchModal visible={searchVisible} onClose={() => setSearchVisible(false)} />
 
       {isPending
         ? <Loading />

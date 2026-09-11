@@ -4,3 +4,4 @@ export * from './use-auth-store';
 export * from './use-is-first-time';
 export * from './use-login-actions';
 export * from './use-selected-theme';
+export * from './use-tenant-store';

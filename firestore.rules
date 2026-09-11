@@ -2,20 +2,70 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
-    function role() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
-    function admin() { return signedIn() && role() == 'admin'; }
+    function role() { return userDoc().role; }
+    function userTenantId() { return userDoc().tenantId; }
+    function admin() { return signedIn() && (role() == 'admin' || role() == 'super_admin'); }
     function staff() { return signedIn() && role() == 'staff'; }
     function owns(uid) { return signedIn() && request.auth.uid == uid; }
 
+    // Compiled userAccess authorization lookup helpers
+    function accessDoc() {
+      return get(/databases/$(database)/documents/userAccess/$(request.auth.uid)).data;
+    }
+    function userPermissions() { return accessDoc().permissions; }
+    function userLocations() { return accessDoc().locationIds; }
+    function can(permissionKey) { return signedIn() && userPermissions()[permissionKey] != null; }
+    function scope(permissionKey) { return userPermissions()[permissionKey]; }
+    function hasLocationAccess(locId) { return locId != null && userLocations()[locId] == true; }
+
+    // Tenant check
+    function sameTenant() { return signedIn() && resource.data.tenantId == userTenantId(); }
+    function newDocSameTenant() { return signedIn() && request.resource.data.tenantId == userTenantId(); }
+
+    // -------------------------------------------------------------------------
+    // Permission Registry, Roles, UserAccess & App Registry
+    // -------------------------------------------------------------------------
+    match /permissionRegistry/{id} {
+      allow read: if signedIn();
+      allow write: if false; // Managed via Admin SDK
+    }
+
+    match /roles/{id} {
+      allow read: if signedIn();
+      allow write: if admin();
+    }
+
+    match /userAccess/{uid} {
+      allow read: if owns(uid);
+      allow write: if false; // Compiled server-side
+    }
+
+    match /appRegistry/{id} {
+      allow read: if signedIn() && can(resource.data.requiredPermission);
+      allow write: if admin();
+    }
+
+    // -------------------------------------------------------------------------
+    // Tenants
+    // -------------------------------------------------------------------------
+    match /tenants/{tenantId} {
+      allow read: if signedIn() && userTenantId() == tenantId;
+      allow write: if admin() && userTenantId() == tenantId;
+    }
+
+    // -------------------------------------------------------------------------
+    // Users
+    // -------------------------------------------------------------------------
     match /users/{uid} {
-      allow read: if owns(uid) || admin();
+      allow read: if owns(uid) || (admin() && resource.data.tenantId == userTenantId());
       // Registration never grants staff/admin access. Provision those with a trusted Admin SDK.
       allow create: if owns(uid)
-        && request.resource.data.keys().hasOnly(['role', 'name', 'email', 'photoURL', 'phone', 'address', 'updatedAt'])
-        && request.resource.data.role == 'subscriber';
-      // Owners may only fill in phone/address (e.g. profile completion); role/name/email/photoURL are immutable from the client.
+        && request.resource.data.keys().hasOnly(['role', 'roleIds', 'tenantId', 'tenantIds', 'name', 'email', 'photoURL', 'phone', 'address', 'updatedAt'])
+        && request.resource.data.role == 'customer';
+      // Owners may only fill in phone/address (e.g. profile completion); role/name/email/photoURL/tenantId are immutable from the client.
       allow update: if owns(uid)
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['phone', 'address', 'updatedAt']);
       allow delete: if false;
@@ -24,53 +74,87 @@ service cloud.firestore {
         allow read, write: if owns(uid);
       }
     }
-    match /subscribers/{uid} {
-      allow read: if admin() || owns(uid)
-        || (staff() && resource.data.collectorId == request.auth.uid);
-      allow write: if admin();
-    }
+
+    // -------------------------------------------------------------------------
+    // Customers
+    // -------------------------------------------------------------------------
     match /customers/{id} {
-      allow read: if signedIn();
-      allow write: if admin();
+      allow read: if signedIn() && (can('customers.view') || sameTenant());
+      allow create: if can('customers.create') || (admin() && sameTenant());
+      allow update: if can('customers.update') || (admin() && sameTenant());
+      allow delete: if can('customers.delete');
     }
+
+    // -------------------------------------------------------------------------
+    // Customer Accounts
+    // -------------------------------------------------------------------------
     match /customer_accounts/{id} {
-      allow read: if signedIn();
-      allow write: if admin();
+      allow read: if signedIn() && sameTenant();
+      allow write: if admin() && sameTenant();
     }
+
+    // -------------------------------------------------------------------------
+    // Services
+    // -------------------------------------------------------------------------
     match /services/{id} {
-      allow read: if signedIn();
-      allow write: if admin();
+      allow read: if signedIn() && sameTenant();
+      allow write: if admin() && sameTenant();
     }
+
+    // -------------------------------------------------------------------------
+    // Service Providers
+    // -------------------------------------------------------------------------
     match /service_providers/{id} {
-      allow read: if signedIn();
-      allow write: if admin();
+      allow read: if signedIn() && sameTenant();
+      allow write: if admin() && sameTenant();
 
       match /packages/{packageId} {
         allow read: if signedIn();
         allow write: if admin();
       }
     }
+
+    // -------------------------------------------------------------------------
+    // Payments
+    // -------------------------------------------------------------------------
     match /payments/{id} {
-      allow read: if admin()
-        || (staff() && resource.data.collectorId == request.auth.uid)
-        || (signedIn() && resource.data.subscriberId == request.auth.uid);
-      // Payments require a trusted backend; clients must not rewrite financial records.
+      allow read: if can('payments.view')
+        || (admin() && sameTenant())
+        || (staff() && sameTenant() && resource.data.collectorId == request.auth.uid)
+        || (signedIn() && (resource.data.customerId == request.auth.uid || resource.data.subscriberId == request.auth.uid));
       allow write: if false;
     }
+
+    // -------------------------------------------------------------------------
+    // Packages
+    // -------------------------------------------------------------------------
     match /packages/{id} {
-      allow read: if signedIn();
-      allow write: if admin();
+      allow read: if signedIn() && sameTenant();
+      allow write: if admin() && sameTenant();
     }
+
+    // -------------------------------------------------------------------------
+    // Complaints / Tickets
+    // -------------------------------------------------------------------------
     match /tickets/{id} {
-      allow read: if admin()
-        || (staff() && resource.data.assignedTo == request.auth.uid)
-        || (signedIn() && resource.data.subscriberId == request.auth.uid);
-      allow create: if admin() || signedIn();
-      // Staff may only progress a ticket assigned to them; reassignment stays with admins.
-      allow update: if admin()
-        || (staff() && resource.data.assignedTo == request.auth.uid
+      allow read: if can('complaints.view')
+        || (admin() && sameTenant())
+        || (staff() && sameTenant() && resource.data.assignedTo == request.auth.uid)
+        || (signedIn() && (resource.data.customerId == request.auth.uid || resource.data.subscriberId == request.auth.uid));
+      allow create: if can('complaints.create') || (admin() && newDocSameTenant()) || (signedIn() && newDocSameTenant());
+      allow update: if can('complaints.update')
+        || can('complaints.resolve')
+        || (admin() && sameTenant())
+        || (staff() && sameTenant() && resource.data.assignedTo == request.auth.uid
             && request.resource.data.assignedTo == resource.data.assignedTo);
-      allow delete: if admin();
+      allow delete: if can('complaints.delete') || (admin() && sameTenant());
+    }
+
+    match /complaints/{id} {
+      allow read: if can('complaints.view') || (admin() && sameTenant());
+      allow create: if can('complaints.create') || (admin() && sameTenant());
+      allow update: if can('complaints.update') || can('complaints.resolve') || (admin() && sameTenant());
+      allow delete: if can('complaints.delete');
     }
   }
 }

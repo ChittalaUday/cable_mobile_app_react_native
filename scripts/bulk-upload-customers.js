@@ -59,11 +59,30 @@ else {
 const db = getFirestore(app);
 
 // -----------------------------------------------------------------------------
+// Tenant Configuration — all data is scoped to this tenant
+// -----------------------------------------------------------------------------
+const TENANT_ID = 'satya_cable_network';
+const TENANT_DOC = {
+  id: TENANT_ID,
+  name: 'Satya Cable Network',
+  slug: 'satya-cable-network',
+  phone: '+91 9876543210',
+  email: 'info@satyacable.com',
+  logoUrl: null,
+  address: 'Andhra Pradesh, India',
+  website: null,
+  gstNumber: null,
+  description: 'Satya Cable & Broadband — your trusted local cable and internet service provider.',
+  isActive: true,
+};
+
+// -----------------------------------------------------------------------------
 // Service Providers Registry Definition
 // -----------------------------------------------------------------------------
 const SERVICE_PROVIDERS = [
   {
     id: 'cable_act',
+    tenantId: TENANT_ID,
     serviceType: 'cable',
     serviceTypeName: 'Cable TV',
     provider: 'act',
@@ -74,6 +93,7 @@ const SERVICE_PROVIDERS = [
   },
   {
     id: 'cable_sitv',
+    tenantId: TENANT_ID,
     serviceType: 'cable',
     serviceTypeName: 'Cable TV',
     provider: 'sitv',
@@ -84,6 +104,7 @@ const SERVICE_PROVIDERS = [
   },
   {
     id: 'internet_vbc',
+    tenantId: TENANT_ID,
     serviceType: 'internet',
     serviceTypeName: 'High-Speed Broadband',
     provider: 'vbc',
@@ -94,6 +115,7 @@ const SERVICE_PROVIDERS = [
   },
   {
     id: 'internet_bsnl',
+    tenantId: TENANT_ID,
     serviceType: 'internet',
     serviceTypeName: 'High-Speed Broadband',
     provider: 'bsnl',
@@ -104,6 +126,7 @@ const SERVICE_PROVIDERS = [
   },
   {
     id: 'internet_iptv_combo',
+    tenantId: TENANT_ID,
     serviceType: 'internet+iptv',
     serviceTypeName: 'Internet + IPTV Combo',
     provider: 'fiber_iptv',
@@ -114,6 +137,7 @@ const SERVICE_PROVIDERS = [
   },
   {
     id: 'apfiber_apsfl',
+    tenantId: TENANT_ID,
     serviceType: 'apfiber',
     serviceTypeName: 'AP FiberNet (APSFL)',
     provider: 'apsfl',
@@ -238,6 +262,7 @@ function processCustomerData() {
 
       customersMap[custId] = {
         id: custId,
+        tenantId: TENANT_ID,
         customerCode: `SAT-${custId}`,
         name: item.name || 'Unknown Customer',
         phone: item.phone || '919999999999',
@@ -262,6 +287,7 @@ function processCustomerData() {
     if (!packagesMap[pkgSlug]) {
       packagesMap[pkgSlug] = {
         id: pkgSlug,
+        tenantId: TENANT_ID,
         packageName: pkgName,
         serviceType: 'cable',
         provider: 'act',
@@ -276,6 +302,7 @@ function processCustomerData() {
     // Account Document (service: 'cable', provider: 'act')
     const accountDoc = {
       id: item.accountNumber,
+      tenantId: TENANT_ID,
       accountNumber: item.accountNumber,
       customerId: custId, // Relation back to Customer
       lcoCustomerId: item.lcoCustomerId || '',
@@ -320,6 +347,7 @@ function buildCollectionsFromExisting(customersArray, servicesArray) {
     if (!packagesMap[pkgSlug]) {
       packagesMap[pkgSlug] = {
         id: pkgSlug,
+        tenantId: TENANT_ID,
         packageName: pkgName,
         serviceType: s.serviceCategory || 'cable',
         provider: s.provider || 'act',
@@ -341,6 +369,7 @@ function buildCollectionsFromExisting(customersArray, servicesArray) {
 
     return {
       id: s.id || s.accountNumber,
+      tenantId: TENANT_ID,
       accountNumber: s.accountNumber || s.id,
       customerId: custId,
       lcoCustomerId: s.lcoCustomerId || '',
@@ -362,6 +391,7 @@ function buildCollectionsFromExisting(customersArray, servicesArray) {
 
   const customersList = customersArray.map(c => ({
     ...c,
+    tenantId: TENANT_ID,
     accountIds: customerAccountIdsMap[c.id] || [],
     activeServices: Array.from(customerServicesMap[c.id] || ['cable']),
     updatedAt: new Date().toISOString(),
@@ -379,6 +409,18 @@ async function runBulkUpload() {
   console.log('==================================================================');
   console.log('🚀 SATYA CABLE - FIRESTORE BULKWRITER CUSTOMER DATA UPLOADER');
   console.log('==================================================================');
+
+  // Seed the tenant document first
+  const tenantRef = db.collection('tenants').doc(TENANT_ID);
+  await tenantRef.set(
+    {
+      ...TENANT_DOC,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    },
+    { merge: true },
+  );
+  console.log(`  ✅ Tenant "${TENANT_DOC.name}" seeded as tenants/${TENANT_ID}`);
 
   const { customersList, accountsList, packagesList } = processCustomerData();
 

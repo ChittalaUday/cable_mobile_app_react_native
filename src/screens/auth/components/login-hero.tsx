@@ -11,7 +11,7 @@ import { translate } from '@/lib/i18n';
 
 export function LoginHero() {
   return (
-    <View className="h-[32%] min-h-[200px] overflow-hidden bg-neutral-50">
+    <View className="h-[32%] min-h-[200px] overflow-hidden bg-neutral-100">
       <Image
         source={IMAGES.loginHero}
         className="absolute inset-0 size-full"

@@ -63,9 +63,7 @@ const button = tv({
     },
     disabled: {
       true: {
-        container: 'bg-neutral-300 dark:bg-neutral-300',
-        label: 'text-neutral-600 dark:text-neutral-600',
-        indicator: 'text-neutral-400 dark:text-neutral-400',
+        container: 'opacity-50',
       },
     },
     fullWidth: {
@@ -107,30 +105,27 @@ export function Button({ ref, label: text, loading = false, variant = 'default',
       ref={ref}
       testID={testID}
     >
-      {props.children
+      {loading
         ? (
-            props.children
+            <ActivityIndicator
+              size="small"
+              className={styles.indicator()}
+              color={variant === 'outline' ? '#333' : '#fff'}
+              testID={testID ? `${testID}-activity-indicator` : undefined}
+            />
           )
-        : (
-            <>
-              {loading
-                ? (
-                    <ActivityIndicator
-                      size="small"
-                      className={styles.indicator()}
-                      testID={testID ? `${testID}-activity-indicator` : undefined}
-                    />
-                  )
-                : (
-                    <Text
-                      testID={testID ? `${testID}-label` : undefined}
-                      className={styles.label({ className: textClassName })}
-                    >
-                      {text}
-                    </Text>
-                  )}
-            </>
-          )}
+        : props.children
+          ? (
+              props.children
+            )
+          : (
+              <Text
+                testID={testID ? `${testID}-label` : undefined}
+                className={styles.label({ className: textClassName })}
+              >
+                {text}
+              </Text>
+            )}
     </Pressable>
   );
 }
