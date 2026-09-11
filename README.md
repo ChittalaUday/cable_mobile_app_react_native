@@ -1,115 +1,170 @@
-<h1 align="center">
-  Satya Cable & Broadband Mobile App
-</h1>
+# Satya Cable & Broadband Mobile App
 
-📱 Expo / React Native project 🚀, built with Expo, TypeScript, TailwindCSS, Husky, Lint-Staged, expo-router, react-query, TanStack Form, I18n.
+![Expo SDK 54](https://img.shields.io/badge/Expo-SDK%2054-blue?style=flat-square&logo=expo)
+![React Native](https://img.shields.io/badge/React%20Native-0.81.5-61DAFB?style=flat-square&logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript)
+![Firebase](https://img.shields.io/badge/Firebase-Auth%20%26%20Firestore-FFCA28?style=flat-square&logo=firebase)
+![License](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)
 
-> Satya Cable & Broadband Mobile Application
+**Satya Cable & Broadband** is a production-grade, multi-role mobile application built with Expo and React Native to manage cable network and broadband operations, subscriptions, collections, and customer support.
 
-## 🚀 Motivation
+---
 
-Our goal with this starter kit was to streamline the process of building React Native apps, both for our own team and for our clients. We wanted to create a resource that would allow us to create high-quality apps faster and with less effort, while ensuring that all of our projects adhere to the same code standards and architectural principles.
+## 📱 Role-Based System Overview
 
-The benefits of using this starter kit are numerous. It helps our team easily switch between projects, as we can rely on a consistent foundation of code. It also allows us to focus on the business logic of each project rather than getting bogged down in boilerplate code. And, because it promotes consistency across projects, it makes it easier to maintain and scale our apps, as well as share code between teams.
+The application features role-based access control (RBAC) backed by Firebase Auth and Firestore:
 
-Overall, our starter kit is designed to facilitate efficient and effective app development, helping us to bring the best possible products to our clients
+- 👑 **Admin**: Full administrative control over network infrastructure, subscriber management, staff assignments, package pricing, financial collections, and reporting.
+- 🛠 **Staff / Field Executives**: Field management tools for recording subscriber bill collections, attending service complaints, looking up customer details, and updating connection status.
+- 👤 **Subscriber (User)**: Self-service portal for viewing active cable & broadband plans, bill payment history, raising service tickets, and profile updates.
 
-## ✍️ Philosophy
+---
 
-When creating this starter kit, we had several guiding principles in mind::
+## 🛠 Technology Stack
 
-- **🚀 Production-ready**: We wanted to ensure that this starter was ready for real-world use, providing a solid foundation for building production-grade apps.
-- **🥷 Developer experience and productivity**: Our focus was on creating a starter that would enhance the developer experience and increase productivity.
-- **🧩 Minimal code and dependencies**: We aimed to keep the codebase and dependencies as small as possible.
-- **💪 Well-maintained third-party libraries**: We included only well-maintained and reliable third-party libraries, to provide stability and support for our projects.
+- **Framework**: [Expo SDK 54](https://docs.expo.dev/) with [React Native 0.81.5](https://reactnative.dev/)
+- **Routing**: [Expo Router 6](https://docs.expo.dev/router/introduction/) (file-based navigation)
+- **Backend & Auth**: [Firebase Auth](https://firebase.google.com/docs/auth) & [Firestore Database](https://firebase.google.com/docs/firestore)
+- **State Management**: [Zustand](https://github.com/pmndrs/zustand) (app state) & [React Query](https://tanstack.com/query/latest) (server state)
+- **Styling**: [TailwindCSS](https://tailwindcss.com/) via Uniwind / NativeWind
+- **Forms & Validation**: [TanStack Form](https://tanstack.com/form/latest) + [Zod](https://zod.dev/)
+- **Secure Storage**: [React Native MMKV](https://github.com/mrousavy/react-native-mmkv)
+- **Localization**: [i18next](https://www.i18next.com/) with multi-language support (English `en.json`, Telugu `te.json`)
+- **Testing**: [Jest](https://jestjs.io/) + [React Testing Library](https://testing-library.com/) (Unit), [Maestro](https://maestro.mobile.dev/) (E2E)
 
-## ⭐ Key Features
+---
 
-- ✅ Latest Expo SDK with Custom Dev Client: Leverage the best of the Expo ecosystem while maintaining full control over your app.
-- 🎉 [TypeScript](https://www.typescriptlang.org/) for enhanced code quality and bug prevention through static type checking.
-- 💅 Minimal UI kit built with [TailwindCSS](https://www.nativewind.dev/), featuring common components essential for your app.
-- ⚙️ Multi-environment build support (Production, Staging, Development) using Expo configuration.
-- 🦊 Husky for Git Hooks: Automate your git hooks and enforce code standards.
-- 💡 Clean project structure with Absolute Imports for easier code navigation and management.
-- 🚫 Lint-staged: Run Eslint and TypeScript checks on Git staged files to maintain code quality.
-- 🗂 VSCode recommended extensions, settings, and snippets for an enhanced developer experience.
-- ☂️ Pre-installed [Expo Router](https://docs.expo.dev/router/introduction/) with examples for comprehensive app navigation.
-- 💫 Auth flow implementation using [Zustand](https://github.com/pmndrs/zustand) for state management and [react-native-mmkv](https://github.com/mrousavy/react-native-mmkv) for secure data storage.
-- 🛠 10+ [Github Actions](https://github.com/features/actions) workflows for building, releasing, testing, and distributing your app.
-- 🔥 [React Query](https://react-query.tanstack.com/) and [axios](https://github.com/axios/axios) for efficient data fetching and state management.
-- 🧵 Robust form handling with [TanStack Form](https://tanstack.com/form/latest) and [zod](https://github.com/colinhacks/zod) for validation, plus keyboard handling.
-- 🎯 Localization support with [i18next](https://www.i18next.com/), including Eslint for validation.
-- 🧪 Unit testing setup with [Jest](https://jestjs.io/) and [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/).
-- 🔍 E2E testing capabilities with [Maestro](https://maestro.mobile.dev/) for comprehensive app testing.
+## 📂 Project Structure
 
-## Is this starter for me?
+```
+.
+├── src/
+│   ├── app/              # Expo Router file-based screens and tabs
+│   ├── components/ui/    # Reusable UI component library (buttons, inputs, modals, etc.)
+│   ├── features/         # Modular feature domain logic
+│   │   ├── auth/         # Login, Auth store, Role routing, Firebase Auth integration
+│   │   ├── dashboard/    # Role-specific dashboard layouts (Admin/Staff/Subscriber)
+│   │   ├── onboarding/   # App onboarding flow
+│   │   └── settings/     # App configuration, theme, language selection
+│   ├── lib/              # Utility singletons (Firebase, MMKV Storage, API client, i18n)
+│   └── translations/     # Localization JSON resources (en.json, te.json)
+├── .maestro/             # Maestro E2E test scripts
+├── app.config.ts         # Dynamic Expo app configuration
+├── env.ts                # Environment variable schema & validation
+└── package.json          # Dependency manifest & npm scripts
+```
 
-Yes 😀
+---
 
-This starter kit is designed to benefit a wide range of React Native developers, from beginners to experienced professionals. Here's why it might be a good fit for you:
+## 🚀 Quick Start
 
-1. **For beginners:** It provides a solid foundation with best practices and common solutions, helping you learn industry-standard approaches to React Native development.
+### Prerequisites
 
-2. **For experienced developers:** It offers a well-structured, production-ready setup that can save you time and effort in project initialization and configuration.
+- [Node.js](https://nodejs.org/) LTS (v20+)
+- [pnpm](https://pnpm.io/) package manager (`npm install -g pnpm`)
+- [Expo CLI](https://docs.expo.dev/get-started/installation/)
+- iOS Simulator (macOS / Xcode) or Android Emulator (Android Studio)
 
-3. **For teams:** It ensures consistency across projects and team members, making it easier to onboard new developers and maintain code quality.
+### Installation
 
-4. **For explorers:** Even if you prefer not to use starter kits, this project can serve as a valuable reference. You can explore the codebase, documentation, and architectural decisions to gain insights and potentially adopt specific solutions for your projects.
+```bash
+# Clone the repository
+git clone https://github.com/ChittalaUday/cable_mobile_app_react_native.git
 
-5. **For learners:** The starter kit incorporates up-to-date libraries and patterns, allowing you to familiarize yourself with current best practices in the React Native ecosystem.
+# Navigate to the project directory
+cd cable_mobile_app_react_native
 
-6. **For AI-assisted development:** This starter kit works well with AI coding tools. It provides a solid structure and best practices that can guide AI-generated code. This helps ensure that AI assistance leads to high-quality, maintainable code that fits well within your project.
+# Install dependencies
+pnpm install
+```
 
-Remember, you don't have to use the entire starter kit as-is. Feel free to cherry-pick ideas, configurations, or code snippets that align with your project needs. Whether you're building a new app from scratch or looking to improve your existing development process, this starter kit can provide valuable insights and practical solutions.
+### Running the App
 
-## Why Expo and not React Native CLI?
+```bash
+# Start Metro bundler (Development)
+pnpm start
 
-We have been using Expo as our main framework since the introduction of [Continuous Native Generation (CNG)](https://docs.expo.dev/workflow/continuous-native-generation/) concept and we are happy with the experience.
+# Run on iOS simulator
+pnpm ios
 
-I think this question is not valid anymore, especially after the last React conference when the core React native team recommended using Expo for new projects.
+# Run on Android emulator / device
+pnpm android
+```
 
-> "As of today, the only recommended community framework for React Native is Expo. Folks at Expo have been investing in the React Native ecosystem since the early days of React Native and as of today, we believe the developer experience offered by Expo is best in class." React native core team
+---
 
-Still hesitating? Check out this [article](https://reactnative.dev/blog/2024/06/25/use-a-framework-to-build-react-native-apps) or this [video](https://www.youtube.com/watch?v=lifGTznLBcw), maybe this one [video](https://www.youtube.com/watch?v=ek_IdGC0G80) too.
+## ⚙️ Environment Configuration
 
-## 🧑‍💻 Stay up to date
+Environment configuration is managed via `env.ts` with strict Zod validation:
 
-We are committed to continually improving our starter kit and providing the best possible resources for building React Native apps. To that end, we regularly add new features and fix any bugs that are discovered.
+- **Development**: Bundle ID `com.udaychittala.satyacablenetwork.development`
+- **Preview / Staging**: Bundle ID `com.udaychittala.satyacablenetwork.preview`
+- **Production**: Bundle ID `com.udaychittala.satyacablenetwork`
 
-If you want to stay up to date with the latest developments in our starter kit, you can either watch the repository or hit the "star" button. This will allow you to receive notifications whenever new updates are available.
+Copy `.env.example` to `.env` to configure local variables:
 
-We value the feedback and contributions of our users, and we encourage you to let us know if you have any suggestions for improving our starter kit. We are always looking for ways to make it even more effective and useful for our community. So, please do not hesitate to reach out and share your thoughts with us.
+```bash
+cp .env.example .env
+```
 
-<!-- add a gif image here  -->
+To run under specific environment configurations:
 
-## 💎 Libraries used
+```bash
+pnpm start:preview      # Preview environment
+pnpm start:production   # Production environment
+```
 
-- [Expo](https://docs.expo.io/)
-- [Expo Router](https://docs.expo.dev/router/introduction/)
-- [Nativewind](https://www.nativewind.dev/v4/overview)
-- [Flash list](https://github.com/Shopify/flash-list)
-- [React Query](https://tanstack.com/query/v4)
-- [Axios](https://axios-http.com/docs/intro)
-- [TanStack Form](https://tanstack.com/form/latest)
-- [i18next](https://www.i18next.com/)
-- [zustand](https://github.com/pmndrs/zustand)
-- [React Native MMKV](https://github.com/mrousavy/react-native-mmkv)
-- [React Native Gesture Handler](https://docs.swmansion.com/react-native-gesture-handler/docs/)
-- [React Native Reanimated](https://docs.swmansion.com/react-native-reanimated/docs/)
-- [React Native Svg](https://github.com/software-mansion/react-native-svg)
-- [React Error Boundaries](https://github.com/bvaughn/react-error-boundary)
-- [Expo Image](https://docs.expo.dev/versions/unversioned/sdk/image/)
-- [React Native Keyboard Controller](https://github.com/kirillzyusko/react-native-keyboard-controller)
-- [Moti](https://moti.fyi/)
-- [React Native Safe Area Context](https://github.com/th3rdwave/react-native-safe-area-context)
-- [React Native Screens](https://github.com/software-mansion/react-native-screens)
-- [Tailwind Variants](https://www.tailwind-variants.org/)
-- [Zod](https://zod.dev/)
+---
 
-## 🚀 Repository
+## 🧪 Testing & Code Quality
 
-Maintained at [https://github.com/ChittalaUday/cable_mobile_app_react_native](https://github.com/ChittalaUday/cable_mobile_app_react_native).
+Run the complete quality check suite:
+
+```bash
+pnpm run check-all
+```
+
+Individual validation scripts:
+
+```bash
+pnpm run lint               # ESLint static code analysis
+pnpm run lint:fix           # Automatically fix linting issues
+pnpm run lint:translations  # Verify and sort translation JSON keys (--fix)
+pnpm run type-check         # TypeScript strict type verification
+pnpm run test               # Run Jest unit test suite (includes multi-language tests)
+pnpm run test:watch         # Run unit tests in watch mode
+```
+
+### 🌐 Translation Guidelines:
+- **Always update all supported languages** (`en.json`, `te.json`) whenever UI text, taglines, or error messages change.
+- **Ensure translation keys are sorted**: Run `pnpm run lint:translations` (which executes `eslint ./src/translations/ --fix --ext .json`).
+- **Test all languages**: Write Jest unit tests that test language switching (`i18n.changeLanguage(...)`) to ensure all key translations are verified in all supported languages.
+
+---
+
+## 📦 Building & Deployment
+
+Build native binaries using Expo Application Services (EAS):
+
+```bash
+# Build Android APK / App Bundle
+pnpm build:development:android
+pnpm build:preview:android
+pnpm build:production:android
+
+# Build iOS Application
+pnpm build:development:ios
+pnpm build:preview:ios
+pnpm build:production:ios
+```
+
+---
+
+## 🔗 Repository & Maintenance
+
+- **GitHub Repository**: [https://github.com/ChittalaUday/cable_mobile_app_react_native](https://github.com/ChittalaUday/cable_mobile_app_react_native)
+- **Maintainer**: Chittala Uday Kumar ([@ChittalaUday](https://github.com/ChittalaUday))
 
 ## 🔖 License
 
-This project is MIT licensed.
+This project is licensed under the [MIT License](LICENSE).

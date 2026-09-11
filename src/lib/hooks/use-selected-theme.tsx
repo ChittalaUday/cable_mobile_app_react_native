@@ -17,22 +17,20 @@ export function useSelectedTheme() {
   const { theme: _theme } = useUniwind();
   const [theme, _setTheme] = useMMKVString(SELECTED_THEME, storage);
 
+  // TODO: dark theme is temporarily disabled app-wide - restore `t` here to re-enable.
   const setSelectedTheme = React.useCallback(
-    (t: ColorSchemeType) => {
-      Uniwind.setTheme(t);
-      _setTheme(t);
+    (_t: ColorSchemeType) => {
+      Uniwind.setTheme('light');
+      _setTheme('light');
     },
     [_setTheme],
   );
 
-  const selectedTheme = (theme ?? 'system') as ColorSchemeType;
+  const selectedTheme = (theme ?? 'light') as ColorSchemeType;
   return { selectedTheme, setSelectedTheme } as const;
 }
 // to be used in the root file to load the selected theme from MMKV
+// TODO: dark theme is temporarily disabled app-wide - read the stored theme here to re-enable.
 export function loadSelectedTheme() {
-  const theme = storage.getString(SELECTED_THEME);
-  if (theme !== undefined) {
-    console.log('theme', theme);
-    Uniwind.setTheme(theme as ColorSchemeType);
-  }
+  Uniwind.setTheme('light');
 }

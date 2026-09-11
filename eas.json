@@ -17,7 +17,8 @@
         "image": "latest"
       },
       "env": {
-        "EXPO_PUBLIC_APP_ENV": "production"
+        "EXPO_PUBLIC_APP_ENV": "production",
+        "NODE_ENV": "production"
       }
     },
     "preview": {
@@ -33,7 +34,8 @@
       },
       "environment": "preview",
       "env": {
-        "EXPO_PUBLIC_APP_ENV": "preview"
+        "EXPO_PUBLIC_APP_ENV": "preview",
+        "NODE_ENV": "production"
       }
     },
     "development": {
@@ -48,7 +50,8 @@
         "image": "latest"
       },
       "env": {
-        "EXPO_PUBLIC_APP_ENV": "development"
+        "EXPO_PUBLIC_APP_ENV": "development",
+        "NODE_ENV": "development"
       }
     },
     "simulator": {

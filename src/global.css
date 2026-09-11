@@ -6,6 +6,7 @@
 @theme {
   /* Font families */
   --font-family-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-family-inter: 'Inter', ui-sans-serif, system-ui, sans-serif;
 
   /* Base colors */
   --color-white: #ffffff;
@@ -89,6 +90,9 @@
   --color-background: #ffffff;
   --color-foreground: #0a0a0a;
 
+  /* App canvas behind cards (dashboard, list screens) */
+  --color-surface: #EDEFF3;
+
   --color-card: #ffffff;
   --color-card-foreground: #0a0a0a;
 
@@ -104,7 +108,10 @@
 }
 
 /* Dark mode colors */
-@media (prefers-color-scheme: dark) {
+/* TODO: dark theme temporarily disabled app-wide - this media query reacts to OS appearance
+   directly regardless of the in-app theme setting, which is why it must be disabled here (not
+   just in JS) to keep the app light-only for now. Uncomment to re-enable. */
+/* @media (prefers-color-scheme: dark) {
   @theme {
     --color-background: #0a0a0a;
     --color-foreground: #fafafa;
@@ -118,7 +125,7 @@
     --color-border: #404040;
     --color-input: #404040;
   }
-}
+} */
 
 /* Custom utilities (if needed) */
 @layer utilities {

@@ -9,7 +9,8 @@
     "checkJs": true,
     "strict": true,
     "esModuleInterop": true,
-    "customConditions": ["react-native"]
+    "customConditions": ["react-native"],
+    "types": ["jest", "@hugeicons/core-free-icons", "@hugeicons/react-native"]
   },
   "include": [
     "**/*.ts",

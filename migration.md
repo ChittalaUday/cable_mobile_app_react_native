@@ -21,10 +21,11 @@ Copy `.env.example` to `.env` for a new environment. The local `.env` already po
 - Firestore-backed `admin`, `staff`, and `subscriber` role routing
 - Role-specific dashboard shells and navigation
 - Existing orange/charcoal visual system, dark mode, and 200–300 ms transitions
+- Firebase Analytics and Crashlytics (configured in `app.config.ts`, `src/lib/analytics.ts`, `src/lib/crashlytics.ts`)
 
 ## Remaining native integrations
 
 - Google sign-in
 - Bluetooth receipt printing
 - Barcode scanning
-- Push notifications, analytics, crash reporting, App Check, Remote Config, and Cloudflare R2 uploads
+- App Check, Remote Config, and Cloudflare R2 uploads

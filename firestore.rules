@@ -13,9 +13,16 @@ service cloud.firestore {
       allow read: if owns(uid) || admin();
       // Registration never grants staff/admin access. Provision those with a trusted Admin SDK.
       allow create: if owns(uid)
-        && request.resource.data.keys().hasOnly(['role', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['role', 'name', 'email', 'photoURL', 'phone', 'address', 'updatedAt'])
         && request.resource.data.role == 'subscriber';
-      allow update, delete: if false;
+      // Owners may only fill in phone/address (e.g. profile completion); role/name/email/photoURL are immutable from the client.
+      allow update: if owns(uid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['phone', 'address', 'updatedAt']);
+      allow delete: if false;
+
+      match /devices/{deviceId} {
+        allow read, write: if owns(uid);
+      }
     }
     match /subscribers/{uid} {
       allow read: if admin() || owns(uid)
@@ -23,6 +30,10 @@ service cloud.firestore {
       allow write: if admin();
     }
     match /customers/{id} {
+      allow read: if signedIn();
+      allow write: if admin();
+    }
+    match /customer_accounts/{id} {
       allow read: if signedIn();
       allow write: if admin();
     }
@@ -49,6 +60,17 @@ service cloud.firestore {
     match /packages/{id} {
       allow read: if signedIn();
       allow write: if admin();
+    }
+    match /tickets/{id} {
+      allow read: if admin()
+        || (staff() && resource.data.assignedTo == request.auth.uid)
+        || (signedIn() && resource.data.subscriberId == request.auth.uid);
+      allow create: if admin() || signedIn();
+      // Staff may only progress a ticket assigned to them; reassignment stays with admins.
+      allow update: if admin()
+        || (staff() && resource.data.assignedTo == request.auth.uid
+            && request.resource.data.assignedTo == resource.data.assignedTo);
+      allow delete: if admin();
     }
   }
 }
