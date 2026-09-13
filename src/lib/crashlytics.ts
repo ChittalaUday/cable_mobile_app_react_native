@@ -43,10 +43,8 @@ export function logMessage(message: string): void {
  */
 export async function setCrashlyticsUserId(userId: string | null): Promise<void> {
   try {
-    if (userId) {
-      const crashlytics = getCrashlytics();
-      await firebaseSetUserId(crashlytics, userId);
-    }
+    const crashlytics = getCrashlytics();
+    await firebaseSetUserId(crashlytics, userId ?? '');
   }
   catch (err) {
     if (__DEV__) {

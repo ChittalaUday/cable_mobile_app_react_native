@@ -10,15 +10,11 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { useThemeConfig } from '@/components/ui/use-theme-config';
 import { logScreenView, setUserId as setAnalyticsUserId } from '@/lib/analytics';
-import { APIProvider } from '@/lib/api';
+import { APIProvider, queryClient } from '@/lib/api';
 import { initFirebaseAppCheck } from '@/lib/app-check';
 import { setCrashlyticsUserId } from '@/lib/crashlytics';
-import { configureGoogleSignIn } from '@/lib/google-signin';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
 import { loadSelectedTheme } from '@/lib/hooks/use-selected-theme';
-import { registerForPushNotifications } from '@/lib/notifications';
-// Registers the background FCM handler as a side effect - must happen at module scope.
-import '@/lib/messaging';
 // Import  global CSS file
 import '../global.css';
 
@@ -30,9 +26,8 @@ export const unstable_settings = {
 };
 
 loadSelectedTheme();
-// Must run before any other Firebase service (auth, firestore) makes its first request.
+// Must run before Firebase monitoring makes its first request.
 initFirebaseAppCheck();
-configureGoogleSignIn();
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 // Set the animation options. This is optional.
@@ -44,6 +39,7 @@ SplashScreen.setOptions({
 export default function RootLayout() {
   const hydrate = useAuthStore.use.hydrate();
   const userId = useAuthStore.use.user()?.uid;
+  const status = useAuthStore.use.status();
   const pathname = usePathname();
   const hasHiddenSplash = React.useRef(false);
 
@@ -60,7 +56,6 @@ export default function RootLayout() {
 
   React.useEffect(() => {
     if (userId) {
-      registerForPushNotifications(userId).catch(console.warn);
       setAnalyticsUserId(userId);
       setCrashlyticsUserId(userId);
     }
@@ -69,6 +64,11 @@ export default function RootLayout() {
       setCrashlyticsUserId(null);
     }
   }, [userId]);
+
+  React.useEffect(() => {
+    if (status === 'signOut')
+      queryClient.clear();
+  }, [status]);
 
   React.useEffect(() => {
     if (pathname) {

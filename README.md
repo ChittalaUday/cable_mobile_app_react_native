@@ -3,7 +3,7 @@
 ![Expo SDK 54](https://img.shields.io/badge/Expo-SDK%2054-blue?style=flat-square&logo=expo)
 ![React Native](https://img.shields.io/badge/React%20Native-0.81.5-61DAFB?style=flat-square&logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript)
-![Firebase](https://img.shields.io/badge/Firebase-Auth%20%26%20Firestore-FFCA28?style=flat-square&logo=firebase)
+![API](https://img.shields.io/badge/API-Axios-5A29E4?style=flat-square&logo=axios)
 ![License](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)
 
 **Satya Cable & Broadband** is a production-grade, multi-role mobile application built with Expo and React Native to manage cable network and broadband operations, subscriptions, collections, and customer support.
@@ -12,7 +12,7 @@
 
 ## 📱 Role-Based System Overview
 
-The application features role-based access control (RBAC) backed by Firebase Auth and Firestore:
+The application receives authenticated role and tenant memberships from the backend API:
 
 - 👑 **Admin**: Full administrative control over network infrastructure, customer management, staff assignments, package pricing, financial collections, and reporting.
 - 🛠 **Staff / Field Executives**: Field management tools for recording customer bill collections, attending service complaints, looking up customer details, and updating connection status.
@@ -28,7 +28,8 @@ The application features role-based access control (RBAC) backed by Firebase Aut
 
 - **Framework**: [Expo SDK 54](https://docs.expo.dev/) with [React Native 0.81.5](https://reactnative.dev/)
 - **Routing**: [Expo Router 6](https://docs.expo.dev/router/introduction/) (file-based navigation)
-- **Backend & Auth**: [Firebase Auth](https://firebase.google.com/docs/auth) & [Firestore Database](https://firebase.google.com/docs/firestore)
+- **Backend & Auth**: Axios client with rotating access/refresh tokens
+- **Monitoring**: Firebase Analytics, Crashlytics, Performance, and App Check
 - **State Management**: [Zustand](https://github.com/pmndrs/zustand) (app state) & [React Query](https://tanstack.com/query/latest) (server state)
 - **Styling**: [TailwindCSS](https://tailwindcss.com/) via Uniwind / NativeWind
 - **Forms & Validation**: [TanStack Form](https://tanstack.com/form/latest) + [Zod](https://zod.dev/)
@@ -46,11 +47,11 @@ The application features role-based access control (RBAC) backed by Firebase Aut
 │   ├── app/              # Expo Router file-based screens and tabs
 │   ├── components/ui/    # Reusable UI component library (buttons, inputs, modals, etc.)
 │   ├── features/         # Modular feature domain logic
-│   │   ├── auth/         # Login, Auth store, Role routing, Firebase Auth integration
+│   │   ├── auth/         # Login, auth store, and role routing
 │   │   ├── dashboard/    # Role-specific dashboard layouts (Admin/Staff/Subscriber)
 │   │   ├── onboarding/   # App onboarding flow
 │   │   └── settings/     # App configuration, theme, language selection
-│   ├── lib/              # Utility singletons (Firebase, MMKV Storage, API client, i18n)
+│   ├── lib/              # API routes, MMKV storage, monitoring, and i18n
 │   └── translations/     # Localization JSON resources (en.json, te.json)
 ├── .maestro/             # Maestro E2E test scripts
 ├── app.config.ts         # Dynamic Expo app configuration

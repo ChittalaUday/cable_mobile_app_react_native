@@ -94,7 +94,7 @@ export function LoadError({ message, onRetry }: { message?: string; onRetry: () 
   return (
     <View className="flex-1 items-center justify-center gap-3 px-8">
       <Text className="text-center text-[15px] font-semibold text-foreground">Could not load your network data</Text>
-      <Text className="text-center text-[13px] text-muted-foreground">{message ?? 'Firestore returned no data for this account.'}</Text>
+      <Text className="text-center text-[13px] text-muted-foreground">{message ?? 'No data is available for this account.'}</Text>
       <Button label="Try again" variant="outline" onPress={onRetry} />
     </View>
   );

@@ -109,7 +109,7 @@ function CustomerListContent({
         <Text className="text-center text-xs text-muted-foreground">
           {query
             ? `No customer or box details matched "${query}".`
-            : 'No customer records are present in Firestore for this filter.'}
+            : 'No customer records are available for this filter.'}
         </Text>
       </View>
     );

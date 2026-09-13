@@ -12,21 +12,19 @@ pnpm test
 npx expo run:android --device
 ```
 
-Copy `.env.example` to `.env` for a new environment. The local `.env` already points at the same Firebase project as the Flutter app and is intentionally ignored by Git.
+Copy `.env.example` to `.env` for a new environment and set `EXPO_PUBLIC_API_URL` to the backend `/api/v1` base URL.
 
 ## Migrated
 
-- Firebase email/password registration and sign-in
-- Anonymous guest access
-- Firestore-backed `admin`, `staff`, and `customer` role routing
+- Backend email/password sign-in with rotating access and refresh tokens
+- Backend membership-backed `admin`, `staff`, and `customer` role routing
 - Consolidated Customer & Connection management (1 Customer : N STB/Fiber lines)
 - Role-specific dashboard shells and navigation
 - Existing orange/charcoal visual system, dark mode, and 200–300 ms transitions
-- Firebase Analytics and Crashlytics (configured in `app.config.ts`, `src/lib/analytics.ts`, `src/lib/crashlytics.ts`)
+- Firebase Analytics, Crashlytics, Performance, and App Check for mobile monitoring only
 
 ## Remaining native integrations
 
-- Google sign-in
 - Bluetooth receipt printing
 - Barcode scanning
-- App Check, Remote Config, and Cloudflare R2 uploads
+- Customer, package, tenant, access, registry, and device API routes

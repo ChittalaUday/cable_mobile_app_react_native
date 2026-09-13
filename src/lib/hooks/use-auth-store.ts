@@ -1,150 +1,220 @@
-import type { User } from 'firebase/auth';
-
+import type { ApiUser, AuthResponse, Membership } from '@/lib/api/routes/auth';
 import type { UserRole } from '@/lib/utils/user-role';
-import { GoogleSignin, isSuccessResponse } from '@react-native-google-signin/google-signin';
-import { createUserWithEmailAndPassword, signOut as firebaseSignOut, getAdditionalUserInfo, GoogleAuthProvider, onAuthStateChanged, signInAnonymously, signInWithCredential, signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
-
 import { create } from 'zustand';
-import { COLLECTIONS, ERROR_MESSAGES, USER_ROLES } from '@/constants';
-import { auth, db } from '@/lib/firebase';
-import { useAccessStore } from '@/lib/hooks/use-access-store';
+import { USER_ROLES } from '@/constants';
+import { setSessionExpiredHandler } from '@/lib/api/client';
+import { authApi } from '@/lib/api/routes/auth';
+import { getToken, removeTenantId, removeToken, setTenantId, setToken } from '@/lib/auth/utils';
 import { createSelectors } from '@/lib/utils';
-import { parseUserRole } from '@/lib/utils/user-role';
 
 export type { UserRole } from '@/lib/utils/user-role';
+
+export type AuthUser = {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  phone: string | null;
+  phoneNumber: string | null;
+  isAnonymous: false;
+};
 
 type AuthState = {
   error: string | null;
   role: UserRole | null;
   tenantId: string | null;
   tenantIds: string[];
-  needsProfileCompletion: boolean;
+  memberships: Membership[];
   status: 'idle' | 'signOut' | 'signIn';
-  user: User | null;
+  user: AuthUser | null;
   hydrate: () => () => void;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
+  signIn: (identifier: string, password: string) => Promise<void>;
+  requestOtp: (phone: string) => Promise<number>;
+  verifyOtp: (phone: string, code: string) => Promise<void>;
   switchTenant: (tenantId: string) => void;
-  completeProfile: (profile: { phone: string; address: string }) => Promise<void>;
-  continueAsGuest: () => Promise<void>;
   signOut: () => Promise<void>;
+  signOutEverywhere: () => Promise<void>;
 };
 
-type Profile = { role: UserRole; tenantId: string | null; tenantIds: string[]; needsProfileCompletion: boolean };
-
-async function profileFor(user: User): Promise<Profile> {
-  if (user.isAnonymous)
-    return { role: USER_ROLES.CUSTOMER, tenantId: null, tenantIds: [], needsProfileCompletion: false };
-  try {
-    const data = (await getDoc(doc(db, COLLECTIONS.USERS, user.uid))).data();
-    const role = parseUserRole(data?.role);
-    const tenantIds: string[] = Array.isArray(data?.tenantIds)
-      ? data.tenantIds
-      : data?.tenantId
-        ? [data.tenantId]
-        : [];
-    const tenantId = (data?.tenantId as string) || tenantIds[0] || null;
-    return { role, tenantId, tenantIds, needsProfileCompletion: role === USER_ROLES.CUSTOMER && (!data?.phone || !data?.address) };
-  }
-  catch (error) {
-    console.warn('Failed to fetch user profile from Firestore:', error);
-    return { role: USER_ROLES.CUSTOMER, tenantId: null, tenantIds: [], needsProfileCompletion: false };
-  }
-}
-
-function newUserDoc({ name, email, photoURL, tenantId = null }: { name: string | null; email: string | null; photoURL: string | null; tenantId?: string | null }) {
-  const tenantIds = tenantId ? [tenantId] : [];
+function toAuthUser(user: ApiUser): AuthUser {
   return {
-    role: USER_ROLES.CUSTOMER,
-    roleIds: [USER_ROLES.CUSTOMER],
-    tenantId,
-    tenantIds,
-    name,
-    email,
-    photoURL,
-    phone: null,
-    address: null,
-    updatedAt: serverTimestamp(),
+    uid: user.id,
+    email: user.email,
+    displayName: user.name,
+    photoURL: user.photoUrl,
+    phone: user.phone,
+    phoneNumber: user.phone,
+    isAnonymous: false,
   };
 }
 
-let accessUnsubscribe: (() => void) | null = null;
+function roleFor(user: ApiUser, membership?: Membership): UserRole {
+  if (user.isSuperAdmin)
+    return USER_ROLES.SUPER_ADMIN;
+  if (membership?.roleId === USER_ROLES.ADMIN || membership?.roleId === USER_ROLES.STAFF || membership?.roleId === USER_ROLES.CUSTOMER)
+    return membership.roleId;
+  return USER_ROLES.CUSTOMER;
+}
 
-const _useAuthStore = create<AuthState>((set, get) => ({
+const signedOut = {
   error: null,
   role: null,
   tenantId: null,
   tenantIds: [],
-  needsProfileCompletion: false,
-  status: 'idle',
+  memberships: [],
+  status: 'signOut' as const,
   user: null,
-  switchTenant: (tenantId: string) => {
-    const currentTenantIds = get().tenantIds;
-    if (currentTenantIds.length === 0 || currentTenantIds.includes(tenantId)) {
-      set({ tenantId });
+};
+
+async function authenticatedState(session: AuthResponse) {
+  setToken({ access: session.accessToken, refresh: session.refreshToken });
+  try {
+    const { user, memberships } = await authApi.me();
+    const membership = memberships[0];
+    return {
+      error: null,
+      memberships,
+      role: roleFor(user, membership),
+      status: 'signIn' as const,
+      tenantId: membership?.tenantId ?? null,
+      tenantIds: memberships.map(item => item.tenantId),
+      user: toAuthUser(user),
+    };
+  }
+  catch (error) {
+    removeToken();
+    throw error;
+  }
+}
+
+const _useAuthStore = create<AuthState>((set, get) => ({
+  ...signedOut,
+  status: 'idle',
+
+  hydrate: () => {
+    let cancelled = false;
+    if (!getToken()) {
+      set(signedOut);
+      return () => {
+        cancelled = true;
+      };
     }
+
+    authApi.me().then(({ user, memberships }) => {
+      if (cancelled)
+        return;
+      const membership = memberships[0];
+      set({
+        error: null,
+        memberships,
+        role: roleFor(user, membership),
+        status: 'signIn',
+        tenantId: membership?.tenantId ?? null,
+        tenantIds: memberships.map(item => item.tenantId),
+        user: toAuthUser(user),
+      });
+    }).catch((error) => {
+      if (cancelled)
+        return;
+      removeToken();
+      set({ ...signedOut, error: error instanceof Error ? error.message : 'Could not restore session.' });
+    });
+
+    return () => {
+      cancelled = true;
+    };
   },
-  hydrate: () => onAuthStateChanged(auth, async (user) => {
-    if (accessUnsubscribe) {
-      accessUnsubscribe();
-      accessUnsubscribe = null;
-    }
-    if (!user) {
-      useAccessStore.getState().clear();
-      return set({ error: null, role: null, tenantId: null, tenantIds: [], needsProfileCompletion: false, status: 'signOut', user: null });
-    }
+
+  signIn: async (identifier, password) => {
+    set({ error: null });
     try {
-      accessUnsubscribe = useAccessStore.getState().subscribe(user.uid);
-      const { role, tenantId, tenantIds, needsProfileCompletion } = await profileFor(user);
-      set({ error: null, role, tenantId, tenantIds, needsProfileCompletion, status: 'signIn', user });
+      const session = await authApi.login(identifier, password);
+      set(await authenticatedState(session));
     }
     catch (error) {
-      useAccessStore.getState().clear();
-      set({ error: error instanceof Error ? error.message : ERROR_MESSAGES.ACCOUNT_ACCESS_UNAVAILABLE, role: null, tenantId: null, tenantIds: [], needsProfileCompletion: false, status: 'signOut', user: null });
-      await firebaseSignOut(auth);
-    }
-  }),
-  signIn: async (email, password) => {
-    set({ error: null });
-    await signInWithEmailAndPassword(auth, email.trim(), password);
-  },
-  signUp: async (email, password) => {
-    set({ error: null });
-    const credential = await createUserWithEmailAndPassword(auth, email.trim(), password);
-    await setDoc(doc(db, COLLECTIONS.USERS, credential.user.uid), newUserDoc({ name: null, email: credential.user.email, photoURL: null }));
-  },
-  signInWithGoogle: async () => {
-    set({ error: null });
-    await GoogleSignin.hasPlayServices();
-    const response = await GoogleSignin.signIn();
-    if (!isSuccessResponse(response))
-      return;
-    const { idToken, user: googleUser } = response.data;
-    if (!idToken)
-      throw new Error(ERROR_MESSAGES.GOOGLE_TOKEN_MISSING);
-    const credential = await signInWithCredential(auth, GoogleAuthProvider.credential(idToken));
-    if (getAdditionalUserInfo(credential)?.isNewUser) {
-      await setDoc(doc(db, COLLECTIONS.USERS, credential.user.uid), newUserDoc({
-        name: googleUser.name,
-        email: googleUser.email,
-        photoURL: googleUser.photo,
-      }));
+      removeToken();
+      set({ ...signedOut, error: error instanceof Error ? error.message : 'Sign in failed.' });
+      throw error;
     }
   },
-  completeProfile: async ({ phone, address }) => {
+
+  requestOtp: async (phone) => {
+    set({ error: null });
+    const response = await authApi.requestOtp(phone);
+    return response.expiresInSeconds;
+  },
+
+  verifyOtp: async (phone, code) => {
+    set({ error: null });
+    try {
+      const session = await authApi.verifyOtp(phone, code);
+      set(await authenticatedState(session));
+    }
+    catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Code verification failed.' });
+      throw error;
+    }
+  },
+
+  switchTenant: (tenantId) => {
+    const membership = get().memberships.find(item => item.tenantId === tenantId);
     const user = get().user;
-    if (!user)
-      throw new Error('Not signed in.');
-    await setDoc(doc(db, 'users', user.uid), { phone, address, updatedAt: serverTimestamp() }, { merge: true });
-    set({ needsProfileCompletion: false });
+    if (!membership || !user)
+      return;
+    set({ tenantId, role: roleFor({
+      id: user.uid,
+      email: user.email,
+      phone: user.phone,
+      name: user.displayName,
+      photoUrl: user.photoURL,
+      isSuperAdmin: get().role === USER_ROLES.SUPER_ADMIN,
+    }, membership) });
   },
-  continueAsGuest: async () => {
-    set({ error: null });
-    await signInAnonymously(auth);
+
+  signOut: async () => {
+    try {
+      if (getToken())
+        await authApi.logout();
+    }
+    finally {
+      removeToken();
+      set(signedOut);
+    }
   },
-  signOut: async () => firebaseSignOut(auth),
+
+  signOutEverywhere: async () => {
+    try {
+      await authApi.logoutEverywhere();
+    }
+    finally {
+      removeToken();
+      set(signedOut);
+    }
+  },
 }));
+
+setSessionExpiredHandler(() => {
+  removeToken();
+  _useAuthStore.setState(signedOut);
+});
+
+/**
+ * Mirror the active tenant into storage for the API client's request header.
+ *
+ * One subscription rather than a `setTenantId` beside every `set({ tenantId })`:
+ * the call site that gets forgotten is the one that breaks `switchTenant`
+ * silently, because the app looks right and only the server disagrees.
+ */
+let mirroredTenantId: string | null | undefined;
+_useAuthStore.subscribe(({ tenantId }) => {
+  if (tenantId === mirroredTenantId)
+    return;
+
+  mirroredTenantId = tenantId;
+  if (tenantId)
+    setTenantId(tenantId);
+  else
+    removeTenantId();
+});
 
 export const useAuthStore = createSelectors(_useAuthStore);

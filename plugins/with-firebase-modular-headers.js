@@ -1,7 +1,7 @@
 const { mergeContents } = require('@expo/config-plugins/build/utils/generateCode');
 const { withPodfile } = require('expo/config-plugins');
 
-// Several Firebase Swift pods (AppCheckCore, FirebaseCrashlytics, FirebaseInAppMessaging, ...)
+// Several Firebase monitoring Swift pods (AppCheckCore, FirebaseCrashlytics, ...)
 // don't define Clang modules, which CocoaPods needs to import them as static libraries.
 // `use_modular_headers!` isn't exposed by expo-build-properties, so it's added here directly.
 module.exports = function withFirebaseModularHeaders(config) {

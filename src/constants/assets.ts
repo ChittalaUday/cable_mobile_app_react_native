@@ -4,7 +4,6 @@ export const IMAGES = {
   splashIcon: require('../../assets/splash-icon.png'),
   adaptiveIcon: require('../../assets/adaptive-icon.png'),
   favicon: require('../../assets/favicon.png'),
-  googleLogo: require('../../assets/images/google-logo.png'),
 
   // Hero & Banners
   loginHero: require('../../assets/images/login-hero.png'),

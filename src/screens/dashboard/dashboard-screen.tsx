@@ -8,7 +8,7 @@ import { StaffDashboardScreen } from '@/screens/staff/staff-dashboard-screen';
 export function DashboardScreen() {
   const role = useAuthStore.use.role() ?? 'customer';
 
-  if (role === 'admin')
+  if (role === 'admin' || role === 'super_admin')
     return <AdminHomeScreen />;
 
   if (role === 'staff')

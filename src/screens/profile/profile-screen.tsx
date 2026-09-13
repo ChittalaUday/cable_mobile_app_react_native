@@ -11,11 +11,15 @@ import {
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
+import { Alert } from 'react-native';
+import { showMessage } from 'react-native-flash-message';
 
 import { Card, comingSoon, Divider, IconTile, TINT } from '@/components/common/shell';
 import { colors, FocusAwareStatusBar, Image, Pressable, SafeAreaView, ScrollView, Text, View } from '@/components/ui';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
+import { translate } from '@/lib/i18n';
 import { initials } from '@/lib/utils/admin-format';
+import { authErrorMessage } from '@/lib/utils/auth-error';
 
 const ROWS: { key: string; icon: IconSvgElement; tint: keyof typeof TINT; label: string }[] = [
   { key: 'account', icon: UserIcon, tint: 'blue', label: 'Account details' },
@@ -28,20 +32,33 @@ export function ProfileScreen() {
   const user = useAuthStore.use.user();
   const role = useAuthStore.use.role();
   const signOut = useAuthStore.use.signOut();
+  const signOutEverywhere = useAuthStore.use.signOutEverywhere();
   const router = useRouter();
-  const [signingOut, setSigningOut] = React.useState(false);
+  const [signingOut, setSigningOut] = React.useState<'current' | 'all' | null>(null);
 
   const name = user?.displayName ?? user?.email?.split('@')[0] ?? 'Admin';
 
-  const onSignOut = async () => {
-    setSigningOut(true);
+  const runSignOut = async (everywhere = false) => {
+    setSigningOut(everywhere ? 'all' : 'current');
     try {
-      await signOut();
+      await (everywhere ? signOutEverywhere() : signOut());
+    }
+    catch (error) {
+      showMessage({ message: translate('profile.sign_out_failed'), description: authErrorMessage(error), type: 'danger' });
     }
     finally {
-      setSigningOut(false);
+      setSigningOut(null);
     }
   };
+
+  const confirmSignOutEverywhere = () => Alert.alert(
+    translate('profile.sign_out_all'),
+    translate('profile.sign_out_all_confirmation'),
+    [
+      { text: translate('profile.cancel'), style: 'cancel' },
+      { text: translate('profile.confirm'), style: 'destructive', onPress: () => runSignOut(true) },
+    ],
+  );
 
   return (
     <View className="flex-1 bg-surface">
@@ -91,12 +108,22 @@ export function ProfileScreen() {
         <Card className="px-3.5">
           <Pressable
             accessibilityRole="button"
-            disabled={signingOut}
-            onPress={onSignOut}
+            disabled={signingOut !== null}
+            onPress={() => runSignOut()}
             className="flex-row items-center gap-3 py-3.5"
           >
             <IconTile icon={Logout01Icon} tint="red" size={32} iconSize={17} />
-            <Text className="flex-1 text-[14px] font-semibold text-danger-600">{signingOut ? 'Signing out…' : 'Sign out'}</Text>
+            <Text className="flex-1 text-[14px] font-semibold text-danger-600">{signingOut === 'current' ? translate('profile.signing_out') : translate('profile.sign_out')}</Text>
+          </Pressable>
+          <Divider />
+          <Pressable
+            accessibilityRole="button"
+            disabled={signingOut !== null}
+            onPress={confirmSignOutEverywhere}
+            className="flex-row items-center gap-3 py-3.5"
+          >
+            <IconTile icon={Logout01Icon} tint="red" size={32} iconSize={17} />
+            <Text className="flex-1 text-[14px] font-semibold text-danger-600">{signingOut === 'all' ? translate('profile.signing_out_all') : translate('profile.sign_out_all')}</Text>
           </Pressable>
         </Card>
       </ScrollView>

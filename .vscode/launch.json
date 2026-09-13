@@ -1,0 +1,26 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "📱 Mobile: Start Expo (node-terminal)",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "pnpm start",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "📱 Mobile: iOS (node-terminal)",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "pnpm ios",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "📱 Mobile: Android (node-terminal)",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "pnpm android",
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}

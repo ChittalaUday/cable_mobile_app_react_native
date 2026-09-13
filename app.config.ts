@@ -77,10 +77,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ['@react-native-firebase/app', { ios: { disableSPM: true } }],
     '@react-native-firebase/crashlytics',
     './plugins/with-firebase-modular-headers',
-    '@react-native-firebase/messaging',
     '@react-native-firebase/app-check',
     '@react-native-firebase/perf',
-    '@react-native-google-signin/google-signin',
     [
       'expo-splash-screen',
       {
@@ -116,8 +114,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     'expo-localization',
-    ['expo-notifications', { defaultChannel: 'default' }],
-    './plugins/with-fcm-channel-tools-replace',
     'expo-router',
     ['app-icon-badge', appIconBadgeConfig],
     ['react-native-edge-to-edge'],
