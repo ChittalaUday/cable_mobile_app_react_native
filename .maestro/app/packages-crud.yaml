@@ -1,0 +1,107 @@
+appId: ${APP_ID}
+env:
+  PKG: E2E Fiber Pack
+  PRICE: '749'
+  NEW_PRICE: '899'
+tags:
+  - e2e
+  - packages
+---
+# Full create -> read -> update -> delete cycle against the Firestore `packages`
+# collection, signed in as an admin holding all four packages.* permissions.
+- runFlow:
+    file: ../utils/fresh-login.yaml
+    env:
+      EMAIL: admin@satyacable.dev
+      PASSWORD: Passw0rd!
+- assertVisible: Operator Panel
+
+# Reach the screen the way an operator does: through the global search registry.
+- runFlow: ../utils/open-packages.yaml
+- assertVisible: 'Packages & Plans'
+- assertVisible:
+    id: add-package-button
+
+# ---------------------------------------------------------------- CREATE
+- tapOn:
+    id: add-package-button
+- assertVisible: New Package
+- assertVisible: Plans defined here appear as services on customer connections
+
+- tapOn:
+    id: package-name-input
+- inputText: ${PKG}
+
+# Service type drives which numeric field is offered (speed vs channels).
+- tapOn: Fiber
+- assertVisible: Speed (Mbps)
+- assertNotVisible: Channels
+
+- tapOn:
+    id: package-price-input
+- inputText: ${PRICE}
+- tapOn:
+    id: package-speed-input
+- inputText: '300'
+
+- tapOn:
+    id: package-submit-button
+- assertVisible: Package created
+
+# ------------------------------------------------------------------ READ
+- assertVisible: ${PKG}
+- assertVisible:
+    text: '.*${PRICE}.*'
+- assertVisible: 300 Mbps
+- assertVisible: Active
+
+# Filters: a fiber plan survives the Broadband filter, not the Cable TV one.
+- tapOn: 'Filter: Broadband'
+- assertVisible: ${PKG}
+- tapOn: 'Filter: Cable TV'
+- assertNotVisible: ${PKG}
+- tapOn: 'Filter: All'
+
+# Search narrows to the new plan.
+- tapOn:
+    id: package-search-input
+- inputText: E2E
+- assertVisible: ${PKG}
+- tapOn:
+    id: package-search-input
+- eraseText: 3
+
+# ---------------------------------------------------------------- UPDATE
+- tapOn: 'Edit ${PKG}'
+- assertVisible: Edit Package
+- tapOn:
+    id: package-price-input
+- eraseText: 6
+- inputText: ${NEW_PRICE}
+
+# Drop it out of the sale catalogue while we are here.
+- tapOn:
+    id: package-active-toggle
+- tapOn:
+    id: package-submit-button
+- assertVisible: Package updated
+- assertVisible:
+    text: '.*${NEW_PRICE}.*'
+- assertVisible: Inactive
+
+# An inactive plan is filtered out of the active list.
+- tapOn: 'Filter: Active'
+- assertNotVisible: ${PKG}
+- tapOn: 'Filter: All'
+
+# ---------------------------------------------------------------- DELETE
+# Cancelling the confirmation must leave the plan untouched.
+- tapOn: 'Delete ${PKG}'
+- assertVisible: Delete package
+- tapOn: Cancel
+- assertVisible: ${PKG}
+
+- tapOn: 'Delete ${PKG}'
+- assertVisible: Delete package
+- tapOn: Delete plan
+- assertNotVisible: ${PKG}

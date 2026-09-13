@@ -11,6 +11,10 @@ export const IMAGES = {
   operatorHero: require('../../assets/images/operator-hero.png'),
   onboardingHero: require('../../assets/welcome-asset-2k.png'),
 
+  // Add Customer & Customer Details New Assets
+  addCustomerSuccessTechnician: require('../../assets/images/add-customer-success-technician.png'),
+  customerDetailsHeaderBg: require('../../assets/images/customer-details-header-bg.png'),
+
   // Illustrations & Draft Assets
   allSet: require('../../assets/all-set-asset-2k.png'),
   cableOutage: require('../../assets/cable-outage-illustration-draft.png'),

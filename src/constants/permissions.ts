@@ -78,6 +78,12 @@ export const PERMISSIONS = {
   DEALERS_UPDATE: 'dealers.update',
   DEALERS_DELETE: 'dealers.delete',
 
+  // Packages & Plans
+  PACKAGES_VIEW: 'packages.view',
+  PACKAGES_CREATE: 'packages.create',
+  PACKAGES_UPDATE: 'packages.update',
+  PACKAGES_DELETE: 'packages.delete',
+
   // Inventory
   INVENTORY_VIEW: 'inventory.view',
   INVENTORY_UPDATE: 'inventory.update',

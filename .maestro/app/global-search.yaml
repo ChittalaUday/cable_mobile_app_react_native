@@ -1,0 +1,40 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - search
+---
+# The appRegistry drives global search: screens and per-permission actions.
+- runFlow:
+    file: ../utils/fresh-login.yaml
+    env:
+      EMAIL: admin@satyacable.dev
+      PASSWORD: Passw0rd!
+- assertVisible: Operator Panel
+
+- tapOn: Global Search
+- assertVisible: 'Search screens, actions, commands...'
+
+# Empty query lists everything the admin is permitted to reach.
+- assertVisible: Customers
+- assertVisible: 'Packages & Plans'
+
+# Every packages CRUD operation is registered as its own searchable action.
+- inputText: package
+- assertVisible: 'Packages & Plans'
+- assertVisible: Add Package
+- assertVisible: Edit Packages
+- assertVisible: Delete Packages
+
+# A miss reports cleanly rather than showing stale results.
+- eraseText: 7
+- inputText: zzzznotathing
+- assertVisible: No matching actions or screens found
+- eraseText: 13
+
+# The create action deep-links straight into an open form.
+- inputText: add package
+- tapOn: Add Package
+- assertVisible: New Package
+- tapOn:
+    id: package-cancel-button
+- assertVisible: 'Packages & Plans'

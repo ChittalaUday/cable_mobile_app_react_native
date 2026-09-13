@@ -1,0 +1,22 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - customer
+---
+# A subscriber account sees only its own subscriptions - no operator surface.
+- runFlow:
+    file: ../utils/fresh-login.yaml
+    env:
+      EMAIL: user@satyacable.dev
+      PASSWORD: Passw0rd!
+
+- assertVisible: 'Satya Cable & Broadband'
+- assertVisible: My Subscriptions
+- assertNotVisible: Operator Panel
+- assertNotVisible: Quick Actions
+
+- tapOn: Bills
+- tapOn: Account
+- tapOn: Home
+
+- assertVisible: Sign out

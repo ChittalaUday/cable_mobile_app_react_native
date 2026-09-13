@@ -7,6 +7,16 @@ jest.mock('react-native-worklets', () => ({
   default: {},
 }));
 
+// Mock @hugeicons/react-native
+jest.mock('@hugeicons/react-native', () => {
+  const React = require('react');
+  const View = require('react-native').View;
+  return {
+    __esModule: true,
+    HugeiconsIcon: (props: any) => React.createElement(View, props),
+  };
+});
+
 // Mock react-native-reanimated
 jest.mock('react-native-reanimated', () => {
   const View = require('react-native').View;

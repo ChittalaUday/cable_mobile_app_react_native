@@ -1,0 +1,70 @@
+appId: ${APP_ID}
+env:
+  CUSTOMER: E2E Wizard Subscriber
+tags:
+  - e2e
+  - customers
+---
+# 6-step Add Customer wizard:
+# Customer Details -> Select Services -> Package Details -> Device / Box
+# -> Additional Information -> Review & Confirm -> success.
+- runFlow:
+    file: ../utils/fresh-login.yaml
+    env:
+      EMAIL: admin@satyacable.dev
+      PASSWORD: Passw0rd!
+- assertVisible: Operator Panel
+
+- tapOn: Customers
+- assertVisible: Customers & Lines
+- tapOn: '+ Add Customer'
+
+# --- Step 1: customer details ---------------------------------------------
+- assertVisible: Customer Details
+- assertVisible: Enter the basic information of the customer.
+- tapOn: Enter customer name
+- inputText: ${CUSTOMER}
+- tapOn: 10 digit mobile number
+- inputText: '9911002233'
+- tapOn: Next →
+
+# --- Step 2: services ------------------------------------------------------
+- assertVisible: Select Services
+- assertVisible: Cable TV
+- assertVisible: Broadband Internet
+- assertVisible: IPTV / OTT
+- tapOn: Next →
+
+# --- Step 3: package (from the Packages & Plans catalogue) ------------------
+- assertVisible: Package Details
+- assertVisible: Select a package for each selected service.
+- tapOn: Next →
+
+# --- Step 4: device / box --------------------------------------------------
+- assertVisible: Device / Box Details
+- tapOn: Enter serial number
+- inputText: STB_E2E_WIZ
+- tapOn: Next →
+
+# --- Step 5: additional ----------------------------------------------------
+- assertVisible: Additional Information
+- tapOn: Next →
+
+# --- Step 6: review & save -------------------------------------------------
+- assertVisible: Review & Confirm
+- assertVisible: Please review all the details before saving.
+- assertVisible: Customer Information
+- assertVisible: ${CUSTOMER}
+- tapOn: Save Customer
+
+- extendedWaitUntil:
+    visible: Customer Added Successfully!
+    timeout: 30000
+- assertVisible: Customer ID
+- tapOn: Go to Customers List
+
+# The new subscriber is searchable in the list.
+- tapOn: Customers
+- tapOn: Search customer name, phone, STB serial, VC card...
+- inputText: ${CUSTOMER}
+- assertVisible: ${CUSTOMER}

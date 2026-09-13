@@ -1,0 +1,23 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - auth
+---
+# A clean install goes straight to the operator login screen.
+# NOTE: src/app/(auth)/onboarding.tsx exists but nothing routes to it - no
+# layout consults useIsFirstTime - so the cover screen is currently dead code.
+# If onboarding is ever wired back up, this flow is where it gets asserted.
+- clearState
+- runFlow: ../utils/open-dev-build.yaml
+
+- assertVisible: Satya Cable
+- assertVisible: Operator Login
+- assertVisible: Welcome Back
+- assertVisible: Sign in to your Satya Cable operator account
+- assertVisible: Email or Mobile Number
+- assertVisible: Password
+- assertVisible: Remember me
+- assertVisible: Sign In
+- assertVisible: Continue with Google
+- assertVisible: Continue as Guest
+- assertNotVisible: Get Started

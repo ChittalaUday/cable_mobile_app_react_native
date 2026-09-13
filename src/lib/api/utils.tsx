@@ -11,7 +11,7 @@ export type PaginateQuery<T> = {
 };
 
 type KeyParams = {
-  [key: string]: any;
+  [key: string]: unknown;
 };
 export const DEFAULT_LIMIT = 10;
 

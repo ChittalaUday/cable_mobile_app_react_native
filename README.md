@@ -14,9 +14,13 @@
 
 The application features role-based access control (RBAC) backed by Firebase Auth and Firestore:
 
-- 👑 **Admin**: Full administrative control over network infrastructure, subscriber management, staff assignments, package pricing, financial collections, and reporting.
-- 🛠 **Staff / Field Executives**: Field management tools for recording subscriber bill collections, attending service complaints, looking up customer details, and updating connection status.
-- 👤 **Subscriber (User)**: Self-service portal for viewing active cable & broadband plans, bill payment history, raising service tickets, and profile updates.
+- 👑 **Admin**: Full administrative control over network infrastructure, customer management, staff assignments, package pricing, financial collections, and reporting.
+- 🛠 **Staff / Field Executives**: Field management tools for recording customer bill collections, attending service complaints, looking up customer details, and updating connection status.
+- 👤 **Customer (User)**: Self-service portal for viewing active cable & broadband plans, bill payment history, raising service tickets, and profile updates.
+
+### 🔌 Consolidated Customer & Multi-Connection Model
+- **1 Customer : N Connections**: A single customer record (name, phone, address) owns multiple physical hardware connections (cable STBs, broadband lines, IPTV boxes).
+- **Unified Card UI (`CustomerConnectionCard`)**: Displays customer identity, multi-box count badges (`2 Connections`), interactive box pill switchers, hardware serial numbers (STB / VC card), and quick recharge actions without requiring separate redundant tabs.
 
 ---
 

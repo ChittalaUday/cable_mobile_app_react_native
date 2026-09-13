@@ -1,0 +1,35 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - packages
+  - rbac
+---
+# Staff hold packages.view at LOCATION scope and none of the write permissions,
+# so the catalogue is readable but every mutating affordance must be absent.
+- runFlow:
+    file: ../utils/fresh-login.yaml
+    env:
+      EMAIL: staff@satyacable.dev
+      PASSWORD: Passw0rd!
+
+- runFlow: ../utils/open-packages.yaml
+- assertVisible: 'Packages & Plans'
+
+# Read surface is present.
+- assertVisible: 'Filter: All'
+- assertVisible:
+    id: package-search-input
+
+# Write surface is not.
+- assertNotVisible:
+    id: add-package-button
+- assertNotVisible: Add Package
+- assertNotVisible: Edit
+- assertNotVisible: Delete
+
+# The create action is not offered in global search either.
+- back
+- tapOn: Global Search
+- inputText: package
+- assertNotVisible: Add Package
+- assertNotVisible: Delete Packages

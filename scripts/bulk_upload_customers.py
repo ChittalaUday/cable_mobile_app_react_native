@@ -35,6 +35,8 @@ from google.oauth2 import service_account
 # Config & Credentials Setup
 # -----------------------------------------------------------------------------
 PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID", "cableapp-642c4")
+# Every doc must carry tenantId, or the app's tenant-scoped reads skip it.
+TENANT_ID = os.environ.get("TENANT_ID", "satya_cable_network")
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(SCRIPT_DIR)
 SERVICE_ACCOUNT_FILE = os.path.join(ROOT_DIR, "cableapp-642c4-firebase-adminsdk-fbsvc-ee5e58c939.json")
@@ -363,6 +365,7 @@ def run_bulk_upload():
     # 2. Packages
     for pkg in packages_list:
         root_ref = db.collection("packages").document(pkg["id"])
+        pkg["tenantId"] = TENANT_ID
         bulk_writer.set(root_ref, pkg, merge=True)
         total_queued += 1
 
@@ -372,12 +375,14 @@ def run_bulk_upload():
 
     # 3. Customers
     for cust in customers_list:
+        cust["tenantId"] = TENANT_ID
         ref = db.collection("customers").document(cust["id"])
         bulk_writer.set(ref, cust, merge=True)
         total_queued += 1
 
     # 4. Customer Accounts & Services
     for acct in accounts_list:
+        acct["tenantId"] = TENANT_ID
         acct_ref = db.collection("customer_accounts").document(acct["id"])
         bulk_writer.set(acct_ref, acct, merge=True)
         total_queued += 1

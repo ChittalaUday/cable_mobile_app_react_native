@@ -1,0 +1,16 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - auth
+---
+# Anonymous sign-in lands on the customer dashboard, never the operator panel.
+- clearState
+- runFlow: ../utils/open-dev-build.yaml
+- tapOn: Continue as Guest
+- assertVisible: My Subscriptions
+- assertVisible: 'Satya Cable & Broadband'
+- assertNotVisible: Operator Panel
+
+# A guest has no admin surface: no global search, no packages catalogue.
+- assertNotVisible: Global Search
+- assertNotVisible: 'Packages & Plans'

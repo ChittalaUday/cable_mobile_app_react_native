@@ -1,0 +1,85 @@
+appId: ${APP_ID}
+env:
+  PKG: E2E Linked Pack
+  PRICE: '911'
+  CUSTOMER: E2E Linked Subscriber
+tags:
+  - e2e
+  - packages
+  - customers
+---
+# End-to-end proof of the catalogue link: a plan created in Packages & Plans
+# appears as a selectable option in the wizard's Package Details step, and then
+# reads back as that customer's service on their card in the customer list.
+- runFlow:
+    file: ../utils/fresh-login.yaml
+    env:
+      EMAIL: admin@satyacable.dev
+      PASSWORD: Passw0rd!
+- assertVisible: Operator Panel
+
+# --- Create the plan (Cable TV, so it lands on the wizard's default tab) ----
+- runFlow: ../utils/open-packages.yaml
+- tapOn:
+    id: add-package-button
+- tapOn:
+    id: package-name-input
+- inputText: ${PKG}
+- tapOn:
+    id: package-price-input
+- inputText: ${PRICE}
+- tapOn:
+    id: package-channels-input
+- inputText: '275'
+- tapOn:
+    id: package-submit-button
+- assertVisible: Package created
+- assertVisible: ${PKG}
+
+# --- Assign it to a new customer ------------------------------------------
+- back
+- tapOn: Customers
+- tapOn: '+ Add Customer'
+
+- tapOn: Enter customer name
+- inputText: ${CUSTOMER}
+- tapOn: 10 digit mobile number
+- inputText: '9911004455'
+- tapOn: Next →
+- tapOn: Next →
+
+# The catalogue plan is offered here - not a hardcoded list.
+- assertVisible: Package Details
+- assertVisible: ${PKG}
+- assertVisible: 275+ Channels
+- tapOn: ${PKG}
+- tapOn: Next →
+
+- tapOn: Enter serial number
+- inputText: STB_E2E_LINK
+- tapOn: Next →
+- tapOn: Next →
+
+# Review shows the chosen plan, then save.
+- assertVisible: Review & Confirm
+- assertVisible: ${PKG}
+- tapOn: Save Customer
+- extendedWaitUntil:
+    visible: Customer Added Successfully!
+    timeout: 30000
+- tapOn: Go to Customers List
+
+# --- The package now reads back as that customer's service -----------------
+- tapOn: Customers
+- tapOn: Search customer name, phone, STB serial, VC card...
+- inputText: ${CUSTOMER}
+- assertVisible: ${CUSTOMER}
+- assertVisible: ${PKG}
+
+# --- Clean up the catalogue entry -----------------------------------------
+- tapOn: Home
+- runFlow: ../utils/open-packages.yaml
+- tapOn: Delete ${PKG}
+- assertVisible: Delete package
+- tapOn: Delete plan
+- assertNotVisible: ${PKG}

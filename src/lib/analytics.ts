@@ -10,10 +10,10 @@ import {
 /**
  * Log a custom event to Firebase Analytics.
  */
-export async function logEvent(name: string, params?: Record<string, any>): Promise<void> {
+export async function logEvent(name: string, params?: Record<string, unknown>): Promise<void> {
   try {
     const analytics = getAnalytics();
-    await firebaseLogEvent(analytics, name as any, params);
+    await firebaseLogEvent(analytics, name as Parameters<typeof firebaseLogEvent>[1], params);
   }
   catch (error) {
     if (__DEV__) {

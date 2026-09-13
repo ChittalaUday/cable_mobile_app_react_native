@@ -1,0 +1,22 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - staff
+---
+# Field staff land on collections, not the admin panel.
+- runFlow:
+    file: ../utils/fresh-login.yaml
+    env:
+      EMAIL: staff@satyacable.dev
+      PASSWORD: Passw0rd!
+
+- assertVisible: 'Satya Cable & Broadband'
+- assertVisible: Staff Collections
+- assertNotVisible: Operator Panel
+
+- tapOn: My Route
+- tapOn: Receipts
+- tapOn: More
+- tapOn: Today
+
+- assertVisible: Sign out

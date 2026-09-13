@@ -14,7 +14,7 @@ export function RecentCustomers({ rows, onViewAll, onPress }: {
   onPress: (row: CustomerRow) => void;
 }) {
   return (
-    <Card className="p-3.5">
+    <Card className="p-4">
       <SectionHeader icon={UserIcon} tint="blue" title="Recent Customers" action="View All" onAction={onViewAll} />
       {rows.length === 0
         ? <Text className="mt-4 text-xs text-muted-foreground">No customers have been created yet.</Text>
@@ -23,16 +23,29 @@ export function RecentCustomers({ rows, onViewAll, onPress }: {
             return (
               <View key={row.id}>
                 {index > 0 && <Divider />}
-                <Pressable accessibilityRole="button" onPress={() => onPress(row)} className="flex-row items-center gap-3 py-3">
-                  <View className="size-9 items-center justify-center rounded-full" style={{ backgroundColor: tint.bg }}>
-                    <Text className="text-xs font-bold" style={{ color: tint.fg }}>{initials(row.name)}</Text>
+                <Pressable accessibilityRole="button" onPress={() => onPress(row)} className="flex-row items-center gap-3.5 py-3.5">
+                  <View className="size-11 items-center justify-center rounded-full" style={{ backgroundColor: tint.bg }}>
+                    <Text className="text-sm font-extrabold" style={{ color: tint.fg }}>{initials(row.name)}</Text>
                   </View>
                   <View className="flex-1">
-                    <Text className="text-[13px] font-semibold text-foreground" numberOfLines={1}>{row.name}</Text>
-                    <Text className="text-xs text-muted-foreground" numberOfLines={1}>{row.phone}</Text>
+                    <View className="flex-row items-center gap-2">
+                      <Text className="text-base font-extrabold text-foreground" numberOfLines={1}>{row.name}</Text>
+                      {row.connectionCount && row.connectionCount > 1
+                        ? (
+                            <View className="rounded-full bg-primary-100 px-2 py-0.5 dark:bg-neutral-800">
+                              <Text className="text-[10px] font-bold text-primary-600 dark:text-primary-400">
+                                {row.connectionCount}
+                                {' '}
+                                Boxes
+                              </Text>
+                            </View>
+                          )
+                        : null}
+                    </View>
+                    <Text className="text-xs font-medium text-muted-foreground" numberOfLines={1}>{row.phone}</Text>
                   </View>
                   <StatusPill status={row.status} />
-                  <Text className="w-[62px] text-right text-[11px] text-muted-foreground">{row.ago}</Text>
+                  <Text className="w-[62px] text-right text-xs font-medium text-muted-foreground">{row.ago}</Text>
                 </Pressable>
               </View>
             );

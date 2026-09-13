@@ -1,0 +1,18 @@
+appId: ${APP_ID}
+tags:
+  - util
+---
+# Reaches Packages & Plans the way a real operator does: via the global search registry.
+- tapOn: Global Search
+- extendedWaitUntil:
+    visible: 'Search screens, actions, commands...'
+    timeout: 20000
+- inputText: package
+- extendedWaitUntil:
+    visible: 'Packages & Plans'
+    timeout: 20000
+- tapOn: 'Packages & Plans'
+# Modal dismiss animation, then the route mounts and the catalogue loads.
+- extendedWaitUntil:
+    visible: 'Search plan name, service, provider…'
+    timeout: 30000

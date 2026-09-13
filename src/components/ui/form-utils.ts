@@ -1,5 +1,14 @@
+export type FormFieldLike = {
+  state: {
+    meta: {
+      isTouched?: boolean;
+      errors: unknown[];
+    };
+  };
+};
+
 export function getFieldError(
-  field: any,
+  field: FormFieldLike,
 ): string | undefined {
   if (!field.state.meta.isTouched || !field.state.meta.errors.length) {
     return undefined;

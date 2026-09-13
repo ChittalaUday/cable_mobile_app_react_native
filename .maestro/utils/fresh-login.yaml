@@ -1,0 +1,25 @@
+appId: ${APP_ID}
+env:
+  EMAIL: admin@satyacable.dev
+  PASSWORD: Passw0rd!
+tags:
+  - util
+---
+# Wipes app state and signs in as ${EMAIL}.
+# Credentials come from `pnpm seed:users` (override with SEED_PASSWORD).
+- clearState
+- runFlow: open-dev-build.yaml
+- assertVisible: Welcome Back
+- tapOn:
+    id: email-input
+- inputText: ${EMAIL}
+- tapOn:
+    id: password-input
+- inputText: ${PASSWORD}
+- tapOn:
+    id: login-button
+# Firebase Auth round trip, then the role-based dashboard mounts.
+- extendedWaitUntil:
+    notVisible: Welcome Back
+    timeout: 60000
+- runFlow: dismiss-system-dialogs.yaml

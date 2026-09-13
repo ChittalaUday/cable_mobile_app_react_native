@@ -18,18 +18,18 @@ const inputTv = tv({
   variants: {
     focused: {
       true: {
-        input: 'border-neutral-400 dark:border-neutral-300',
+        input: 'border-neutral-900 dark:border-neutral-100',
       },
     },
     error: {
       true: {
-        input: 'border-danger-600',
+        input: 'border-danger-600 font-bold text-danger-600',
         label: 'text-danger-600 dark:text-danger-600',
       },
     },
     disabled: {
       true: {
-        input: 'bg-neutral-200',
+        input: 'bg-neutral-200 opacity-50 dark:bg-neutral-800',
       },
     },
   },
@@ -51,7 +51,7 @@ export function Input({ ref, ...props }: NInputProps & { ref?: React.Ref<NTextIn
   const [isFocussed, setIsFocussed] = React.useState(false);
 
   const onBlur = React.useCallback(
-    (e: any) => {
+    (e: Parameters<NonNullable<TextInputProps['onBlur']>>[0]) => {
       setIsFocussed(false);
       onBlurProp?.(e);
     },
@@ -59,7 +59,7 @@ export function Input({ ref, ...props }: NInputProps & { ref?: React.Ref<NTextIn
   );
 
   const onFocus = React.useCallback(
-    (e: any) => {
+    (e: Parameters<NonNullable<TextInputProps['onFocus']>>[0]) => {
       setIsFocussed(true);
       onFocusProp?.(e);
     },

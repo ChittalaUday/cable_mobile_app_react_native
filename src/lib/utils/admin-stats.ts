@@ -1,7 +1,9 @@
+import type { AccountDoc, CustomerDoc, PaymentDoc, StaffDoc, TicketDoc } from '@/types';
+
 export type Bar = { key: string; label: string; value: number };
 export type Slice = { id: string; label: string; count: number; share: number };
 export type CustomerStatus = 'active' | 'inactive' | 'pending';
-export type CustomerRow = { id: string; name: string; phone: string; status: CustomerStatus; ago: string };
+export type CustomerRow = { id: string; name: string; phone: string; status: CustomerStatus; ago: string; connectionCount?: number };
 export type ActivityKind = 'customer' | 'connection' | 'payment' | 'ticket';
 export type ActivityRow = { id: string; kind: ActivityKind; title: string; subtitle: string; ago: string };
 export type RevenueRange = 'daily' | 'weekly' | 'monthly';
@@ -43,19 +45,7 @@ export type AdminDashboard = {
   staff: StaffRow[];
 };
 
-export type AccountDoc = {
-  id?: string;
-  customerId?: string;
-  status?: string;
-  msoShareDue?: number;
-  serviceType?: string;
-  serviceTypeName?: string;
-  createdAt?: string;
-};
-export type CustomerDoc = { id?: string; name?: string; phone?: string; address?: string; createdAt?: string };
-export type PaymentDoc = { id?: string; amount?: number; paidAt?: string; subscriberName?: string; subscriberId?: string; collectorId?: string };
-export type StaffDoc = { id?: string; name?: string; email?: string };
-export type TicketDoc = { id?: string; assignedTo?: string; status?: string; subject?: string; resolvedAt?: string; updatedAt?: string };
+export type { AccountDoc, CustomerDoc, PaymentDoc, StaffDoc, TicketDoc };
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const DAY = 86_400_000;
@@ -258,9 +248,10 @@ export function summarisePayments(payments: PaymentDoc[], now: Date) {
   };
 }
 
-export function recentCustomers({ customers, statusByCustomer, now, take = 4 }: {
+export function recentCustomers({ customers, statusByCustomer, accountCountsByCustomer, now, take = 4 }: {
   customers: CustomerDoc[];
   statusByCustomer: Map<string, CustomerStatus>;
+  accountCountsByCustomer?: Map<string, number>;
   now: Date;
   take?: number;
 }): CustomerRow[] {
@@ -274,6 +265,7 @@ export function recentCustomers({ customers, statusByCustomer, now, take = 4 }: 
       name: customer.name ?? 'Unknown customer',
       phone: formatPhone(customer.phone),
       status: (customer.id && statusByCustomer.get(customer.id)) || 'pending',
+      connectionCount: customer.id && accountCountsByCustomer ? accountCountsByCustomer.get(customer.id) ?? 1 : undefined,
       ago: relativeTime(at, now),
     }));
 }
@@ -299,22 +291,56 @@ export function buildActivity({ customers, activations, payments, nameById, now,
 
   for (const customer of customers) {
     const at = parseDate(customer.createdAt);
-    if (at)
-      rows.push({ at, row: { id: `c-${customer.id ?? customer.phone}`, kind: 'customer', title: 'New customer added', subtitle: customer.name ?? 'Unknown customer' } });
+    if (at) {
+      rows.push({
+        at,
+        row: { id: `c-${customer.id ?? customer.phone}`, kind: 'customer', title: 'New customer added', subtitle: customer.name ?? 'Customer Account' },
+      });
+    }
   }
+
   for (const activation of activations) {
     rows.push({
       at: activation.at,
-      row: { id: `a-${activation.name}-${activation.at.getTime()}`, kind: 'connection', title: 'Connection activated', subtitle: nameById.get(activation.name) ?? activation.name },
+      row: {
+        id: `a-${activation.name}-${activation.at.getTime()}`,
+        kind: 'connection',
+        title: 'Connection activated',
+        subtitle: nameById.get(activation.name) ?? activation.name,
+      },
     });
   }
+
   for (const payment of payments) {
-    const at = parseDate(payment.paidAt);
-    const amount = Number(payment.amount) || 0;
-    if (at && amount) {
+    const dateStr = payment.paidAt ?? payment.paymentDate ?? payment.createdAt;
+    const at = parseDate(dateStr);
+    if (!at)
+      continue;
+    const amount = Number(payment.amount ?? payment.totalAmount ?? payment.paidAmount ?? 0);
+    const who = payment.subscriberName ?? payment.customerName ?? (payment.subscriberId ? nameById.get(payment.subscriberId) : undefined) ?? (payment.customerId ? nameById.get(payment.customerId) : undefined) ?? 'customer';
+
+    rows.push({
+      at,
+      row: {
+        id: `p-${payment.id ?? Math.random()}`,
+        kind: 'payment',
+        title: 'Payment received',
+        subtitle: amount > 0 ? `₹${Math.round(amount)} from ${who}` : `Payment recorded from ${who}`,
+      },
+    });
+  }
+
+  // Fallback: If no dated records exist, fallback to recent available customers
+  if (rows.length === 0) {
+    for (const customer of customers) {
       rows.push({
-        at,
-        row: { id: `p-${payment.id ?? at.getTime()}`, kind: 'payment', title: 'Payment received', subtitle: `₹${Math.round(amount)} from ${payment.subscriberName ?? 'subscriber'}` },
+        at: now,
+        row: {
+          id: `c-${customer.id ?? customer.phone}`,
+          kind: 'customer',
+          title: 'Customer account updated',
+          subtitle: customer.name ?? 'Customer Account',
+        },
       });
     }
   }

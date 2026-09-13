@@ -44,7 +44,11 @@ service cloud.firestore {
     }
 
     match /appRegistry/{id} {
-      allow read: if signedIn() && can(resource.data.requiredPermission);
+      // Menu metadata only (title/route/permission key) — no business data.
+      // Gating per-document here fails the whole listing query for any user who
+      // lacks one entry's permission; visibility is enforced client-side in
+      // useAppSearch via can(item.requiredPermission).
+      allow read: if signedIn();
       allow write: if admin();
     }
 
@@ -129,8 +133,10 @@ service cloud.firestore {
     // Packages
     // -------------------------------------------------------------------------
     match /packages/{id} {
-      allow read: if signedIn() && sameTenant();
-      allow write: if admin() && sameTenant();
+      allow read: if signedIn() && (can('packages.view') || sameTenant());
+      allow create: if (can('packages.create') || admin()) && newDocSameTenant();
+      allow update: if (can('packages.update') || admin()) && sameTenant() && newDocSameTenant();
+      allow delete: if (can('packages.delete') || admin()) && sameTenant();
     }
 
     // -------------------------------------------------------------------------

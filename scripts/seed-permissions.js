@@ -53,6 +53,12 @@ const PERMISSION_REGISTRY_ITEMS = [
   { key: 'assets.transfer', resource: 'assets', action: 'transfer', name: 'Transfer Assets', module: 'assets', allowedScopes: ['LOCATION', 'ALL'], enabled: true, system: true },
   { key: 'assets.delete', resource: 'assets', action: 'delete', name: 'Delete Assets', module: 'assets', allowedScopes: ['ALL'], enabled: true, system: true },
 
+  // Packages & Plans
+  { key: 'packages.view', resource: 'packages', action: 'view', name: 'View Packages', description: 'View the service package & plan catalogue', module: 'packages', allowedScopes: ['OWN', 'LOCATION', 'ALL'], enabled: true, system: true },
+  { key: 'packages.create', resource: 'packages', action: 'create', name: 'Create Packages', description: 'Add a new service package or plan', module: 'packages', allowedScopes: ['ALL'], enabled: true, system: true },
+  { key: 'packages.update', resource: 'packages', action: 'update', name: 'Update Packages', description: 'Edit pricing and details of an existing package', module: 'packages', allowedScopes: ['ALL'], enabled: true, system: true },
+  { key: 'packages.delete', resource: 'packages', action: 'delete', name: 'Delete Packages', description: 'Remove a package from the catalogue', module: 'packages', allowedScopes: ['ALL'], enabled: true, system: true },
+
   // Locations & Dealers
   { key: 'locations.view', resource: 'locations', action: 'view', name: 'View Locations', module: 'locations', allowedScopes: ['LOCATION', 'ALL'], enabled: true, system: true },
   { key: 'locations.create', resource: 'locations', action: 'create', name: 'Create Locations', module: 'locations', allowedScopes: ['ALL'], enabled: true, system: true },

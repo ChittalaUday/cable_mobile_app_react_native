@@ -1,0 +1,16 @@
+appId: ${APP_ID}
+tags:
+  - util
+---
+# The app asks for push-notification permission right after sign-in. The OS
+# dialog is not part of any flow under test, so grant it and move on.
+# Optional: on a device where permission is already granted it never appears.
+- extendedWaitUntil:
+    visible: '.*send you notifications.*'
+    timeout: 15000
+    optional: true
+- runFlow:
+    when:
+      visible: '.*send you notifications.*'
+    commands:
+      - tapOn: Allow

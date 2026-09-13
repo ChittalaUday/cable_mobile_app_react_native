@@ -17,10 +17,10 @@
 ```
 src/
 ├── app/              # Expo Router file-based routes (add new routes here)
-├── features/         # Feature modules - auth, feed, settings are EXAMPLES
+├── screens/          # Screen modules (admin, auth, customer, add-customer, staff, etc.)
 ├── components/ui/    # Pre-built UI components (button, input, modal, etc.)
 ├── lib/              # Pre-configured utilities (api, auth, i18n, storage)
-├── translations/     # i18n files (en.json, ar.json - add more languages)
+├── translations/     # i18n files (en.json, te.json)
 └── global.css        # TailwindCSS configuration
 
 Root Files:
@@ -50,11 +50,11 @@ pnpm build:production:ios       # EAS production build
 
 ## How: Key Patterns
 
-- **Create features**: New folder in `src/features/[your-feature]/` with screens, components, API hooks
+- **Create screens**: New folder in `src/screens/[your-screen]/` with screens, components, Zustand stores, API hooks
 - **Add routes**: Create files in `src/app/` (file-based routing)
-- **Forms**: Use TanStack Form + Zod (see `src/features/auth/components/login-form.tsx`)
-- **Data fetching**: Use React Query (see `src/features/feed/api.ts`)
-- **Global state**: Use Zustand (see `src/features/auth/use-auth-store.tsx`)
+- **Forms**: Use TanStack Form + Zod or controlled components
+- **Data fetching**: Use React Query
+- **Global state**: Use Zustand (see `src/screens/add-customer/use-add-customer-store.ts`)
 - **Styling**: NativeWind/Tailwind classes (see `src/components/ui/button.tsx`)
 - **Storage**: Use MMKV via `src/lib/storage.tsx` for sensitive data
 - **Imports**: Always use `@/` prefix, never relative imports
@@ -62,7 +62,7 @@ pnpm build:production:ios       # EAS production build
 ## How: Essential Rules
 
 - ✅ **DO** use absolute imports: `@/components/ui/button`
-- ✅ **DO** follow feature-based structure: `src/features/[name]/`
+- ✅ **DO** follow screen-based structure: `src/screens/[name]/`
 - ✅ **DO** use TanStack Form for forms (not react-hook-form)
 - ✅ **DO** use MMKV storage for sensitive data (not AsyncStorage)
 - ✅ **DO** use EAS Build for production: `pnpm build:production:ios`

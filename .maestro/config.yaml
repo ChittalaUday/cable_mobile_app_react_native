@@ -8,5 +8,19 @@ excludeTags:
 executionOrder:
   continueOnFailure: false # default is true
   flowsOrder:
-    - onboarding
+    # Auth first: first launch -> validation -> the two non-admin roles.
+    - first-launch
     - login-with-validation
+    - guest-login
+    # Admin surface.
+    - admin-dashboard
+    - global-search
+    # Packages & Plans: CRUD, RBAC, and the link onto customers.
+    - packages-crud
+    - packages-permissions
+    - add-customer-flow
+    - packages-on-customers
+    # Other roles and sign-out last (sign-out clears the session).
+    - customer-dashboard
+    - staff-dashboard
+    - profile-and-signout

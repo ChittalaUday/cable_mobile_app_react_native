@@ -1,0 +1,38 @@
+appId: ${APP_ID}
+env:
+  # Metro server the dev client should load. Android emulator reaches the host
+  # via 10.0.2.2; use localhost for an iOS simulator:
+  #   maestro test ... -e DEV_SERVER=http://localhost:8081
+  DEV_SERVER: http://10.0.2.2:8081
+  DEV_SCHEME: satyaCable.development
+tags:
+  - util
+---
+# Expo dev-client builds boot into the launcher UI and, after a clearState, also
+# show the one-time developer-menu intro. Both are dev-only chrome that would
+# otherwise break automation, so we skip straight past them:
+#   1. deep-link directly at the Metro server (never touches the launcher list)
+#   2. dismiss the developer-menu intro and the dev menu sheet if they appear
+# On a release build neither exists; the optional steps simply lapse.
+- openLink: ${DEV_SCHEME}://expo-development-client/?url=${DEV_SERVER}
+
+- extendedWaitUntil:
+    visible: This is the developer menu. It gives you access to useful tools in your development builds.
+    timeout: 15000
+    optional: true
+- runFlow:
+    when:
+      visible: This is the developer menu. It gives you access to useful tools in your development builds.
+    commands:
+      - tapOn: Continue
+
+# Dismiss the dev menu sheet itself so the app is on screen.
+- runFlow:
+    when:
+      visible: Performance monitor
+    commands:
+      - back
+
+- extendedWaitUntil:
+    visible: Satya Cable
+    timeout: 120000

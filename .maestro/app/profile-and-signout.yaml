@@ -1,0 +1,28 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - auth
+---
+# Profile screen, then sign out returns to the login screen (not onboarding).
+- runFlow:
+    file: ../utils/fresh-login.yaml
+    env:
+      EMAIL: admin@satyacable.dev
+      PASSWORD: Passw0rd!
+- assertVisible: Operator Panel
+
+- tapOn: Profile
+- assertVisible: Profile
+- assertVisible: admin@satyacable.dev
+- assertVisible: Account details
+- assertVisible: Notifications
+- assertVisible: Language
+- assertVisible: 'Help & support'
+
+- tapOn: Sign out
+- assertVisible: Welcome Back
+- assertNotVisible: Operator Panel
+
+# Session is gone - relaunching must not restore the operator panel.
+- runFlow: ../utils/open-dev-build.yaml
+- assertVisible: Welcome Back

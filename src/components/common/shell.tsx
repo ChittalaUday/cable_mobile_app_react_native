@@ -2,11 +2,11 @@
 import type { IconSvgElement } from '@hugeicons/react-native';
 import {
   ArrowRight01Icon,
+  CreditCardIcon,
   Home01Icon,
   Message01Icon,
   MoreIcon,
   UserMultipleIcon,
-  Wifi01Icon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as React from 'react';
@@ -100,14 +100,14 @@ export function LoadError({ message, onRetry }: { message?: string; onRetry: () 
   );
 }
 
-export function Divider() {
-  return <View className="h-px bg-border" />;
+export function Divider({ className = '' }: { className?: string }) {
+  return <View className={`h-px bg-border ${className}`} />;
 }
 
 const TABS = [
   { key: 'home', icon: Home01Icon, label: 'Home' },
   { key: 'customers', icon: UserMultipleIcon, label: 'Customers' },
-  { key: 'connections', icon: Wifi01Icon, label: 'Connections' },
+  { key: 'payments', icon: CreditCardIcon, label: 'Payments' },
   { key: 'tickets', icon: Message01Icon, label: 'Tickets' },
   { key: 'more', icon: MoreIcon, label: 'More' },
 ] as const;

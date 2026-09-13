@@ -1,0 +1,44 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+---
+# Operator panel: KPIs, quick actions, activity feed and bottom navigation.
+- runFlow:
+    file: ../utils/fresh-login.yaml
+    env:
+      EMAIL: admin@satyacable.dev
+      PASSWORD: Passw0rd!
+
+- assertVisible: Satya Cable
+- assertVisible: Operator Panel
+- assertVisible: "Here's what's happening with your network today."
+
+# KPI grid - all four tiles are admin-visible.
+- assertVisible: Total Customers
+- assertVisible: Active Connections
+- assertVisible: Inactive / Disconnected
+- assertVisible: Revenue (This Month)
+
+# Quick actions
+- assertVisible: Quick Actions
+- assertVisible: Add Customer
+- assertVisible: New Connection
+- assertVisible: Record Payment
+- assertVisible: Raise Ticket
+
+- scroll
+- assertVisible: Recent Activity
+
+# Bottom navigation across every tab.
+- tapOn: Customers
+- assertVisible: 'Customers & Lines'
+- tapOn: Payments
+- tapOn: Tickets
+- tapOn: Home
+- assertVisible: Quick Actions
+
+# Quick action deep-links into the customers tab with the wizard open.
+- tapOn: Add Customer
+- assertVisible: Add New Customer
+- tapOn: Cancel
