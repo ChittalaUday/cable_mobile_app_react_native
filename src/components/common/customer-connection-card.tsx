@@ -27,7 +27,7 @@ export type CustomerConnectionCardProps = {
 };
 
 function getServiceIcon(type?: string) {
-  if (type === 'internet' || type === 'apfiber' || type === 'broadband') {
+  if (type === 'broadband') {
     return Wifi01Icon;
   }
   return Tv01Icon;
@@ -153,7 +153,7 @@ function ConnectionCardItem({
   onPress?: () => void;
 }) {
   const isAct = connection.status === 'active';
-  const serviceName = connection.serviceTypeName || (connection.serviceType === 'internet' ? 'Broadband' : 'Cable TV');
+  const serviceName = connection.serviceTypeName || (connection.serviceType === 'broadband' ? 'Broadband' : 'Cable TV');
   const boxInfo = connection.stbNumber ?? connection.vcNumber;
 
   return (

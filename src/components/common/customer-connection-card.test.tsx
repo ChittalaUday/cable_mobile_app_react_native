@@ -52,7 +52,7 @@ const multiConnectionCustomer: ConsolidatedCustomer = {
     {
       id: 'conn_11',
       customerId: 'cust_102',
-      serviceType: 'internet',
+      serviceType: 'broadband',
       serviceTypeName: 'Broadband',
       provider: 'vbc',
       providerName: 'VBC Fiber',

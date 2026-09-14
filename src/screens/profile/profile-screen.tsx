@@ -16,7 +16,7 @@ import { showMessage } from 'react-native-flash-message';
 
 import { Card, comingSoon, Divider, IconTile, TINT } from '@/components/common/shell';
 import { colors, FocusAwareStatusBar, Image, Pressable, SafeAreaView, ScrollView, Text, View } from '@/components/ui';
-import { useAuthStore } from '@/lib/hooks/use-auth-store';
+import { useAuthStore } from '@/lib/hooks/stores/use-auth-store';
 import { translate } from '@/lib/i18n';
 import { initials } from '@/lib/utils/admin-format';
 import { authErrorMessage } from '@/lib/utils/auth-error';

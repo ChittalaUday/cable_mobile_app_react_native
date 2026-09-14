@@ -6,14 +6,14 @@ import { AddCustomerModal } from './add-customer-modal';
 
 const mockMutateAsync = jest.fn();
 
-jest.mock('@/lib/hooks/use-admin-dashboard', () => ({
+jest.mock('@/lib/hooks/api/use-admin-dashboard', () => ({
   useCreateCustomer: () => ({
     mutateAsync: mockMutateAsync,
     isPending: false,
   }),
 }));
 
-jest.mock('@/lib/hooks/use-packages', () => ({
+jest.mock('@/lib/hooks/api/use-packages', () => ({
   usePackages: () => ({ data: [], isPending: false }),
 }));
 

@@ -37,6 +37,7 @@ import { BottomSheetModal, useBottomSheet } from '@gorhom/bottom-sheet';
 import * as React from 'react';
 import { Pressable, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { Path, Svg } from 'react-native-svg';
 
 import { Text } from './text';
@@ -46,6 +47,18 @@ type ModalProps = BottomSheetModalProps & {
 };
 
 type ModalRef = React.ForwardedRef<BottomSheetModal>;
+
+/**
+ * Safe-area insets, read without insisting on a provider.
+ *
+ * `useSafeAreaInsets` throws when nothing above it provides them, and a test
+ * that stubs the library out may not export the context at all — neither is a
+ * reason for a sheet to fail to render. Resolved once at import, so the hook
+ * call below stays stable.
+ */
+const InsetsContext: React.Context<{ top: number } | null>
+  = (SafeAreaInsetsContext as React.Context<{ top: number } | null> | undefined)
+    ?? React.createContext<{ top: number } | null>(null);
 
 type ModalHeaderProps = {
   title?: string;
@@ -63,13 +76,21 @@ export function useModal() {
   return { ref, present, dismiss };
 }
 
-export function Modal({ ref, snapPoints: _snapPoints = ['60%'] as (string | number)[], title, detached = false, ...props }: ModalProps & { ref?: ModalRef }) {
+export function Modal({ ref, snapPoints: _snapPoints = ['60%', '100%'] as (string | number)[], title, detached = false, topInset, ...props }: ModalProps & { ref?: ModalRef }) {
   const detachedProps = React.useMemo(
     () => getDetachedProps(detached),
     [detached],
   );
   const modal = useModal();
+  const insets = React.use(InsetsContext);
   const snapPoints = React.useMemo(() => _snapPoints, [_snapPoints]);
+
+  /*
+   * A sheet can be dragged up to fill the screen, so it stops short of the
+   * status bar rather than sliding under the clock. Callers that set their own
+   * `topInset` keep it.
+   */
+  const safeTopInset = topInset ?? insets?.top ?? 0;
 
   React.useImperativeHandle(
     ref,
@@ -79,7 +100,12 @@ export function Modal({ ref, snapPoints: _snapPoints = ['60%'] as (string | numb
   const renderHandleComponent = React.useCallback(
     () => (
       <>
-        <View className="mt-2 mb-8 h-1 w-12 self-center rounded-lg bg-gray-400 dark:bg-gray-700" />
+        {/*
+          The grab bar sits just above the header. It used to carry `mb-8`,
+          which opened 32dp of dead space between the bar and the title on
+          every sheet in the app.
+        */}
+        <View className="mt-2.5 mb-1 h-1 w-12 self-center rounded-lg bg-gray-400 dark:bg-gray-700" />
         <ModalHeader title={title} dismiss={modal.dismiss} />
       </>
     ),
@@ -93,6 +119,8 @@ export function Modal({ ref, snapPoints: _snapPoints = ['60%'] as (string | numb
       ref={modal.ref}
       index={0}
       snapPoints={snapPoints}
+      topInset={detached ? topInset : safeTopInset}
+      enablePanDownToClose
       backdropComponent={props.backdropComponent || renderBackdrop}
       enableDynamicSizing={false}
       handleComponent={renderHandleComponent}
@@ -147,20 +175,26 @@ function getDetachedProps(detached: boolean) {
  */
 
 const ModalHeader = React.memo(({ title, dismiss }: ModalHeaderProps) => {
+  /*
+   * A balanced three-column row: equal gutters left and right, so a centred
+   * title is actually centred. The close button used to be absolutely
+   * positioned over the grab bar, which left it floating above the title and
+   * — on a sheet with no title — sitting on top of the content.
+   */
   return (
-    <>
-      {title && (
-        <View className="flex-row px-2 py-4">
-          <View className="size-6" />
-          <View className="flex-1">
-            <Text className="text-center text-[16px] font-bold text-[#26313D] dark:text-white">
-              {title}
-            </Text>
-          </View>
-        </View>
-      )}
+    <View className="flex-row items-center border-b border-border p-3">
+      <View className="size-8" />
+      <View className="flex-1">
+        {title
+          ? (
+              <Text className="text-center text-[16px] font-bold text-[#26313D] dark:text-white">
+                {title}
+              </Text>
+            )
+          : null}
+      </View>
       <CloseButton close={dismiss} />
-    </>
+    </View>
   );
 });
 
@@ -168,8 +202,8 @@ function CloseButton({ close }: { close: () => void }) {
   return (
     <Pressable
       onPress={close}
-      className="absolute top-3 right-3 size-6 items-center justify-center"
-      hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+      className="size-8 items-center justify-center rounded-full active:bg-muted"
+      hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
       accessibilityLabel="close modal"
       accessibilityRole="button"
       accessibilityHint="closes the modal"

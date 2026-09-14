@@ -1,4 +1,4 @@
-import type { PackageDoc } from '@/types/service';
+import type { NormalizedPackage } from '@/lib/hooks/api/use-packages';
 import {
   Add01Icon,
   ArrowLeft01Icon,
@@ -9,10 +9,12 @@ import {
   Wifi01Icon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as React from 'react';
 import { ActivityIndicator, Alert, RefreshControl, TextInput } from 'react-native';
 
+import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { Card, LoadError, SectionHeader, StatusPill } from '@/components/common/shell';
 import {
   colors,
@@ -24,56 +26,43 @@ import {
   View,
 } from '@/components/ui';
 import { PERMISSIONS } from '@/constants';
-import { useDeletePackage, usePackages } from '@/lib/hooks/use-packages';
-import { usePermissions } from '@/lib/hooks/use-permissions';
-import { PackageFormModal } from './components/package-form-modal';
+import { coverageLabel, useDeletePackage, usePackages } from '@/lib/hooks/api/use-packages';
+import { usePermissions } from '@/lib/hooks/common/use-permissions';
+import { serviceIcon } from '@/lib/service-icons';
+import { usePackageFormStore } from '@/screens/services/use-package-form-store';
 
-type FilterType = 'all' | 'active' | 'inactive' | 'cable' | 'broadband';
+/**
+ * Status is a fixed property of a package; the rest of the filtering is by
+ * service, and a tenant's services are its own — so those pills are built from
+ * what the catalogue actually holds rather than a hard-coded list of types.
+ */
+type FilterType = 'all' | 'active' | 'inactive';
 
 const FILTERS: { key: FilterType; label: string }[] = [
   { key: 'all', label: 'All' },
   { key: 'active', label: 'Active' },
   { key: 'inactive', label: 'Inactive' },
-  { key: 'cable', label: 'Cable TV' },
-  { key: 'broadband', label: 'Broadband' },
 ];
 
-const SERVICE_LABEL: Record<PackageDoc['serviceType'], string> = {
-  cable_tv: 'Cable TV',
-  internet: 'Broadband',
-  fiber: 'Fiber',
-  iptv: 'IPTV',
-  combo: 'Combo',
-};
+function matchesFilter(pkg: NormalizedPackage, filter: FilterType) {
+  if (filter === 'active')
+    return pkg.active;
+  if (filter === 'inactive')
+    return !pkg.active;
 
-function isBroadbandType(type: PackageDoc['serviceType']) {
-  return type !== 'cable_tv';
+  return true;
 }
 
-function matchesFilter(pkg: PackageDoc, filter: FilterType) {
-  switch (filter) {
-    case 'active':
-      return pkg.active;
-    case 'inactive':
-      return !pkg.active;
-    case 'cable':
-      return pkg.serviceType === 'cable_tv' || pkg.serviceType === 'iptv';
-    case 'broadband':
-      return isBroadbandType(pkg.serviceType) && pkg.serviceType !== 'iptv';
-    default:
-      return true;
-  }
-}
-
-function PackageMeta({ pkg }: { pkg: PackageDoc }) {
+function PackageMeta({ pkg }: { pkg: NormalizedPackage }) {
   const bits = [
-    SERVICE_LABEL[pkg.serviceType],
+    pkg.serviceName,
     pkg.durationMonths > 1 ? `${pkg.durationMonths} months` : 'Monthly',
     pkg.speedMbps ? `${pkg.speedMbps} Mbps` : null,
     pkg.channelCount ? `${pkg.channelCount} channels` : null,
-    pkg.dataLimitGb ? `${pkg.dataLimitGb} GB` : null,
-    pkg.setupFee ? `₹${pkg.setupFee} setup` : null,
     pkg.providerName,
+    // Last, because it is what tells two same-named packages apart once the
+    // rest of the line reads identically.
+    coverageLabel(pkg),
   ].filter(Boolean) as string[];
 
   return (
@@ -86,23 +75,23 @@ function PackageMeta({ pkg }: { pkg: PackageDoc }) {
 }
 
 function PackageCard({ pkg, canUpdate, canDelete, onEdit, onDelete }: {
-  pkg: PackageDoc;
+  pkg: NormalizedPackage;
   canUpdate: boolean;
   canDelete: boolean;
-  onEdit: (pkg: PackageDoc) => void;
-  onDelete: (pkg: PackageDoc) => void;
+  onEdit: (pkg: NormalizedPackage) => void;
+  onDelete: (pkg: NormalizedPackage) => void;
 }) {
   return (
     <Card className="gap-3 border border-border p-4">
       <View className="flex-row items-start gap-3">
         <View
           className="size-11 items-center justify-center rounded-xl"
-          style={{ backgroundColor: isBroadbandType(pkg.serviceType) ? '#E8F2FE' : '#FFF1E6' }}
+          style={{ backgroundColor: '#F1F1F4' }}
         >
           <HugeiconsIcon
-            icon={isBroadbandType(pkg.serviceType) ? Wifi01Icon : Tv01Icon}
+            icon={serviceIcon(pkg.serviceIcon)}
             size={20}
-            color={isBroadbandType(pkg.serviceType) ? '#2E90FA' : '#FF6C00'}
+            color={colors.neutral[600]}
           />
         </View>
 
@@ -160,15 +149,7 @@ function PackageCard({ pkg, canUpdate, canDelete, onEdit, onDelete }: {
   );
 }
 
-function PackageList({ isPending, packages, query, canUpdate, canDelete, onEdit, onDelete }: {
-  isPending: boolean;
-  packages: PackageDoc[];
-  query: string;
-  canUpdate: boolean;
-  canDelete: boolean;
-  onEdit: (pkg: PackageDoc) => void;
-  onDelete: (pkg: PackageDoc) => void;
-}) {
+function PackageListEmpty({ isPending, query }: { isPending: boolean; query: string }) {
   if (isPending) {
     return (
       <View className="items-center justify-center gap-2 py-14">
@@ -178,32 +159,15 @@ function PackageList({ isPending, packages, query, canUpdate, canDelete, onEdit,
     );
   }
 
-  if (packages.length === 0) {
-    return (
-      <View className="items-center justify-center gap-2 px-4 py-14">
-        <Text className="text-base font-bold text-foreground">No packages found</Text>
-        <Text className="text-center text-xs text-muted-foreground">
-          {query
-            ? `No plan matched "${query}".`
-            : 'Create your first plan — it becomes selectable as a service on customer connections.'}
-        </Text>
-      </View>
-    );
-  }
-
   return (
-    <>
-      {packages.map(pkg => (
-        <PackageCard
-          key={pkg.id}
-          pkg={pkg}
-          canUpdate={canUpdate}
-          canDelete={canDelete}
-          onEdit={onEdit}
-          onDelete={onDelete}
-        />
-      ))}
-    </>
+    <View className="items-center justify-center gap-2 px-4 py-14">
+      <Text className="text-base font-bold text-foreground">No packages found</Text>
+      <Text className="text-center text-xs text-muted-foreground">
+        {query
+          ? `No plan matched "${query}".`
+          : 'Create your first plan — it becomes selectable as a service on customer connections.'}
+      </Text>
+    </View>
   );
 }
 
@@ -214,8 +178,8 @@ export function PackagesScreen() {
   const { can } = usePermissions();
   const [query, setQuery] = React.useState('');
   const [filter, setFilter] = React.useState<FilterType>('all');
-  const [editing, setEditing] = React.useState<PackageDoc | null>(null);
-  const [formOpen, setFormOpen] = React.useState(false);
+  const initNewPackage = usePackageFormStore(s => s.initNewPackage);
+  const initEditPackage = usePackageFormStore(s => s.initEditPackage);
 
   const canView = can(PERMISSIONS.PACKAGES_VIEW);
   const canCreate = can(PERMISSIONS.PACKAGES_CREATE);
@@ -224,14 +188,33 @@ export function PackagesScreen() {
 
   const { data: packages = [], isPending, isRefetching, error, refetch } = usePackages({ enabled: canView });
   const deletePackage = useDeletePackage();
+  const [pendingDelete, setPendingDelete] = React.useState<NormalizedPackage | null>(null);
+
+  const openCreate = React.useCallback(() => {
+    // The provider is chosen on the form itself when we arrive without one.
+    initNewPackage();
+    router.push('/add-edit-package');
+  }, [initNewPackage, router]);
+
+  const openEdit = React.useCallback((pkg: NormalizedPackage) => {
+    initEditPackage({
+      id: pkg.id,
+      name: pkg.name,
+      price: pkg.monthlyPrice,
+      billingCycle: pkg.billingCycle,
+      description: pkg.description,
+      active: pkg.active,
+      providerId: pkg.serviceProviderId,
+      providerName: pkg.serviceProviderName,
+    });
+    router.push('/add-edit-package');
+  }, [initEditPackage, router]);
 
   // Deep link from the global search registry: `/packages?action=create`.
   React.useEffect(() => {
-    if (params.action === 'create' && canCreate) {
-      setEditing(null);
-      setFormOpen(true);
-    }
-  }, [params.action, canCreate]);
+    if (params.action === 'create' && canCreate)
+      openCreate();
+  }, [params.action, canCreate, openCreate]);
 
   const visiblePackages = React.useMemo(() => {
     const term = query.trim().toLowerCase();
@@ -242,33 +225,24 @@ export function PackagesScreen() {
         return true;
       return pkg.name.toLowerCase().includes(term)
         || (pkg.description?.toLowerCase().includes(term) ?? false)
-        || SERVICE_LABEL[pkg.serviceType].toLowerCase().includes(term)
+        || pkg.serviceName.toLowerCase().includes(term)
         || (pkg.providerName?.toLowerCase().includes(term) ?? false);
     });
   }, [packages, query, filter]);
 
-  const handleDelete = (pkg: PackageDoc) => {
-    Alert.alert(
-      'Delete package',
-      `Delete "${pkg.name}"? Customers already on this plan keep their current service, but it can no longer be assigned.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          // Distinct from the card's own "Delete" button so the confirmation is unambiguous.
-          text: 'Delete plan',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deletePackage.mutateAsync({ id: pkg.id });
-              refetch();
-            }
-            catch (err) {
-              Alert.alert('Could not delete', (err as Error).message);
-            }
-          },
-        },
-      ],
-    );
+  const handleDelete = async () => {
+    if (!pendingDelete)
+      return;
+
+    try {
+      await deletePackage.mutateAsync({ id: pendingDelete.id });
+      setPendingDelete(null);
+      refetch();
+    }
+    catch (err) {
+      setPendingDelete(null);
+      Alert.alert('Could not delete', (err as Error).message);
+    }
   };
 
   if (!canView) {
@@ -291,19 +265,15 @@ export function PackagesScreen() {
       <FocusAwareStatusBar />
       <SafeAreaView edges={['top']} className="bg-surface" />
 
-      {formOpen
-        ? (
-            <PackageFormModal
-              key={editing?.id ?? 'new'}
-              editing={editing}
-              onClose={() => {
-                setFormOpen(false);
-                setEditing(null);
-              }}
-              onSuccess={() => refetch()}
-            />
-          )
-        : null}
+      <ConfirmDialog
+        visible={pendingDelete !== null}
+        busy={deletePackage.isPending}
+        title="Delete package"
+        confirmLabel="Delete plan"
+        message={`Delete "${pendingDelete?.name ?? ''}"? Customers already on this plan keep their service, but it can no longer be assigned.`}
+        onConfirm={handleDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
 
       <View className="z-10 gap-3 border-b border-border/40 bg-surface px-4 py-3">
         <View className="flex-row items-center justify-between gap-2">
@@ -318,10 +288,7 @@ export function PackagesScreen() {
                 <Pressable
                   testID="add-package-button"
                   accessibilityRole="button"
-                  onPress={() => {
-                    setEditing(null);
-                    setFormOpen(true);
-                  }}
+                  onPress={openCreate}
                   className="flex-row items-center gap-1.5 rounded-xl bg-primary-500 px-3.5 py-2 active:bg-primary-600"
                 >
                   <HugeiconsIcon icon={Add01Icon} size={16} color="#ffffff" />
@@ -367,25 +334,26 @@ export function PackagesScreen() {
       {error
         ? <LoadError message={error.message} onRetry={refetch} />
         : (
-            <ScrollView
-              className="flex-1"
-              contentContainerClassName="gap-3 px-3 pt-3 pb-6"
+            <FlashList
+              data={visiblePackages}
+              keyExtractor={pkg => pkg.id}
+              extraData={canUpdate || canDelete}
+              renderItem={({ item }) => (
+                <PackageCard
+                  pkg={item}
+                  canUpdate={canUpdate}
+                  canDelete={canDelete}
+                  onEdit={openEdit}
+                  onDelete={setPendingDelete}
+                />
+              )}
+              ItemSeparatorComponent={() => <View className="h-3" />}
+              contentContainerStyle={{ paddingHorizontal: 12, paddingTop: 12, paddingBottom: 24 }}
               showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
               refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary[600]} />}
-            >
-              <PackageList
-                isPending={isPending}
-                packages={visiblePackages}
-                query={query}
-                canUpdate={canUpdate}
-                canDelete={canDelete}
-                onEdit={(pkg) => {
-                  setEditing(pkg);
-                  setFormOpen(true);
-                }}
-                onDelete={handleDelete}
-              />
-            </ScrollView>
+              ListEmptyComponent={<PackageListEmpty isPending={isPending} query={query} />}
+            />
           )}
     </View>
   );

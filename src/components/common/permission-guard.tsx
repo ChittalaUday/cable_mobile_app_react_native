@@ -1,7 +1,7 @@
 import type { PermissionKey, PermissionScope } from '@/constants/permissions';
 import type { ResourceMeta } from '@/lib/utils/access-compiler';
 import * as React from 'react';
-import { usePermissions } from '@/lib/hooks/use-permissions';
+import { usePermissions } from '@/lib/hooks/common/use-permissions';
 
 export type PermissionGuardProps = {
   permission: PermissionKey | string;

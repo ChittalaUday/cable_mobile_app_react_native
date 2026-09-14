@@ -2,7 +2,7 @@ import * as React from 'react';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 import { FocusAwareStatusBar, View } from '@/components/ui';
-import { useLoginActions } from '@/lib/hooks/use-login-actions';
+import { useLoginActions } from '@/lib/hooks/common/use-login-actions';
 import { getItem, removeItem, setItem } from '@/lib/storage';
 import { CredentialsCard } from './components/credentials-card';
 import { LoginFooter } from './components/login-footer';

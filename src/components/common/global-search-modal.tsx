@@ -20,7 +20,7 @@ import * as React from 'react';
 import { InteractionManager, Modal, ScrollView, TextInput, TouchableOpacity } from 'react-native';
 
 import { colors, Text, View } from '@/components/ui';
-import { useAppSearch } from '@/lib/hooks/use-app-search';
+import { useAppSearch } from '@/lib/hooks/common/use-app-search';
 
 export type GlobalSearchModalProps = {
   visible: boolean;

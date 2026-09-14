@@ -123,7 +123,8 @@ export type PackageDoc = {
   tenantId?: string;
   name: string;
   description?: string;
-  serviceType: 'cable_tv' | 'internet' | 'fiber' | 'iptv' | 'combo';
+  /** Free text on the legacy doc; the catalogue has services, not types. */
+  serviceType?: string;
   monthlyPrice: number;
   setupFee?: number;
   /** Billing cycle length in months (1 = monthly, 3 = quarterly …). */

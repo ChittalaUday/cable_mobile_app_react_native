@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import * as React from 'react';
 
 import { Button, FocusAwareStatusBar, SafeAreaView, View } from '@/components/ui';
-import { useIsFirstTime } from '@/lib/hooks/use-is-first-time';
+import { useIsFirstTime } from '@/lib/hooks/common/use-is-first-time';
 import { Cover } from './components/cover';
 
 export function OnboardingScreen() {

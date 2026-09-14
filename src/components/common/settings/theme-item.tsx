@@ -1,9 +1,9 @@
 import type { OptionType } from '@/components/ui';
 
-import type { ColorSchemeType } from '@/lib/hooks/use-selected-theme';
+import type { ColorSchemeType } from '@/lib/hooks/common/use-selected-theme';
 import * as React from 'react';
 import { Options, useModal } from '@/components/ui';
-import { useSelectedTheme } from '@/lib/hooks/use-selected-theme';
+import { useSelectedTheme } from '@/lib/hooks/common/use-selected-theme';
 import { translate } from '@/lib/i18n';
 
 import { SettingsItem } from './settings-item';

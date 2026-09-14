@@ -63,6 +63,20 @@ jest.mock('react-native-reanimated', () => {
 });
 
 // Mock expo-localization
+// FlashList measures real layout and sets state from a layout effect, which
+// under the test renderer is just an unavoidable act() warning. Rows render the
+// same either way, so tests exercise a FlatList.
+jest.mock('@shopify/flash-list', () => {
+  const React = require('react');
+  const { FlatList } = require('react-native');
+
+  return {
+    __esModule: true,
+    FlashList: ({ ref, ...props }) =>
+      React.createElement(FlatList, { ...props, ref }),
+  };
+});
+
 jest.mock('expo-localization', () => ({
   getLocales: jest.fn(() => [
     {

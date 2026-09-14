@@ -37,7 +37,7 @@ const mockCustomers: ConsolidatedCustomer[] = [
       {
         id: 'conn2',
         customerId: 'c2',
-        serviceType: 'internet',
+        serviceType: 'broadband',
         serviceTypeName: 'Broadband',
         provider: 'satya',
         providerName: 'Satya Broadband',
@@ -58,7 +58,7 @@ jest.mock('expo-router', () => ({
   }),
 }));
 
-jest.mock('@/lib/hooks/use-admin-dashboard', () => ({
+jest.mock('@/lib/hooks/api/use-admin-dashboard', () => ({
   useConsolidatedCustomers: () => ({
     data: mockCustomers,
     isPending: false,
@@ -70,7 +70,7 @@ jest.mock('@/lib/hooks/use-admin-dashboard', () => ({
   }),
 }));
 
-jest.mock('@/lib/hooks/use-packages', () => ({
+jest.mock('@/lib/hooks/api/use-packages', () => ({
   usePackages: () => ({ data: [], isPending: false }),
 }));
 

@@ -3,7 +3,7 @@ import { MotiView } from 'moti';
 import * as React from 'react';
 import { CustomerConnectionCard } from '@/components/common/customer-connection-card';
 import { Button, Pressable, ScrollView, Text, View } from '@/components/ui';
-import { useAuthStore } from '@/lib/hooks/use-auth-store';
+import { useAuthStore } from '@/lib/hooks/stores/use-auth-store';
 
 const demoCustomer: ConsolidatedCustomer = {
   id: 'cust_demo',
@@ -30,7 +30,7 @@ const demoCustomer: ConsolidatedCustomer = {
     {
       id: 'conn_fiber',
       customerId: 'cust_demo',
-      serviceType: 'internet',
+      serviceType: 'broadband',
       serviceTypeName: 'High-Speed Broadband',
       provider: 'vbc',
       providerName: 'VBC Fiber Broadband',

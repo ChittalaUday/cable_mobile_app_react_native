@@ -15,7 +15,7 @@ import {
   View,
 } from '@/components/ui';
 import { Github, Rate, Share, Support, Website } from '@/components/ui/icons';
-import { useAuthStore } from '@/lib/hooks/use-auth-store';
+import { useAuthStore } from '@/lib/hooks/stores/use-auth-store';
 import { translate } from '@/lib/i18n';
 
 export function SettingsScreen() {

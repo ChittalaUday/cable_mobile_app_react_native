@@ -13,8 +13,8 @@ import { logScreenView, setUserId as setAnalyticsUserId } from '@/lib/analytics'
 import { APIProvider, queryClient } from '@/lib/api';
 import { initFirebaseAppCheck } from '@/lib/app-check';
 import { setCrashlyticsUserId } from '@/lib/crashlytics';
-import { useAuthStore } from '@/lib/hooks/use-auth-store';
-import { loadSelectedTheme } from '@/lib/hooks/use-selected-theme';
+import { loadSelectedTheme } from '@/lib/hooks/common/use-selected-theme';
+import { useAuthStore } from '@/lib/hooks/stores/use-auth-store';
 // Import  global CSS file
 import '../global.css';
 
@@ -65,10 +65,17 @@ export default function RootLayout() {
     }
   }, [userId]);
 
+  // Every cached list is tenant-scoped, so leaving one — by signing out or by
+  // switching — has to drop the cache with it.
+  const tenantId = useAuthStore.use.tenantId();
   React.useEffect(() => {
     if (status === 'signOut')
       queryClient.clear();
   }, [status]);
+
+  React.useEffect(() => {
+    queryClient.clear();
+  }, [tenantId]);
 
   React.useEffect(() => {
     if (pathname) {

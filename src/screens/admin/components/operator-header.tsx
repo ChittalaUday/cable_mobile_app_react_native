@@ -4,6 +4,7 @@ import * as React from 'react';
 
 import { colors, Image, Pressable, Text, View } from '@/components/ui';
 import { initials } from '@/lib/utils/admin-format';
+import { TenantSwitcher } from '@/screens/tenant/tenant-picker';
 
 export function OperatorHeader({ photoURL, name, onProfile, onNotifications, onSearch }: {
   photoURL?: string | null;
@@ -17,10 +18,7 @@ export function OperatorHeader({ photoURL, name, onProfile, onNotifications, onS
       <View className="size-11 items-center justify-center rounded-2xl bg-primary-600">
         <HugeiconsIcon icon={Tv01Icon} size={24} color="#fff" strokeWidth={2} />
       </View>
-      <View className="flex-1">
-        <Text className="text-xl font-bold text-foreground">Satya Cable</Text>
-        <Text className="text-xs text-muted-foreground">Operator Panel</Text>
-      </View>
+      <TenantSwitcher subtitle="Operator Panel" />
       {onSearch
         ? (
             <Pressable accessibilityRole="button" accessibilityLabel="Global Search" onPress={onSearch} className="size-10 items-center justify-center rounded-full bg-card">

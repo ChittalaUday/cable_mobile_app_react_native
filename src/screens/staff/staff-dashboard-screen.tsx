@@ -2,7 +2,7 @@ import { MotiView } from 'moti';
 import * as React from 'react';
 
 import { Button, Pressable, ScrollView, Text, View } from '@/components/ui';
-import { useAuthStore } from '@/lib/hooks/use-auth-store';
+import { useAuthStore } from '@/lib/hooks/stores/use-auth-store';
 import { StaffCollectionsCard } from './components/staff-collections-card';
 
 const staffContent = {

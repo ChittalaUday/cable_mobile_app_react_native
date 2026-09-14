@@ -1,7 +1,8 @@
-import type { NativeScrollEvent, NativeSyntheticEvent, RefreshControlProps } from 'react-native';
+import type { RefreshControlProps } from 'react-native';
 import type { ConnectionAccount, ConsolidatedCustomer } from '@/types/customer-connection';
 import { Search01Icon, UserAdd01Icon, UserGroupIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { ActivityIndicator, TextInput } from 'react-native';
@@ -9,17 +10,14 @@ import { ActivityIndicator, TextInput } from 'react-native';
 import { CustomerConnectionCard } from '@/components/common/customer-connection-card';
 import { SectionHeader } from '@/components/common/shell';
 import { colors, Pressable, ScrollView, Text, View } from '@/components/ui';
-import { useConsolidatedCustomers } from '@/lib/hooks/use-admin-dashboard';
+import { useConsolidatedCustomers } from '@/lib/hooks/api/use-admin-dashboard';
 import { AddCustomerModal } from './add-customer-modal';
 
 type FilterType = 'all' | 'active' | 'multi' | 'pending';
-const PAGE_SIZE = 15;
 
 export type CustomersViewProps = {
   onRecharge?: (connection: ConnectionAccount) => void;
   onRaiseTicket?: (cust: ConsolidatedCustomer, conn: ConnectionAccount) => void;
-  nearBottomTrigger?: number;
-  onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
   refreshControl?: React.ReactElement<RefreshControlProps>;
   initialAddModalOpen?: boolean;
   onCloseAddModal?: () => void;
@@ -76,73 +74,33 @@ function CustomerFilterChipsBar({ filter, onSelect }: { filter: FilterType; onSe
   );
 }
 
-function CustomerListContent({
-  isPending,
-  filteredCustomers,
-  displayedCustomers,
-  query,
-  hasMore,
-  onRecharge,
-  onRaiseTicket,
-}: {
-  isPending: boolean;
-  filteredCustomers: ConsolidatedCustomer[];
-  displayedCustomers: ConsolidatedCustomer[];
-  query: string;
-  hasMore: boolean;
-  onRecharge?: (connection: ConnectionAccount) => void;
-  onRaiseTicket?: (cust: ConsolidatedCustomer, conn: ConnectionAccount) => void;
-}) {
+function CustomerListEmpty({ isPending, query }: { isPending: boolean; query: string }) {
   if (isPending) {
     return (
       <View className="items-center justify-center gap-2 py-14">
         <ActivityIndicator size="large" color={colors.primary[500]} />
-        <Text className="text-sm font-semibold text-muted-foreground">Fetching live customer & connection records...</Text>
-      </View>
-    );
-  }
-
-  if (filteredCustomers.length === 0) {
-    return (
-      <View className="items-center justify-center gap-2 px-4 py-14">
-        <Text className="text-base font-bold text-foreground">No customers found</Text>
-        <Text className="text-center text-xs text-muted-foreground">
-          {query
-            ? `No customer or box details matched "${query}".`
-            : 'No customer records are available for this filter.'}
+        <Text className="text-sm font-semibold text-muted-foreground">
+          Fetching live customer & connection records...
         </Text>
       </View>
     );
   }
 
   return (
-    <>
-      {displayedCustomers.map(cust => (
-        <CustomerConnectionCard
-          key={cust.id}
-          customer={cust}
-          onRecharge={onRecharge}
-          onRaiseTicket={onRaiseTicket}
-        />
-      ))}
-      {hasMore && (
-        <View className="flex-row items-center justify-center gap-2 py-4">
-          <ActivityIndicator size="small" color={colors.primary[500]} />
-          <Text className="text-xs font-semibold text-muted-foreground">
-            {`Loading more customers (${displayedCustomers.length} of ${filteredCustomers.length} shown)...`}
-          </Text>
-        </View>
-      )}
-    </>
+    <View className="items-center justify-center gap-2 px-4 py-14">
+      <Text className="text-base font-bold text-foreground">No customers found</Text>
+      <Text className="text-center text-xs text-muted-foreground">
+        {query
+          ? `No customer or box details matched "${query}".`
+          : 'No customer records are available for this filter.'}
+      </Text>
+    </View>
   );
 }
 
-// eslint-disable-next-line max-lines-per-function
 export function CustomersView({
   onRecharge,
   onRaiseTicket,
-  nearBottomTrigger = 0,
-  onScroll,
   refreshControl,
   initialAddModalOpen = false,
   onCloseAddModal,
@@ -150,22 +108,10 @@ export function CustomersView({
   const router = useRouter();
   const [query, setQuery] = React.useState('');
   const [filter, setFilter] = React.useState<FilterType>('all');
-  const [displayLimit, setDisplayLimit] = React.useState(PAGE_SIZE);
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
   const { data: customers = [], isPending, refetch } = useConsolidatedCustomers();
-  const lastTriggerRef = React.useRef(0);
 
   const addModalVisible = initialAddModalOpen || isAddModalOpen;
-
-  const handleQueryChange = (text: string) => {
-    setQuery(text);
-    setDisplayLimit(PAGE_SIZE);
-  };
-
-  const handleFilterChange = (nextFilter: FilterType) => {
-    setFilter(nextFilter);
-    setDisplayLimit(PAGE_SIZE);
-  };
 
   const filteredCustomers = React.useMemo(() => {
     const term = query.trim().toLowerCase();
@@ -198,20 +144,6 @@ export function CustomersView({
     });
   }, [customers, query, filter]);
 
-  const displayedCustomers = React.useMemo(
-    () => filteredCustomers.slice(0, displayLimit),
-    [filteredCustomers, displayLimit],
-  );
-
-  const hasMore = displayedCustomers.length < filteredCustomers.length;
-
-  if (nearBottomTrigger > 0 && nearBottomTrigger !== lastTriggerRef.current) {
-    lastTriggerRef.current = nearBottomTrigger;
-    if (displayedCustomers.length < filteredCustomers.length) {
-      setDisplayLimit(prev => Math.min(prev + PAGE_SIZE, filteredCustomers.length));
-    }
-  }
-
   const handleCloseModal = () => {
     setIsAddModalOpen(false);
     onCloseAddModal?.();
@@ -240,28 +172,28 @@ export function CustomersView({
           </Pressable>
         </View>
 
-        <CustomerSearchBar query={query} onChange={handleQueryChange} />
-        <CustomerFilterChipsBar filter={filter} onSelect={handleFilterChange} />
+        <CustomerSearchBar query={query} onChange={setQuery} />
+        <CustomerFilterChipsBar filter={filter} onSelect={setFilter} />
       </View>
 
-      <ScrollView
-        className="flex-1"
-        contentContainerClassName="gap-2.5 px-3 pt-2.5 pb-6"
+      <FlashList
+        data={filteredCustomers}
+        keyExtractor={cust => cust.id}
+        renderItem={({ item }) => (
+          <CustomerConnectionCard
+            customer={item}
+            onRecharge={onRecharge}
+            onRaiseTicket={onRaiseTicket}
+          />
+        )}
+        ItemSeparatorComponent={() => <View className="h-2.5" />}
+        contentContainerStyle={{ paddingHorizontal: 12, paddingTop: 10, paddingBottom: 24 }}
         showsVerticalScrollIndicator={false}
-        scrollEventThrottle={16}
-        onScroll={onScroll}
+        keyboardShouldPersistTaps="handled"
         refreshControl={refreshControl}
-      >
-        <CustomerListContent
-          isPending={isPending}
-          filteredCustomers={filteredCustomers}
-          displayedCustomers={displayedCustomers}
-          query={query}
-          hasMore={hasMore}
-          onRecharge={onRecharge}
-          onRaiseTicket={onRaiseTicket}
-        />
-      </ScrollView>
+        ListEmptyComponent={<CustomerListEmpty isPending={isPending} query={query} />}
+      />
+
     </View>
   );
 }

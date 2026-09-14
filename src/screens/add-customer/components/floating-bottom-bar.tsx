@@ -33,7 +33,7 @@ export function FloatingBottomBar({
 
   return (
     <View
-      className="absolute right-0 bottom-0 left-0 z-50 border-t border-orange-100/60 bg-[#FFF9F5] px-5 pt-3.5 dark:border-neutral-800 dark:bg-neutral-900"
+      className="absolute inset-x-0 bottom-0 z-50 border-t border-orange-100/60 bg-[#FFF9F5] px-5 pt-3.5 dark:border-neutral-800 dark:bg-neutral-900"
       style={{ paddingBottom: Math.max(insets.bottom + 12, 24) }}
     >
       <View className="flex-row items-center gap-3">

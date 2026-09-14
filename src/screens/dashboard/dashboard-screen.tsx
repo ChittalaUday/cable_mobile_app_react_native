@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import { useAuthStore } from '@/lib/hooks/use-auth-store';
+import { useAuthStore } from '@/lib/hooks/stores/use-auth-store';
 import { AdminHomeScreen } from '@/screens/admin/admin-home-screen';
 import { CustomerDashboardScreen } from '@/screens/customer/customer-dashboard-screen';
 import { StaffDashboardScreen } from '@/screens/staff/staff-dashboard-screen';

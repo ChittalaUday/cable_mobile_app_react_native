@@ -1,5 +1,5 @@
 import type { TabKey } from '@/components/common/shell';
-import type { RevenueRange } from '@/lib/hooks/use-admin-dashboard';
+import type { RevenueRange } from '@/lib/hooks/api/use-admin-dashboard';
 import { useRouter } from 'expo-router';
 import { MotiView } from 'moti';
 import * as React from 'react';
@@ -8,7 +8,7 @@ import { RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomNav, comingSoon, LoadError, Loading } from '@/components/common/shell';
 import { colors, FocusAwareStatusBar, SafeAreaView, ScrollView, View } from '@/components/ui';
-import { useAdminDashboard } from '@/lib/hooks/use-admin-dashboard';
+import { useAdminDashboard } from '@/lib/hooks/api/use-admin-dashboard';
 import { monthYear } from '@/lib/utils/admin-format';
 import { AnalyticsTopBar } from './components/analytics-top-bar';
 import { CollectionsSummary } from './components/collections-summary';

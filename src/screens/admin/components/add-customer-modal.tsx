@@ -12,8 +12,8 @@ import { useTranslation } from 'react-i18next';
 import { Modal, ScrollView, TextInput, TouchableOpacity } from 'react-native';
 
 import { Button, colors, Pressable, Text, View } from '@/components/ui';
-import { useCreateCustomer } from '@/lib/hooks/use-admin-dashboard';
-import { usePackages } from '@/lib/hooks/use-packages';
+import { useCreateCustomer } from '@/lib/hooks/api/use-admin-dashboard';
+import { usePackages } from '@/lib/hooks/api/use-packages';
 
 export type AddCustomerModalProps = {
   visible: boolean;
@@ -51,12 +51,20 @@ export function AddCustomerModal({ visible, onClose, onSuccess }: AddCustomerMod
   const createCustomerMutation = useCreateCustomer();
   const { data: allPackages = [] } = usePackages();
 
-  // Plans from Packages & Plans matching the chosen service type.
+  /*
+   * Every plan on sale.
+   *
+   * This used to narrow by the cable/broadband toggle below, which worked while
+   * a package carried a fixed `serviceType`. Services are the tenant's own now,
+   * so there is nothing to match that toggle against — the toggle still labels
+   * the connection itself, but the catalogue is no longer filtered by it.
+   *
+   * ponytail: filter by service once this screen is wired to the real customer
+   * API, which will know which service the connection is for.
+   */
   const catalogue = React.useMemo(
-    () => allPackages.filter(pkg => pkg.active && (serviceType === 'broadband'
-      ? pkg.serviceType !== 'cable_tv'
-      : pkg.serviceType === 'cable_tv' || pkg.serviceType === 'iptv' || pkg.serviceType === 'combo')),
-    [allPackages, serviceType],
+    () => allPackages.filter(pkg => pkg.active),
+    [allPackages],
   );
 
   const selectCataloguePackage = (pkg: (typeof allPackages)[number]) => {
@@ -153,7 +161,7 @@ export function AddCustomerModal({ visible, onClose, onSuccess }: AddCustomerMod
       phone: phone.trim(),
       email: email.trim() || undefined,
       address: address.trim(),
-      serviceType: serviceType === 'broadband' ? 'internet' : 'cable_tv',
+      serviceType,
       packageName: packageName.trim() || (serviceType === 'broadband' ? 'Fiber 100Mbps' : 'HD Starter Pack'),
       packageId,
       monthlyPrice: Number(monthlyPrice) || 350,

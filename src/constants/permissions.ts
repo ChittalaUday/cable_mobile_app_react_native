@@ -65,6 +65,7 @@ export const PERMISSIONS = {
   LOCATIONS_CREATE: 'locations.create',
   LOCATIONS_UPDATE: 'locations.update',
   LOCATIONS_DELETE: 'locations.delete',
+  LOCATIONS_CONFIGURE: 'locations.configure',
 
   // Areas
   AREAS_VIEW: 'areas.view',
@@ -83,6 +84,12 @@ export const PERMISSIONS = {
   PACKAGES_CREATE: 'packages.create',
   PACKAGES_UPDATE: 'packages.update',
   PACKAGES_DELETE: 'packages.delete',
+
+  // Service catalogue
+  SERVICES_VIEW: 'services.view',
+  SERVICES_CREATE: 'services.create',
+  SERVICES_UPDATE: 'services.update',
+  SERVICES_DELETE: 'services.delete',
 
   // Inventory
   INVENTORY_VIEW: 'inventory.view',

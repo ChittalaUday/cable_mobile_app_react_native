@@ -26,7 +26,7 @@ jest.mock('expo-router', () => ({
   }),
 }));
 
-jest.mock('@/lib/hooks/use-admin-dashboard', () => ({
+jest.mock('@/lib/hooks/api/use-admin-dashboard', () => ({
   useCreateCustomer: () => ({
     mutateAsync: jest.fn().mockResolvedValue({ id: 'SSCN00101' }),
     isPending: false,

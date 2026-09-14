@@ -5,7 +5,7 @@ import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Pressable, Text } from '@/components/ui';
-import { useCreateCustomer } from '@/lib/hooks/use-admin-dashboard';
+import { useCreateCustomer } from '@/lib/hooks/api/use-admin-dashboard';
 import { FloatingBottomBar } from './components/floating-bottom-bar';
 import { Step1CustomerDetails } from './components/step1-customer-details';
 import { Step2SelectServices } from './components/step2-select-services';
@@ -170,7 +170,7 @@ export function AddCustomerWizardScreen() {
       {/* Floating Bottom Bar for Success Step 7 */}
       {currentStep === 7 && (
         <View
-          className="absolute right-0 bottom-0 left-0 border-t border-orange-100/60 bg-[#FFF9F5] px-6 pt-3.5 dark:border-neutral-800 dark:bg-neutral-900"
+          className="absolute inset-x-0 bottom-0 border-t border-orange-100/60 bg-[#FFF9F5] px-6 pt-3.5 dark:border-neutral-800 dark:bg-neutral-900"
           style={{ paddingBottom: Math.max(insets.bottom + 12, 24) }}
         >
           <Pressable
