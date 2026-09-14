@@ -2,24 +2,25 @@
 
 ## Goal
 
-Replace the admin home and analytics screens' fixture data with one permission-aware backend dashboard response built from the existing PostgreSQL schema.
+Replace the admin and staff dashboard fixture data with separate permission-aware backend responses built from PostgreSQL source-of-truth records.
 
 ## Scope
 
-The backend adds `GET /api/v1/analytics/dashboard`. The endpoint returns the complete data needed by both existing mobile screens: customer and connection KPIs, collections, revenue series, service distribution, top locations, recent customers, and recent activity.
+The backend adds `GET /api/v1/analytics/admin-dashboard` and `GET /api/v1/analytics/staff-dashboard`. The admin endpoint returns tenant-level customer and connection KPIs, collections, service distribution, top locations, recent customers, and recent activity. The staff endpoint returns personal and team collection status plus workload in the staff member's granted locations.
 
-Staff collection rankings and ticket metrics are excluded because no staff-attributed collection or ticket records exist. The mobile analytics screen removes that section instead of displaying invented values. The existing customer, subscription, transaction, location, and audit schemas remain because they are source-of-truth business data. The existing `analytics.tenant_customer_stats` view remains because it is a useful read aggregate; no new analytics tables, materialized views, Redis cache, scheduled worker, or dependencies are added.
+Complaint and ticket metrics are excluded. The existing customer, subscription, transaction, location, team, membership, and audit schemas remain because they are source-of-truth business data. The existing `analytics.tenant_customer_stats` view remains because it is a useful read aggregate. A nullable `collected_by` user reference is added to account transactions so new collections can be attributed to a staff member; imported historical rows remain unattributed. No analytics tables, materialized views, Redis cache, scheduled worker, or dependencies are added.
 
 ## API Contract
 
-`GET /api/v1/analytics/dashboard` requires `reports.view`. The permission's existing access scope is applied to customers and subscriptions:
+`GET /api/v1/analytics/admin-dashboard` requires the admin or super-admin role and `reports.view` at `ALL`. `GET /api/v1/analytics/staff-dashboard` requires the staff role and `reports.view`; its existing access scope is applied to customers, subscriptions, and transactions:
 
-- `ALL` includes the tenant.
-- `LOCATION` and related location scopes include the granted location descendants.
-- `OWN` includes only the signed-in customer's records when applicable.
+- Admin `ALL` includes the tenant.
+- Staff workload includes granted location descendants.
+- Personal collections include deposit credits whose `collected_by` is the signed-in user.
+- Team collections include deposit credits whose collector has an active membership in the signed-in user's team.
 - A caller with no reachable locations receives a successful empty dashboard.
 
-The response contains:
+The admin response contains:
 
 - `customers`: total, active, inactive, pending, current-month growth, and an eight-month cumulative series.
 - `connections`: total, active, inactive, suspended, cancelled, current-month growth, and an eight-month cumulative series.
@@ -31,21 +32,29 @@ The response contains:
 - `activity`: the six newest visible customer creations and account transactions.
 - `generatedAt`: the server timestamp so the response's time boundary is explicit.
 
+The staff response contains:
+
+- `personal`: collection amount and receipt count for today, this week, and this month.
+- `team`: the same collection metrics for active members of the caller's team, or `null` when the caller has no team.
+- `workload`: visible customers, customers with dues, outstanding amount, and active/inactive connections in granted locations.
+- `recentCollections`: the ten newest deposit credits collected personally, including customer, account number, amount, and timestamp.
+- `generatedAt`: the server timestamp.
+
 Money is serialized as decimal strings. Counts and percentages are JSON numbers. Empty datasets return zero totals and empty lists, never a 404.
 
 ## Backend Design
 
-A new `modules/analytics` module follows the existing route → controller → service structure. The service issues a small fixed set of aggregate queries using Drizzle and PostgreSQL grouping/window expressions. It reuses the customer module's established reach semantics rather than inventing a second scoping model. Queries always include `tenant_id`, soft-delete filters, and the caller's permitted reach.
+A new `modules/analytics` module follows the existing route → controller → service structure. The service exposes separate `adminDashboard` and `staffDashboard` methods and issues a small fixed set of aggregate queries using Drizzle and PostgreSQL grouping expressions. It reuses the customer module's established location reach semantics rather than inventing a second scoping model. Queries always include `tenant_id`, soft-delete filters, and the caller's permitted reach.
 
 The existing tenant customer view is used for `ALL` scope customer totals. Narrower scopes aggregate the underlying customer table because the tenant-wide view cannot safely answer location- or owner-scoped requests. Transaction collections use `credit`; debits are charges and are not counted as money collected. Revenue on the current UI is renamed to Collections so the displayed meaning matches the available ledger.
 
-The route has a TypeBox response schema and standard error references. The analytics Fastify decorator is registered through the same plugin pattern used by current modules. No migration is needed unless implementation reveals a missing index in an explainable query; the existing tenant/date/status/location indexes cover the planned access paths.
+Both routes have distinct TypeBox response schemas and standard error references. The analytics Fastify decorator is registered through the same plugin pattern used by current modules. A migration adds `crm.account_transactions.collected_by` with a foreign key to `auth.users` and an index supporting tenant/collector/date reads.
 
 ## Mobile Design
 
-`useAdminDashboard` calls `/analytics/dashboard` through the existing authenticated API client and maps decimal strings and server DTO names into a slimmer `AdminDashboard` UI model. Its fixture function and fixture-only staff/ticket fields are deleted.
+`useAdminDashboard` calls `/analytics/admin-dashboard`; a new `useStaffDashboard` calls `/analytics/staff-dashboard`. Both use the existing authenticated API client and map decimal strings and timestamps into presentation values. Their fixtures are deleted.
 
-The admin home keeps its current layout but displays live customer, connection, outstanding, and collection KPIs. The analytics page keeps collections charts, connection status, service distribution, top areas, recent customers, and activity; it removes staff activity and promotional filler. Pull-to-refresh continues to use React Query. Cached data remains visible during background refresh errors, while first load has loading, error/retry, empty, and content states.
+The admin home keeps its current layout but displays live customer, connection, outstanding, and collection KPIs. The analytics page keeps collections charts, connection status, service distribution, top areas, recent customers, and activity; it removes fixture-only staff ranking and promotional filler. The staff home replaces its static tabs with a personal/team selector, collection totals, location workload, and recent personal collections. Pull-to-refresh continues to use React Query. Cached data remains visible during background refresh errors, while first load has loading, error/retry, empty, and content states.
 
 All user-facing dashboard strings move to `admin_dashboard` translation keys in English and Telugu. Components use `useTranslation`; no English fallback fixtures remain.
 
@@ -55,10 +64,10 @@ Authentication and permission failures use the backend's existing handlers. Data
 
 ## Testing
 
-Backend API tests create two tenants and verify tenant isolation, `reports.view` enforcement, location scope, empty data, aggregate values, series buckets, and recent-record ordering using Fastify `inject()` and the existing test database utilities.
+Backend API tests create two tenants and two staff teams and verify role separation, tenant isolation, `reports.view` enforcement, location scope, empty data, admin aggregates, personal/team collection attribution, unattributed-history handling, series buckets, and recent-record ordering using Fastify `inject()` and the existing test database utilities.
 
-Mobile tests verify the API path and decimal mapping, initial failure/retry, empty rendering, cached-data refresh behavior, and English/Telugu dashboard text. Translation JSON is sorted with `pnpm run lint:translations`. Final verification runs focused tests first, followed by `pnpm check-all` in both repositories.
+Mobile tests verify both API paths and decimal mapping, the staff personal/team selector, initial failure/retry, empty rendering, cached-data refresh behavior, and English/Telugu dashboard text. Translation JSON is sorted with `pnpm run lint:translations`. Final verification runs focused tests first, followed by `pnpm check-all` in both repositories.
 
 ## Deliberate Limits
 
-The endpoint computes live data on request. Add persisted analytics snapshots or a pg-boss refresh job only after measured query latency or reporting-history requirements make live aggregates insufficient. Staff collection rankings return when transactions record a collecting staff member. Ticket metrics return with the ticket module.
+The endpoints compute live data on request. Add persisted analytics snapshots or a pg-boss refresh job only after measured query latency or reporting-history requirements make live aggregates insufficient. Complaint metrics return only with the ticket module. Team analytics are limited to collection status; team task assignment is deferred until a real work-assignment model exists.
