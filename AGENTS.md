@@ -16,10 +16,9 @@
 
 ```
 src/
-├── app/              # Expo Router file-based routes (add new routes here)
-├── screens/          # Screen modules (admin, auth, customer, add-customer, staff, etc.)
-├── components/ui/    # Pre-built UI components (button, input, modal, etc.)
-├── lib/              # Pre-configured utilities (api, auth, i18n, storage)
+├── app/              # Expo Router routes (admin/(tabs, customers, services, packages, locations), staff/, customer/, (auth)/)
+├── components/       # UI primitives (ui/), common/ and domain widgets (admin, auth, customer, etc.)
+├── lib/              # Pre-configured utilities (api, auth, i18n, storage, hooks, stores)
 ├── translations/     # i18n files (en.json, te.json)
 └── global.css        # TailwindCSS configuration
 
@@ -50,11 +49,11 @@ pnpm build:production:ios       # EAS production build
 
 ## How: Key Patterns
 
-- **Create screens**: New folder in `src/screens/[your-screen]/` with screens, components, Zustand stores, API hooks
-- **Add routes**: Create files in `src/app/` (file-based routing)
+- **Create routes/screens**: Create route files in `src/app/` (Expo Router file-based routing)
+- **Domain components**: Add subcomponents to `src/components/[feature]/`
 - **Forms**: Use TanStack Form + Zod or controlled components
 - **Data fetching**: Use React Query
-- **Global state**: Use Zustand (see `src/screens/add-customer/use-add-customer-store.ts`)
+- **Global state**: Use Zustand in `src/lib/hooks/stores/` (e.g. `src/lib/hooks/stores/use-add-customer-store.ts`)
 - **Styling**: NativeWind/Tailwind classes (see `src/components/ui/button.tsx`)
 - **Storage**: Use MMKV via `src/lib/storage.tsx` for sensitive data
 - **Imports**: Always use `@/` prefix, never relative imports
@@ -62,7 +61,7 @@ pnpm build:production:ios       # EAS production build
 ## How: Essential Rules
 
 - ✅ **DO** use absolute imports: `@/components/ui/button`
-- ✅ **DO** follow screen-based structure: `src/screens/[name]/`
+- ✅ **DO** follow Expo Router route structure in `src/app/` and domain components in `src/components/[feature]/`
 - ✅ **DO** use TanStack Form for forms (not react-hook-form)
 - ✅ **DO** use MMKV storage for sensitive data (not AsyncStorage)
 - ✅ **DO** use EAS Build for production: `pnpm build:production:ios`

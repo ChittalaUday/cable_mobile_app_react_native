@@ -186,3 +186,80 @@ describe('restoring a session on launch', () => {
     expect(useAuthStore.getState().tenantId).toBeNull();
   });
 });
+
+describe('tenant selection persistence and sign out', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.mocked(getToken).mockReturnValue({ access: 'a', refresh: 'r' });
+  });
+
+  it('clears stored tenant preference on sign out', async () => {
+    jest.mocked(client.post).mockResolvedValueOnce({});
+
+    await useAuthStore.getState().signOut();
+
+    expect(removeToken).toHaveBeenCalled();
+    expect(removeTenantId).toHaveBeenCalled();
+    expect(useAuthStore.getState()).toMatchObject({ status: 'signOut', tenantId: null, role: null });
+  });
+
+  it('clears stored tenant preference on sign out everywhere', async () => {
+    jest.mocked(client.post).mockResolvedValueOnce({});
+
+    await useAuthStore.getState().signOutEverywhere();
+
+    expect(removeToken).toHaveBeenCalled();
+    expect(removeTenantId).toHaveBeenCalled();
+    expect(useAuthStore.getState()).toMatchObject({ status: 'signOut', tenantId: null, role: null });
+  });
+
+  it('does not persist tenant to storage when switchTenant persist is false', async () => {
+    jest.mocked(client.post).mockResolvedValueOnce({
+      data: {
+        accessToken: 'access-token',
+        expiresIn: 900,
+        refreshToken: 'refresh-token',
+        tokenType: 'Bearer',
+        memberships: [
+          { tenantId: 'tenant-a', tenantName: 'Alpha Cable', roleId: 'admin' },
+          { tenantId: 'tenant-b', tenantName: 'Beta Cable', roleId: 'staff' },
+        ],
+        user: { id: 'user-id', email: null, phone: '9876543210', name: 'Uday', photoUrl: null, isSuperAdmin: false },
+      },
+    } as any);
+
+    await useAuthStore.getState().verifyOtp('9876543210', '123456');
+
+    jest.clearAllMocks();
+    useAuthStore.getState().switchTenant('tenant-b', false);
+
+    expect(useAuthStore.getState()).toMatchObject({ tenantId: 'tenant-b', role: 'staff' });
+    expect(removeTenantId).toHaveBeenCalled();
+    expect(setTenantId).not.toHaveBeenCalled();
+  });
+
+  it('preserves remembered tenant on app reopen without wiping storage during hydrate', async () => {
+    // Stored tenant in storage
+    jest.mocked(getTenantId).mockReturnValue('tenant-b');
+    jest.mocked(client.get).mockResolvedValueOnce({
+      data: {
+        user: { id: 'u1', email: null, phone: '9', name: 'U', photoUrl: null, isSuperAdmin: false },
+        memberships: [
+          { tenantId: 'tenant-a', tenantName: 'Alpha Cable', roleId: 'admin' },
+          { tenantId: 'tenant-b', tenantName: 'Beta Cable', roleId: 'staff' },
+        ],
+      },
+    } as never);
+
+    useAuthStore.getState().hydrate();
+
+    // Verify removeTenantId was NOT called during the hydrate lifecycle
+    expect(removeTenantId).not.toHaveBeenCalled();
+
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    // The remembered tenant is restored
+    expect(useAuthStore.getState()).toMatchObject({ tenantId: 'tenant-b', role: 'staff' });
+    expect(removeTenantId).not.toHaveBeenCalled();
+  });
+});

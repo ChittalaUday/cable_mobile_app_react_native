@@ -123,6 +123,129 @@ export type CustomerProfile = {
   };
 };
 
+/**
+ * One row of the staff customer list.
+ *
+ * The breadcrumb and the service rollup arrive already resolved, so a row needs
+ * no follow-up call to `/locations/:id` or `/packages/:id` to render.
+ */
+export type CustomerListItem = {
+  id: string;
+  customerCode: string | null;
+  name: string | null;
+  phone: string | null;
+  status: 'active' | 'inactive' | 'pending';
+  outstandingBalance: string;
+  locationId: string | null;
+  /** `Mandapeta / TIDCO Apartments / Group C / C59 / Ground Floor / 6`. */
+  locationPath: string | null;
+  subscriptions: number;
+  activeSubscriptions: number;
+  services: string[];
+  createdAt: string;
+  alternatePhone: string | null;
+  whatsappNumber: string | null;
+  address: string | null;
+  locations: {
+    locationId: string;
+    path: string;
+    codes: string[];
+    source: 'customer' | 'subscription';
+  }[];
+  serviceAccounts: {
+    subscriptionId: string;
+    accountNumber: string;
+    installationAddress: string | null;
+    locationId: string;
+    locationPath: string | null;
+    service?: string;
+  }[];
+  equipment: {
+    id: string;
+    subscriptionId: string;
+    type: string;
+    brand: string | null;
+    model: string | null;
+    serialNumber: string | null;
+    vcNumber: string | null;
+    macAddress: string | null;
+    barcode: string | null;
+    status: string;
+  }[];
+  matchedFields?: string[];
+  score?: number;
+};
+
+/**
+ * A page of customers.
+ *
+ * Keyset, not page numbers: pass `nextCursor` back until it is `null`. `total`
+ * arrives on the first page only — it cannot usefully change while one operator
+ * scrolls, and the server will not pay for it twice.
+ */
+export type CustomerPage = {
+  items: CustomerListItem[];
+  total: number | null;
+  limit: number;
+  nextCursor: string | null;
+};
+
+export type CustomerEquipment = {
+  id: string;
+  subscriptionId: string;
+  name: string;
+  serialNumber: string | null;
+  status: string;
+  assignedAt: string;
+  returnedAt: string | null;
+};
+
+export type CustomerTransaction = {
+  id: string;
+  transactionNo: string;
+  transactionDate: string;
+  transactionType: string;
+  serviceAccountNumber: string;
+  debit: string;
+  credit: string;
+  closingBalance: string;
+  remarks: string | null;
+};
+
+/**
+ * Everything a customer details page draws, from ONE request.
+ *
+ * Each subscription already carries its service, provider and package, so the
+ * screen never fans out to `/packages/:id` or `/service-providers/:id`.
+ */
+export type CustomerDetail = {
+  id: string;
+  customerCode: string | null;
+  name: string | null;
+  phone: string | null;
+  alternatePhone: string | null;
+  whatsappNumber: string | null;
+  status: 'active' | 'inactive' | 'pending';
+  outstandingBalance: string;
+  userId: string | null;
+  locationId: string | null;
+  locationPath: string | null;
+  address: string | null;
+  notes: string | null;
+  subscriptions: CustomerSubscription[];
+  equipment: CustomerEquipment[];
+  recentTransactions: CustomerTransaction[];
+  summary: {
+    subscriptions: number;
+    activeSubscriptions: number;
+    services: string[];
+    monthlyValue: string;
+    outstandingBalance: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type MeResponse = {
   user: ApiUser;
   sessionId: string;

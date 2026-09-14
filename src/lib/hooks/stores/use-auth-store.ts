@@ -31,7 +31,7 @@ type AuthState = {
   signIn: (identifier: string, password: string) => Promise<void>;
   requestOtp: (phone: string) => Promise<number>;
   verifyOtp: (phone: string, code: string) => Promise<void>;
-  switchTenant: (tenantId: string) => void;
+  switchTenant: (tenantId: string, persist?: boolean) => void;
   /** Drop back to the picker without signing out. */
   clearTenant: () => void;
   signOut: () => Promise<void>;
@@ -130,10 +130,17 @@ function authenticatedState(session: AuthResponse) {
   setToken({ access: session.accessToken, refresh: session.refreshToken });
 
   const { user, memberships } = session;
+  const initialTenant = memberships.length === 1 ? memberships[0]!.tenantId : null;
+  if (initialTenant) {
+    setTenantId(initialTenant);
+  }
+  else {
+    removeTenantId();
+  }
 
   // A fresh sign-in asks every time it is ambiguous — `null`, not whatever the
   // last person to use this device happened to choose.
-  return sessionState(user, memberships, openingTenantId(memberships, null));
+  return sessionState(user, memberships, initialTenant);
 }
 
 /**
@@ -158,7 +165,13 @@ function restoreSession(set: (partial: Partial<AuthState>) => void) {
     if (cancelled)
       return;
 
-    set(sessionState(user, memberships, openingTenantId(memberships, getTenantId() ?? null)));
+    const storedTenant = getTenantId() ?? null;
+    const initialTenant = openingTenantId(memberships, storedTenant);
+    if (storedTenant && !memberships.some(m => m.tenantId === storedTenant)) {
+      removeTenantId();
+    }
+
+    set(sessionState(user, memberships, initialTenant));
   }).catch((error) => {
     if (cancelled)
       return;
@@ -167,6 +180,7 @@ function restoreSession(set: (partial: Partial<AuthState>) => void) {
 
     if (isSessionRejected(error)) {
       removeToken();
+      removeTenantId();
       set({ ...signedOut, error: message });
       return;
     }
@@ -218,18 +232,27 @@ const _useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  switchTenant: (tenantId) => {
+  switchTenant: (tenantId, persist = true) => {
     const { memberships, user } = get();
     const membership = memberships.find(item => item.tenantId === tenantId);
     if (!membership || !user)
       return;
 
+    if (persist) {
+      setTenantId(tenantId);
+    }
+    else {
+      removeTenantId();
+    }
+
     set({ tenantId, role: roleFor(user.isSuperAdmin, membership) });
   },
 
   clearTenant: () => {
-    if (get().memberships.length > 1)
+    if (get().memberships.length > 1) {
+      removeTenantId();
       set({ tenantId: null, role: null });
+    }
   },
 
   signOut: async () => {
@@ -239,6 +262,7 @@ const _useAuthStore = create<AuthState>((set, get) => ({
     }
     finally {
       removeToken();
+      removeTenantId();
       set(signedOut);
     }
   },
@@ -249,6 +273,7 @@ const _useAuthStore = create<AuthState>((set, get) => ({
     }
     finally {
       removeToken();
+      removeTenantId();
       set(signedOut);
     }
   },
@@ -256,19 +281,8 @@ const _useAuthStore = create<AuthState>((set, get) => ({
 
 setSessionExpiredHandler(() => {
   removeToken();
+  removeTenantId();
   _useAuthStore.setState(signedOut);
-});
-
-let mirroredTenantId: string | null | undefined;
-_useAuthStore.subscribe(({ tenantId }) => {
-  if (tenantId === mirroredTenantId)
-    return;
-
-  mirroredTenantId = tenantId;
-  if (tenantId)
-    setTenantId(tenantId);
-  else
-    removeTenantId();
 });
 
 export const useAuthStore = createSelectors(_useAuthStore);

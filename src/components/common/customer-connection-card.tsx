@@ -64,6 +64,15 @@ function ConnectionHeader({
             <Text className="text-[15px] font-extrabold text-foreground" numberOfLines={1}>
               {customer.name}
             </Text>
+            {customer.customerCode
+              ? (
+                  <View className="rounded-sm bg-neutral-100 px-1.5 py-0.5 dark:bg-neutral-800">
+                    <Text className="text-[10px] font-bold text-neutral-600 dark:text-neutral-400">
+                      {customer.customerCode}
+                    </Text>
+                  </View>
+                )
+              : null}
             {isMulti
               ? (
                   <View className="rounded-full bg-primary-100 px-2.5 py-0.5 dark:bg-neutral-800">
@@ -321,7 +330,7 @@ export function CustomerConnectionCard({
       onViewDetails(customer);
       return;
     }
-    router.push(`/customer-details/${customer.id}`);
+    router.push(`/admin/customers/${customer.id}` as any);
   };
 
   const handleMomentumScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {

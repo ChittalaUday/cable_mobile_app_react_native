@@ -72,7 +72,7 @@ jest.mock('@shopify/flash-list', () => {
 
   return {
     __esModule: true,
-    FlashList: ({ ref, ...props }) =>
+    FlashList: ({ ref, ...props }: { ref?: unknown }) =>
       React.createElement(FlatList, { ...props, ref }),
   };
 });

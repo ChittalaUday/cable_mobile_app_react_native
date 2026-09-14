@@ -22,7 +22,7 @@ export { ErrorBoundary } from 'expo-router';
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const unstable_settings = {
-  initialRouteName: '(app)',
+  initialRouteName: 'index',
 };
 
 loadSelectedTheme();
@@ -85,9 +85,13 @@ export default function RootLayout() {
 
   return (
     <Providers onLayout={onLayoutRootView}>
-      <Stack>
-        <Stack.Screen name="(app)" options={{ headerShown: false }} />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="select-tenant" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="admin" options={{ headerShown: false }} />
+        <Stack.Screen name="staff" options={{ headerShown: false }} />
+        <Stack.Screen name="customer" options={{ headerShown: false }} />
       </Stack>
     </Providers>
   );

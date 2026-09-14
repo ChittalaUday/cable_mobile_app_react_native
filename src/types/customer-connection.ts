@@ -25,6 +25,7 @@ export type ConnectionAccount = {
  */
 export type ConsolidatedCustomer = {
   id: string;
+  customerCode?: string | null;
   name: string;
   phone: string;
   email?: string;
