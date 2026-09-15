@@ -36,7 +36,7 @@ All numeric inputs must be finite integers in the ranges defined above. Pattern 
 
 The Kotlin module exposes only two asynchronous functions:
 
-- `getCapabilities` obtains `ConsumerIrManager`, checks `hasIrEmitter()`, and maps `carrierFrequencies` to `{ minHz, maxHz }` records.
+- `getCapabilities` obtains `ConsumerIrManager`, checks `hasIrEmitter()`, and maps each Android `ConsumerIrManager.CarrierFrequencyRange` to an inclusive `{ minHz, maxHz }` record.
 - `transmit(carrierFrequencyHz, pattern)` repeats trust-boundary validation, confirms an emitter exists, verifies the requested frequency against reported ranges when the query succeeds, and calls `ConsumerIrManager.transmit` away from the JavaScript thread.
 
 Keeping protocol encoding in TypeScript means new encoders do not require changing the hardware bridge. Kotlin remains the final safety boundary because TypeScript validation can be bypassed.
