@@ -1,6 +1,6 @@
 # Android IR Blaster Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Add a typed Android IR transmitter supporting common protocols and database-provided raw signals with safe capability and failure handling.
 
@@ -32,7 +32,7 @@
 - Produces: `IrCommand`, `ProtocolIrCommand`, `IrSignal`, and `encodeIrCommand(command: IrCommand): IrSignal`.
 - `IrCommand` discriminates on `protocol`: `raw`, `nec`, `nec-extended`, `samsung`, `sony-sirc`, `rc5`, or `rc6`.
 
-- [ ] **Step 1: Write failing protocol-vector tests**
+- [x] **Step 1: Write failing protocol-vector tests**
 
 Test known header, bit-order, payload width, default frequency, frequency override, and repetition behavior. Use compact expected arrays built from literal protocol timings, for example:
 
@@ -51,13 +51,13 @@ expect(encodeIrCommand({ protocol: 'sony-sirc', bits: 12, data: 1 })).toMatchObj
 
 Add focused vectors for extended NEC, Samsung, RC5 Manchester encoding, and RC6 mode-0 trailer-bit timing. Assert that a custom `carrierFrequencyHz` replaces only the default frequency.
 
-- [ ] **Step 2: Run the tests and verify RED**
+- [x] **Step 2: Run the tests and verify RED**
 
 Run: `pnpm exec jest src/lib/ir-blaster/encode.test.ts --runInBand`
 
 Expected: FAIL because `@/lib/ir-blaster/encode` does not exist.
 
-- [ ] **Step 3: Implement the smallest pure encoders**
+- [x] **Step 3: Implement the smallest pure encoders**
 
 Define exact command types with bounded fields:
 
@@ -77,13 +77,13 @@ export type ProtocolIrCommand = Exclude<IrCommand, { protocol: 'raw' }>;
 
 Use small private helpers for LSB-first pulse-distance bits and Manchester half-bit levels. Merge adjacent equal levels before converting levels to alternating durations. Append protocol-correct inter-frame gaps for `repeatCount`, then validate the final signal once.
 
-- [ ] **Step 4: Run the protocol-vector tests and verify GREEN**
+- [x] **Step 4: Run the protocol-vector tests and verify GREEN**
 
 Run: `pnpm exec jest src/lib/ir-blaster/encode.test.ts --runInBand`
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit the encoder**
+- [x] **Step 5: Commit the encoder**
 
 ```bash
 git add src/lib/ir-blaster/types.ts src/lib/ir-blaster/encode.ts src/lib/ir-blaster/encode.test.ts
@@ -100,7 +100,7 @@ git commit -m "feat: encode common IR protocols"
 - Consumes: `IrCommand` and `IrSignal` from Task 1.
 - Produces: validated signals or `IrBlasterError` with `ERR_IR_INVALID_COMMAND` / `ERR_IR_PATTERN_TOO_LONG`.
 
-- [ ] **Step 1: Add failing table-driven edge-case tests**
+- [x] **Step 1: Add failing table-driven edge-case tests**
 
 Cover non-finite, fractional, negative, and out-of-range protocol fields; invalid SIRC widths; invalid toggle values; negative repeat counts; empty raw patterns; zero, negative, fractional, and `Int.MAX_VALUE`-overflowing durations; invalid frequencies; and totals of `1_999_999` versus `2_000_000` microseconds.
 
@@ -112,23 +112,23 @@ expect(() => encodeIrCommand({
 })).toThrow(expect.objectContaining({ code: 'ERR_IR_PATTERN_TOO_LONG' }));
 ```
 
-- [ ] **Step 2: Run the validation tests and verify RED**
+- [x] **Step 2: Run the validation tests and verify RED**
 
 Run: `pnpm exec jest src/lib/ir-blaster/encode.test.ts --runInBand`
 
 Expected: FAIL on the first invalid input that is currently accepted.
 
-- [ ] **Step 3: Add one shared signal validator and bounded field checks**
+- [x] **Step 3: Add one shared signal validator and bounded field checks**
 
 Create `IrBlasterError` in `types.ts`, use `Number.isSafeInteger`, cap Kotlin-bound integers at `2_147_483_647`, require `carrierFrequencyHz > 0`, and sum durations without overflow. Keep protocol ranges next to their encoder branches.
 
-- [ ] **Step 4: Run the validation tests and verify GREEN**
+- [x] **Step 4: Run the validation tests and verify GREEN**
 
 Run: `pnpm exec jest src/lib/ir-blaster/encode.test.ts --runInBand`
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit validation**
+- [x] **Step 5: Commit validation**
 
 ```bash
 git add src/lib/ir-blaster/types.ts src/lib/ir-blaster/encode.ts src/lib/ir-blaster/encode.test.ts
@@ -149,7 +149,7 @@ git commit -m "feat: validate IR commands"
 - Produces native module `IrBlaster` with `getCapabilities(): Promise<NativeIrCapabilities>` and `transmit(carrierFrequencyHz: number, pattern: number[]): Promise<void>`.
 - Native statuses: `available`, `service-unavailable`, `no-emitter`, `hardware-error`.
 
-- [ ] **Step 1: Generate the Android-only local-module skeleton, then remove sample behavior**
+- [x] **Step 1: Generate the Android-only local-module skeleton, then remove sample behavior**
 
 Run:
 
@@ -159,7 +159,7 @@ EXPO_NONINTERACTIVE=1 npx create-expo-module@latest ir-blaster --local --name Ir
 
 Keep only the generated build/autolinking structure; remove sample constants/functions before adding production behavior.
 
-- [ ] **Step 2: Write a failing JUnit validator test**
+- [x] **Step 2: Write a failing JUnit validator test**
 
 Test the same integer, empty-pattern, and two-second boundary rules as TypeScript, with assertions such as:
 
@@ -171,13 +171,13 @@ assertEquals(
 assertNull(IrSignalValidator.validate(38_000, intArrayOf(999_999, 1_000_000)))
 ```
 
-- [ ] **Step 3: Run the native test and verify RED**
+- [x] **Step 3: Run the native test and verify RED**
 
 Run: `cd android && ./gradlew :ir-blaster:testDebugUnitTest --tests expo.modules.irblaster.IrSignalValidatorTest`
 
 Expected: FAIL because `IrSignalValidator` does not exist.
 
-- [ ] **Step 4: Implement native validation and the hardware wrapper**
+- [x] **Step 4: Implement native validation and the hardware wrapper**
 
 Use `appContext.reactContext?.getSystemService(Context.CONSUMER_IR_SERVICE) as? ConsumerIrManager`. `getCapabilities` checks service presence, `hasIrEmitter()`, and maps each `ConsumerIrManager.CarrierFrequencyRange` to inclusive `minHz`/`maxHz` values. `transmit` validates, repeats capability checks, rejects a frequency outside every reported range, then calls the synchronous Android transmitter inside an Expo `AsyncFunction`.
 
@@ -190,7 +190,7 @@ Add to the module manifest:
 <uses-feature android:name="android.hardware.consumerir" android:required="false" />
 ```
 
-- [ ] **Step 5: Run native tests and compile the module**
+- [x] **Step 5: Run native tests and compile the module**
 
 Run:
 
@@ -201,7 +201,7 @@ cd android
 
 Expected: PASS and BUILD SUCCESSFUL.
 
-- [ ] **Step 6: Commit the native module**
+- [x] **Step 6: Commit the native module**
 
 ```bash
 git add modules/ir-blaster
@@ -219,7 +219,7 @@ git commit -m "feat: add Android IR transmitter module"
 - Consumes: `encodeIrCommand`, `IrCommand`, and native module `IrBlaster`.
 - Produces: public `getCapabilities(): Promise<IrCapabilities>` and `transmit(command: IrCommand): Promise<void>`.
 
-- [ ] **Step 1: Write failing facade tests**
+- [x] **Step 1: Write failing facade tests**
 
 Mock only the unavoidable native boundary. Verify unsupported iOS/web, missing native module, no emitter, successful capability mapping with multiple ranges, encoded arguments passed to native, and every native code normalized into `IrBlasterError`.
 
@@ -233,23 +233,23 @@ await expect(transmit({ protocol: 'nec', address: 0, command: 1 }))
   .rejects.toMatchObject({ code: 'ERR_IR_NO_EMITTER' });
 ```
 
-- [ ] **Step 2: Run facade tests and verify RED**
+- [x] **Step 2: Run facade tests and verify RED**
 
 Run: `pnpm exec jest src/lib/ir-blaster/index.test.ts --runInBand`
 
 Expected: FAIL because the public facade does not exist.
 
-- [ ] **Step 3: Implement the minimal facade**
+- [x] **Step 3: Implement the minimal facade**
 
 Use `Platform.OS` and Expo's optional native-module lookup so importing the file is safe on unsupported platforms. Return capability statuses for expected absence. Encode first, call native once, preserve recognized native error codes, and map unrecognized rejections to `ERR_IR_TRANSMIT_FAILED`.
 
-- [ ] **Step 4: Run facade and encoder tests and verify GREEN**
+- [x] **Step 4: Run facade and encoder tests and verify GREEN**
 
 Run: `pnpm exec jest src/lib/ir-blaster/index.test.ts src/lib/ir-blaster/encode.test.ts --runInBand`
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit the facade**
+- [x] **Step 5: Commit the facade**
 
 ```bash
 git add src/lib/ir-blaster
@@ -264,13 +264,13 @@ git commit -m "feat: expose typed IR blaster API"
 **Interfaces:**
 - Verifies all outputs from Tasks 1–4 together.
 
-- [ ] **Step 1: Confirm Expo autolinking sees the module**
+- [x] **Step 1: Confirm Expo autolinking sees the module**
 
 Run: `npx expo-modules-autolinking resolve --platform android`
 
 Expected: output includes `expo.modules.irblaster.IrBlasterModule` from `modules/ir-blaster`.
 
-- [ ] **Step 2: Run focused and project checks**
+- [x] **Step 2: Run focused and project checks**
 
 Run:
 
@@ -283,7 +283,7 @@ cd android && ./gradlew :ir-blaster:testDebugUnitTest :ir-blaster:compileDebugKo
 
 Expected: all commands succeed without new warnings.
 
-- [ ] **Step 3: Review the final diff**
+- [x] **Step 3: Review the final diff**
 
 Run: `git diff --check HEAD~3..HEAD && git status --short`
 
