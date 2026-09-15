@@ -53,7 +53,7 @@ Add focused vectors for extended NEC, Samsung, RC5 Manchester encoding, and RC6 
 
 - [ ] **Step 2: Run the tests and verify RED**
 
-Run: `pnpm test --runInBand src/lib/ir-blaster/encode.test.ts`
+Run: `pnpm exec jest src/lib/ir-blaster/encode.test.ts --runInBand`
 
 Expected: FAIL because `@/lib/ir-blaster/encode` does not exist.
 
@@ -79,7 +79,7 @@ Use small private helpers for LSB-first pulse-distance bits and Manchester half-
 
 - [ ] **Step 4: Run the protocol-vector tests and verify GREEN**
 
-Run: `pnpm test --runInBand src/lib/ir-blaster/encode.test.ts`
+Run: `pnpm exec jest src/lib/ir-blaster/encode.test.ts --runInBand`
 
 Expected: PASS.
 
@@ -114,7 +114,7 @@ expect(() => encodeIrCommand({
 
 - [ ] **Step 2: Run the validation tests and verify RED**
 
-Run: `pnpm test --runInBand src/lib/ir-blaster/encode.test.ts`
+Run: `pnpm exec jest src/lib/ir-blaster/encode.test.ts --runInBand`
 
 Expected: FAIL on the first invalid input that is currently accepted.
 
@@ -124,7 +124,7 @@ Create `IrBlasterError` in `types.ts`, use `Number.isSafeInteger`, cap Kotlin-bo
 
 - [ ] **Step 4: Run the validation tests and verify GREEN**
 
-Run: `pnpm test --runInBand src/lib/ir-blaster/encode.test.ts`
+Run: `pnpm exec jest src/lib/ir-blaster/encode.test.ts --runInBand`
 
 Expected: PASS.
 
@@ -235,7 +235,7 @@ await expect(transmit({ protocol: 'nec', address: 0, command: 1 }))
 
 - [ ] **Step 2: Run facade tests and verify RED**
 
-Run: `pnpm test --runInBand src/lib/ir-blaster/index.test.ts`
+Run: `pnpm exec jest src/lib/ir-blaster/index.test.ts --runInBand`
 
 Expected: FAIL because the public facade does not exist.
 
@@ -245,7 +245,7 @@ Use `Platform.OS` and Expo's optional native-module lookup so importing the file
 
 - [ ] **Step 4: Run facade and encoder tests and verify GREEN**
 
-Run: `pnpm test --runInBand src/lib/ir-blaster/index.test.ts src/lib/ir-blaster/encode.test.ts`
+Run: `pnpm exec jest src/lib/ir-blaster/index.test.ts src/lib/ir-blaster/encode.test.ts --runInBand`
 
 Expected: PASS.
 
@@ -275,7 +275,7 @@ Expected: output includes `expo.modules.irblaster.IrBlasterModule` from `modules
 Run:
 
 ```bash
-pnpm test --runInBand src/lib/ir-blaster
+pnpm exec jest src/lib/ir-blaster --runInBand
 pnpm type-check
 pnpm lint
 cd android && ./gradlew :ir-blaster:testDebugUnitTest :ir-blaster:compileDebugKotlin
