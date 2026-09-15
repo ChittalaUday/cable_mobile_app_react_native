@@ -35,6 +35,25 @@ export type IrBlasterErrorCode
     | 'ERR_IR_PATTERN_TOO_LONG'
     | 'ERR_IR_TRANSMIT_FAILED';
 
+export type CarrierFrequencyRange = {
+  minHz: number;
+  maxHz: number;
+};
+
+export type IrCapabilityStatus
+  = | 'available'
+    | 'unsupported-platform'
+    | 'module-unavailable'
+    | 'service-unavailable'
+    | 'no-emitter'
+    | 'hardware-error';
+
+export type IrCapabilities = {
+  available: boolean;
+  status: IrCapabilityStatus;
+  carrierFrequencyRanges: CarrierFrequencyRange[];
+};
+
 export class IrBlasterError extends Error {
   readonly code: IrBlasterErrorCode;
 
