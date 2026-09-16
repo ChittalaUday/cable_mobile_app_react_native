@@ -1,4 +1,3 @@
-/* eslint-disable max-lines-per-function */
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import type { ConnectionAccount, ConsolidatedCustomer } from '@/types/customer-connection';
 import {
@@ -330,7 +329,7 @@ export function CustomerConnectionCard({
       onViewDetails(customer);
       return;
     }
-    router.push(`/admin/customers/${customer.id}` as any);
+    router.push(`/admin/customers/${customer.id}`);
   };
 
   const handleMomentumScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {

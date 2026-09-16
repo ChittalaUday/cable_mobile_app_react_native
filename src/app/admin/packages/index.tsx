@@ -1,12 +1,9 @@
 import type { NormalizedPackage } from '@/lib/hooks/api/use-packages';
 import {
   Add01Icon,
-  ArrowLeft01Icon,
   Delete02Icon,
   PencilEdit02Icon,
   Search01Icon,
-  Tv01Icon,
-  Wifi01Icon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { FlashList } from '@shopify/flash-list';
@@ -15,7 +12,8 @@ import * as React from 'react';
 import { ActivityIndicator, Alert, RefreshControl, TextInput } from 'react-native';
 
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
-import { Card, LoadError, SectionHeader, StatusPill } from '@/components/common/shell';
+import { ScreenHeader } from '@/components/common/screen-header';
+import { Card, LoadError, StatusPill } from '@/components/common/shell';
 import {
   colors,
   FocusAwareStatusBar,
@@ -171,7 +169,6 @@ function PackageListEmpty({ isPending, query }: { isPending: boolean; query: str
   );
 }
 
-// eslint-disable-next-line max-lines-per-function
 export function PackagesScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ action?: string }>();
@@ -263,7 +260,6 @@ export function PackagesScreen() {
   return (
     <View className="flex-1 bg-surface">
       <FocusAwareStatusBar />
-      <SafeAreaView edges={['top']} className="bg-surface" />
 
       <ConfirmDialog
         visible={pendingDelete !== null}
@@ -275,61 +271,59 @@ export function PackagesScreen() {
         onCancel={() => setPendingDelete(null)}
       />
 
-      <View className="z-10 gap-3 border-b border-border/40 bg-surface px-4 py-3">
-        <View className="flex-row items-center justify-between gap-2">
-          <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()} hitSlop={12}>
-            <HugeiconsIcon icon={ArrowLeft01Icon} size={22} color={colors.neutral[500]} />
-          </Pressable>
-          <View className="flex-1">
-            <SectionHeader icon={Tv01Icon} tint="purple" title="Packages & Plans" />
-          </View>
-          {canCreate
+      <SafeAreaView edges={['top']} className="bg-card">
+        <ScreenHeader
+          title="Packages & Plans"
+          subtitle="Base packs, bouquets & a-la-carte plans"
+          showBack
+          rightAction={canCreate
             ? (
                 <Pressable
                   testID="add-package-button"
                   accessibilityRole="button"
                   onPress={openCreate}
-                  className="flex-row items-center gap-1.5 rounded-xl bg-primary-500 px-3.5 py-2 active:bg-primary-600"
+                  className="flex-row items-center gap-1.5 rounded-full bg-primary-600 px-3.5 py-2 active:bg-primary-700"
                 >
-                  <HugeiconsIcon icon={Add01Icon} size={16} color="#ffffff" />
-                  <Text className="text-xs font-extrabold text-white">Add Package</Text>
+                  <HugeiconsIcon icon={Add01Icon} size={16} color="#ffffff" strokeWidth={2.4} />
+                  <Text className="text-xs font-bold text-white">Add Package</Text>
                 </Pressable>
               )
             : null}
-        </View>
+        >
+          <View className="flex-row items-center rounded-xl border border-border bg-surface px-3 py-2">
+            <HugeiconsIcon icon={Search01Icon} size={18} color={colors.neutral[400]} strokeWidth={2} />
+            <TextInput
+              testID="package-search-input"
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Search plan name, service, provider…"
+              placeholderTextColor={colors.neutral[400]}
+              className="ml-2 flex-1 py-0 text-sm text-foreground"
+            />
+          </View>
 
-        <View className="flex-row items-center rounded-xl border border-border bg-card px-4 py-3">
-          <HugeiconsIcon icon={Search01Icon} size={20} color={colors.neutral[400]} />
-          <TextInput
-            testID="package-search-input"
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Search plan name, service, provider…"
-            placeholderTextColor={colors.neutral[400]}
-            className="ml-3 flex-1 text-base font-medium text-foreground"
-          />
-        </View>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2">
-          {FILTERS.map(item => (
-            <Pressable
-              key={item.key}
-              accessibilityRole="button"
-              accessibilityLabel={`Filter: ${item.label}`}
-              accessibilityState={{ selected: filter === item.key }}
-              onPress={() => setFilter(item.key)}
-              className={`rounded-full px-4 py-2 ${filter === item.key ? 'bg-primary-500' : 'border border-border bg-card'}`}
-            >
-              <Text className={`text-xs font-extrabold ${
-                filter === item.key ? 'text-white' : 'text-neutral-600 dark:text-neutral-300'
-              }`}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2 pt-1">
+            {FILTERS.map(item => (
+              <Pressable
+                key={item.key}
+                accessibilityRole="button"
+                accessibilityLabel={`Filter: ${item.label}`}
+                accessibilityState={{ selected: filter === item.key }}
+                onPress={() => setFilter(item.key)}
+                className={`rounded-full px-3.5 py-1.5 ${filter === item.key ? 'bg-primary-600' : 'border border-border bg-surface'}`}
               >
-                {item.label}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-      </View>
+                <Text
+                  className={`text-xs font-bold ${
+                    filter === item.key ? 'text-white' : 'text-neutral-600 dark:text-neutral-300'
+                  }`}
+                >
+                  {item.label}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </ScreenHeader>
+      </SafeAreaView>
 
       {error
         ? <LoadError message={error.message} onRetry={refetch} />

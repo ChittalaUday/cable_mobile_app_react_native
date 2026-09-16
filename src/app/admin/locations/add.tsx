@@ -1,19 +1,19 @@
 import type { Location, LocationSchema } from '@/lib/api/types';
-import { ArrowDown01Icon, ArrowLeft01Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons';
+import { ArrowDown01Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as React from 'react';
 import { Alert, ScrollView, Switch, TextInput } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 import { SaveBar } from '@/components/common/save-bar';
-import { Card } from '@/components/common/shell';
+import { Card, ScreenHeader } from '@/components/common/shell';
 import { LocationPickerSheet } from '@/components/locations/location-picker-sheet';
 import {
   colors,
   FocusAwareStatusBar,
   Pressable,
-  SafeAreaView,
   Text,
   useModal,
   View,
@@ -105,7 +105,7 @@ function Option({ title, subtitle, selected, onPress }: {
   return (
     <Pressable
       onPress={onPress}
-      className={`rounded-xl px-4 py-2.5 ${selected ? 'dark:bg-primary-950/60 bg-primary-50' : ''}`}
+      className={`rounded-xl px-4 py-2.5 ${selected ? 'bg-primary-50 dark:bg-primary-950/60' : ''}`}
     >
       <Text className={`text-sm font-semibold ${selected ? 'text-primary-600' : 'text-foreground'}`}>
         {title}
@@ -115,7 +115,6 @@ function Option({ title, subtitle, selected, onPress }: {
   );
 }
 
-// eslint-disable-next-line max-lines-per-function
 export function AddLocationScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -147,20 +146,19 @@ export function AddLocationScreen() {
   const [parent, setParent] = React.useState<Location | null>(null);
 
   const editing = editingId === null ? undefined : locations.find(loc => loc.id === editingId);
-  const hydrated = React.useRef(false);
 
-  // Fill the form once the node being edited turns up in the list.
-  React.useEffect(() => {
-    if (!editing || hydrated.current)
-      return;
-
-    hydrated.current = true;
+  // Fill the form once the node being edited turns up in the list. Adjusted
+  // during render rather than in an effect, so the fields are never briefly
+  // blank after the list arrives.
+  const [hydrated, setHydrated] = React.useState(false);
+  if (editing && !hydrated) {
+    setHydrated(true);
     setName(editing.name);
     setCode(editing.code ?? '');
     setAddress(String((editing.metadata as { address?: string } | null)?.address ?? ''));
     setIsActive(editing.isActive);
     setParentId(editing.parentId);
-  }, [editing]);
+  }
 
   const choosePlacement = React.useCallback((next: Location | null) => {
     setParent(next);
@@ -187,10 +185,9 @@ export function AddLocationScreen() {
 
   const activeSchemas = React.useMemo(() => schemas.filter(s => s.isActive), [schemas]);
 
-  React.useEffect(() => {
-    if (schemaId === null && activeSchemas.length === 1)
-      setSchemaId(activeSchemas[0]!.id);
-  }, [schemaId, activeSchemas]);
+  // With exactly one hierarchy to choose from there is no choice to make.
+  if (schemaId === null && activeSchemas.length === 1)
+    setSchemaId(activeSchemas[0]!.id);
 
   const handleSave = async () => {
     const errs: Record<string, string> = {};
@@ -256,35 +253,24 @@ export function AddLocationScreen() {
 
       <LocationPickerSheet
         ref={picker.ref}
+        title="Choose parent location"
         onSelect={choosePlacement}
         describeLevel={describeLevel}
+        confirmLabel={current => (current ? `Add inside ${current.name}` : 'Add at top level')}
       />
 
-      <SafeAreaView edges={['top']} className="bg-surface">
-        <View className="flex-row items-center gap-3 px-3 pt-1 pb-3">
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Back"
-            onPress={() => router.back()}
-            className="size-9 items-center justify-center rounded-lg border border-border bg-card"
-          >
-            <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color={colors.charcoal[900]} strokeWidth={2.2} />
-          </Pressable>
-          <View>
-            <Text className="text-xl font-bold text-foreground">
-              {editingId ? 'Edit Location' : 'Add Location'}
-            </Text>
-            <Text className="text-xs text-muted-foreground">
-              {editingId ? 'Rename or reconfigure this node' : 'Create a new location'}
-            </Text>
-          </View>
-        </View>
-      </SafeAreaView>
+      <ScreenHeader
+        title={editingId ? 'Edit Location' : 'Add Location'}
+        subtitle={editingId ? 'Rename or reconfigure this node' : 'Create a new location'}
+        showBack
+        withSafeArea
+      />
 
-      <ScrollView
-        className="flex-1 px-4"
-        contentContainerClassName="pt-2 pb-6 gap-4"
+      <KeyboardAwareScrollView
+        style={{ flex: 1, paddingHorizontal: 16 }}
+        contentContainerStyle={{ gap: 16, paddingTop: 8, paddingBottom: 24 }}
         keyboardShouldPersistTaps="handled"
+        bottomOffset={24}
         showsVerticalScrollIndicator={false}
       >
         <View className="gap-1.5">
@@ -373,7 +359,7 @@ export function AddLocationScreen() {
           : (
               <View className="flex-row items-center justify-between rounded-2xl border border-border bg-card px-4 py-3">
                 <Text className="text-sm font-bold text-foreground">Location Type</Text>
-                <View className="dark:bg-primary-950/60 rounded-lg bg-primary-50 px-2.5 py-1">
+                <View className="rounded-lg bg-primary-50 px-2.5 py-1 dark:bg-primary-950/60">
                   <Text className="text-xs font-bold text-primary-600">
                     {level?.categoryName ?? 'Pick a hierarchy first'}
                   </Text>
@@ -416,7 +402,7 @@ export function AddLocationScreen() {
             thumbColor="#ffffff"
           />
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       <SaveBar
         label={editingId ? 'Save Changes' : 'Save Location'}

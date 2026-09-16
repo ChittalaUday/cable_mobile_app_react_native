@@ -1,7 +1,6 @@
 import type { ServiceProvider } from '@/lib/api/types';
 import {
   Add01Icon,
-  ArrowLeft01Icon,
   ArrowRight01Icon,
   Layers01Icon,
   Search01Icon,
@@ -13,13 +12,13 @@ import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { RefreshControl, TextInput } from 'react-native';
 
+import { ScreenHeader } from '@/components/common/screen-header';
 import { Card, Loading } from '@/components/common/shell';
 import { getProviderBrand } from '@/components/services/provider-brand-utils';
 import {
   colors,
   FocusAwareStatusBar,
   Pressable,
-  SafeAreaView,
   ScrollView,
   Text,
   View,
@@ -97,7 +96,6 @@ function ProviderItemCard({
   );
 }
 
-// eslint-disable-next-line max-lines-per-function
 export function ServicesScreen() {
   const router = useRouter();
   // The pills are the tenant's own services now, not a fixed list of types.
@@ -136,74 +134,56 @@ export function ServicesScreen() {
   return (
     <View className="flex-1 bg-surface">
       <FocusAwareStatusBar />
-      <SafeAreaView edges={['top']} className="bg-surface">
-        {/* Header Bar */}
-        <View className="flex-row items-center justify-between px-3 pt-1 pb-3">
-          <View className="flex-row items-center gap-2.5">
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Back"
-              onPress={() => router.back()}
-              className="size-9 items-center justify-center rounded-lg border border-border bg-card"
-            >
-              <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color={colors.charcoal[900]} strokeWidth={2.2} />
-            </Pressable>
-            <View>
-              <Text className="text-xl font-bold text-foreground">Service Providers</Text>
-              <Text className="text-xs text-muted-foreground">
-                {`${providers.length} across ${services.length} ${services.length === 1 ? 'service' : 'services'}`}
-              </Text>
-            </View>
-          </View>
-
-          <View className="flex-row items-center gap-2">
-            {/* The services themselves: a short list, changed rarely, so it
-                sits behind an icon rather than above the list worked in daily. */}
+      <ScreenHeader
+        title="Service Providers"
+        subtitle={`${providers.length} across ${services.length} ${services.length === 1 ? 'service' : 'services'}`}
+        showBack
+        withSafeArea
+        rightAction={(
+          <>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Manage services"
               onPress={() => router.push('/admin/services/types')}
-              className="size-10 items-center justify-center rounded-lg border border-border bg-card"
+              className="size-9 items-center justify-center rounded-lg border border-border bg-card active:bg-muted"
             >
-              <HugeiconsIcon icon={Layers01Icon} size={19} color={colors.neutral[700]} strokeWidth={2} />
+              <HugeiconsIcon icon={Layers01Icon} size={18} color={colors.neutral[700]} strokeWidth={2} />
             </Pressable>
 
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Add provider"
               onPress={onAddPress}
-              className="size-10 items-center justify-center rounded-full bg-primary-600 active:bg-primary-700"
+              className="size-9 items-center justify-center rounded-full bg-primary-600 active:bg-primary-700"
             >
-              <HugeiconsIcon icon={Add01Icon} size={22} color="#ffffff" strokeWidth={2.4} />
+              <HugeiconsIcon icon={Add01Icon} size={20} color="#ffffff" strokeWidth={2.4} />
             </Pressable>
-          </View>
+          </>
+        )}
+      >
+        <View className="flex-row items-center rounded-xl border border-border bg-surface px-3 py-2">
+          <HugeiconsIcon icon={Search01Icon} size={16} color={colors.neutral[400]} strokeWidth={2} />
+          <TextInput
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search providers..."
+            placeholderTextColor={colors.neutral[400]}
+            className="ml-2 flex-1 py-0 text-sm text-foreground"
+          />
+          {search.length > 0 && (
+            <Pressable onPress={() => setSearch('')}>
+              <Text className="text-xs font-semibold text-primary-600">Clear</Text>
+            </Pressable>
+          )}
         </View>
+      </ScreenHeader>
 
-        {/* Search Bar */}
-        <View className="px-3 pb-3">
-          <View className="flex-row items-center rounded-2xl border border-border bg-card px-3.5 py-2.5">
-            <HugeiconsIcon icon={Search01Icon} size={18} color={colors.neutral[400]} strokeWidth={2} />
-            <TextInput
-              value={search}
-              onChangeText={setSearch}
-              placeholder="Search providers..."
-              placeholderTextColor={colors.neutral[400]}
-              className="ml-2.5 flex-1 py-0 text-sm text-foreground"
-            />
-            {search.length > 0 && (
-              <Pressable onPress={() => setSearch('')}>
-                <Text className="text-xs font-semibold text-primary-600">Clear</Text>
-              </Pressable>
-            )}
-          </View>
-        </View>
-
-        {/* One pill per service the tenant actually sells. */}
+      {/* One pill per service the tenant actually sells. */}
+      <View className="shrink-0 py-2.5">
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          className="pb-3"
-          contentContainerClassName="px-3 gap-2"
+          contentContainerClassName="items-center px-4 gap-2"
         >
           {[{ id: null, name: 'All', icon: null }, ...services].map((entry) => {
             const isSelected = selectedService === entry.id;
@@ -214,7 +194,7 @@ export function ServicesScreen() {
                 accessibilityRole="button"
                 accessibilityState={{ selected: isSelected }}
                 onPress={() => setSelectedService(entry.id)}
-                className={`flex-row items-center gap-1.5 rounded-full px-3.5 py-1.5 ${
+                className={`flex-row items-center gap-1.5 rounded-full px-4 py-2 ${
                   isSelected ? 'bg-primary-600' : 'border border-border bg-card'
                 }`}
               >
@@ -222,7 +202,7 @@ export function ServicesScreen() {
                   ? (
                       <HugeiconsIcon
                         icon={serviceIcon(entry.icon)}
-                        size={14}
+                        size={15}
                         color={isSelected ? '#ffffff' : colors.neutral[500]}
                         strokeWidth={2}
                       />
@@ -235,7 +215,7 @@ export function ServicesScreen() {
             );
           })}
         </ScrollView>
-      </SafeAreaView>
+      </View>
 
       {/* Main List */}
       <FlashList
@@ -248,7 +228,7 @@ export function ServicesScreen() {
           />
         )}
         ItemSeparatorComponent={() => <View className="h-3" />}
-        contentContainerStyle={{ paddingHorizontal: 12, paddingTop: 4, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         refreshControl={(

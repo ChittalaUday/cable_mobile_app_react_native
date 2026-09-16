@@ -10,10 +10,12 @@ import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, ScrollView, TextInput, TouchableOpacity } from 'react-native';
-
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Button, colors, Pressable, Text, View } from '@/components/ui';
+
 import { useCreateCustomer } from '@/lib/hooks/api/use-admin-dashboard';
 import { usePackages } from '@/lib/hooks/api/use-packages';
+import { useDismissKeyboardOnExit } from '@/lib/hooks/common/use-dismiss-keyboard';
 
 export type AddCustomerModalProps = {
   visible: boolean;
@@ -23,12 +25,15 @@ export type AddCustomerModalProps = {
 
 type StepKey = 1 | 2 | 3;
 
-// eslint-disable-next-line max-lines-per-function
 export function AddCustomerModal({ visible, onClose, onSuccess }: AddCustomerModalProps) {
   const { t } = useTranslation();
   const [step, setStep] = React.useState<StepKey>(1);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [successMessage, setSuccessMessage] = React.useState('');
+
+  // This modal stays mounted between openings, so closing it is `visible`
+  // going false rather than an unmount.
+  useDismissKeyboardOnExit(visible);
 
   // Step 1 Form State
   const [name, setName] = React.useState('');
@@ -251,7 +256,12 @@ export function AddCustomerModal({ visible, onClose, onSuccess }: AddCustomerMod
           </View>
 
           {/* Form Step Content */}
-          <ScrollView className="px-5 py-4" contentContainerClassName="gap-4 pb-8" keyboardShouldPersistTaps="handled">
+          <KeyboardAwareScrollView
+            style={{ paddingHorizontal: 20, paddingVertical: 16 }}
+            contentContainerStyle={{ gap: 16, paddingBottom: 32 }}
+            keyboardShouldPersistTaps="handled"
+            bottomOffset={24}
+          >
             {successMessage
               ? (
                   <View className="items-center justify-center gap-3 py-10">
@@ -516,7 +526,7 @@ export function AddCustomerModal({ visible, onClose, onSuccess }: AddCustomerMod
                 )}
               </View>
             )}
-          </ScrollView>
+          </KeyboardAwareScrollView>
 
           {/* Action Footer Bar */}
           {!successMessage && (

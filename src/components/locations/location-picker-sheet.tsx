@@ -1,11 +1,10 @@
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
-import type { Location } from '@/lib/api/types';
+import type { Location, LocationRef } from '@/lib/api/types';
 import { BottomSheetFlatList } from '@gorhom/bottom-sheet';
 import {
   ArrowRight01Icon,
   CheckmarkCircle02Icon,
   Folder01Icon,
-  Home01Icon,
   Location01Icon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
@@ -23,31 +22,73 @@ import {
 import { useLocationLevel } from '@/lib/hooks/api/use-locations';
 
 /**
- * Picks a parent by walking the tree down, a level at a time.
+ * The one way this app picks a place.
  *
- * A flat list of every location is unusable once a tenant has a few hundred of
- * them, and it throws away the one thing that makes the choice obvious — that
- * "Block C" only means something under "Sri Sai Apartments". So this drills:
- * tap a place to go inside it, and stop wherever the new location belongs.
+ * Every location choice — a new node's parent, the areas a person is granted,
+ * the part of a crew's patch one member covers — walks the same tree with the
+ * same two affordances, because a tree that behaves differently on each screen
+ * is a tree nobody learns once.
  *
- * Only one level is loaded at a time, and it pages like the tree does.
+ * The two affordances are deliberately separate targets, not one tap that
+ * guesses: the ROW chooses the place, the OPEN button looks inside it. Guessing
+ * from `childCount` is what made "tap Mandapeta" mean select here and navigate
+ * there.
+ *
+ * `roots` bounds the tree — the crew's own areas become the top level, so a
+ * narrowing cannot wander outside the patch the API would reject anyway.
  */
+
+/** Hoisted: `Modal` memoises on this array, so a literal re-lays out the sheet. */
+const SNAP_POINTS = ['75%', '100%'];
+
+type PickerNode = LocationRef;
+
+type BaseProps = {
+  ref: React.RefObject<BottomSheetModal | null>;
+  title?: string;
+  /** Start the tree at these nodes instead of the tenant's roots. */
+  roots?: LocationRef[];
+};
+
+type SingleProps = BaseProps & {
+  mode?: 'single';
+  /** `null` means the top of the tree — used when picking a parent. */
+  onSelect: (node: Location | null) => void;
+  /** What the new node would be called under this parent, if anything. */
+  describeLevel?: (parent: Location | null) => string | undefined;
+  /** The confirm button's label, given the node currently open. */
+  confirmLabel?: (current: Location | null) => string;
+};
+
+type MultiProps = BaseProps & {
+  mode: 'multi';
+  selected: readonly LocationRef[];
+  onToggle: (node: LocationRef) => void;
+  /** Shown under the count, for whatever "none selected" means to the caller. */
+  emptyHint?: string;
+};
+
 /** The path walked so far; tapping a crumb goes back to that level. */
-function Breadcrumb({ trail, onJump }: { trail: Location[]; onJump: (next: Location[]) => void }) {
+function Breadcrumb({ trail, rootLabel, onJump }: {
+  trail: PickerNode[];
+  rootLabel: string;
+  onJump: (next: PickerNode[]) => void;
+}) {
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      className="border-b border-border"
-      contentContainerClassName="items-center gap-1 px-4 py-2.5"
+      // `grow-0`, or this horizontal strip expands to fill the sheet and
+      // pushes the list off the bottom of it.
+      className="max-h-12 shrink-0 grow-0 border-b border-border"
+      contentContainerClassName="items-center gap-1 px-4"
     >
       <Pressable
         accessibilityRole="button"
         onPress={() => onJump([])}
-        className={`flex-row items-center gap-1 rounded-lg px-2 py-1 ${trail.length === 0 ? 'bg-muted' : ''}`}
+        className={`rounded-lg px-2 py-1 ${trail.length === 0 ? 'bg-muted' : ''}`}
       >
-        <HugeiconsIcon icon={Home01Icon} size={14} color={colors.neutral[600]} strokeWidth={2} />
-        <Text className="text-xs font-semibold text-foreground">Top level</Text>
+        <Text className="text-xs font-semibold text-foreground">{rootLabel}</Text>
       </Pressable>
 
       {trail.map((step, index) => (
@@ -58,9 +99,7 @@ function Breadcrumb({ trail, onJump }: { trail: Location[]; onJump: (next: Locat
             onPress={() => onJump(trail.slice(0, index + 1))}
             className={`rounded-lg px-2 py-1 ${index === trail.length - 1 ? 'bg-muted' : ''}`}
           >
-            <Text className="text-xs font-semibold text-foreground" numberOfLines={1}>
-              {step.name}
-            </Text>
+            <Text className="text-xs font-semibold text-foreground" numberOfLines={1}>{step.name}</Text>
           </Pressable>
         </View>
       ))}
@@ -68,84 +107,128 @@ function Breadcrumb({ trail, onJump }: { trail: Location[]; onJump: (next: Locat
   );
 }
 
-function PickerRow({
-  item,
-  onOpen,
-  onChoose,
-}: {
-  item: Location;
-  onOpen: () => void;
+/** One place: the row picks it, the button opens it. */
+function PickerRow({ node, selected, multi, canOpen, onChoose, onOpen }: {
+  node: PickerNode;
+  selected: boolean;
+  multi: boolean;
+  canOpen: boolean;
   onChoose: () => void;
+  onOpen: () => void;
 }) {
-  const canDrill = item.childCount > 0;
-
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={canDrill ? `Open ${item.name}` : `Choose ${item.name}`}
-      // Somewhere to go means go there; a leaf is the choice itself.
-      onPress={canDrill ? onOpen : onChoose}
-      className="flex-row items-center gap-3 rounded-xl px-2 py-3 active:bg-muted/40"
-    >
-      <View className="size-8 items-center justify-center rounded-lg bg-muted">
-        <HugeiconsIcon
-          icon={canDrill ? Folder01Icon : Location01Icon}
-          size={15}
-          color={canDrill ? colors.neutral[600] : '#12B76A'}
-          strokeWidth={2}
-        />
-      </View>
+    <View className="flex-row items-center gap-2 border-b border-border/40">
+      <Pressable
+        accessibilityRole={multi ? 'checkbox' : 'radio'}
+        accessibilityState={{ checked: selected, selected }}
+        accessibilityLabel={`Choose ${node.name}`}
+        onPress={onChoose}
+        className="min-w-0 flex-1 flex-row items-center gap-3 py-3 pl-1 active:bg-muted/40"
+      >
+        <View className={`size-9 shrink-0 items-center justify-center rounded-xl ${selected ? 'bg-primary-600' : 'bg-muted'}`}>
+          <HugeiconsIcon
+            icon={selected ? CheckmarkCircle02Icon : Location01Icon}
+            size={16}
+            color={selected ? '#ffffff' : colors.neutral[600]}
+            strokeWidth={2}
+          />
+        </View>
+        <View className="min-w-0 flex-1">
+          <Text
+            className={`text-sm font-bold ${selected ? 'text-primary-600' : 'text-foreground'}`}
+            numberOfLines={1}
+          >
+            {node.name}
+          </Text>
+          <Text className="text-[11px] text-muted-foreground" numberOfLines={1}>{node.path}</Text>
+        </View>
+      </Pressable>
 
-      <View className="flex-1">
-        <Text className="text-sm font-bold text-foreground" numberOfLines={1}>
-          {item.name}
-        </Text>
-        <Text className="text-[11px] text-muted-foreground" numberOfLines={1}>
-          {canDrill ? (item.childCount === 1 ? '1 inside' : `${item.childCount} inside`) : 'Nothing inside'}
-          {item.code ? ` · ${item.code}` : ''}
-        </Text>
-      </View>
-
-      {canDrill
-        ? <HugeiconsIcon icon={ArrowRight01Icon} size={17} color={colors.neutral[400]} strokeWidth={2} />
+      {canOpen
+        ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Open ${node.name}`}
+              onPress={onOpen}
+              hitSlop={6}
+              className="shrink-0 flex-row items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-2"
+            >
+              <HugeiconsIcon icon={Folder01Icon} size={14} color={colors.neutral[600]} strokeWidth={2} />
+              <Text className="text-[11px] font-bold text-foreground">Open</Text>
+            </Pressable>
+          )
         : null}
-    </Pressable>
+    </View>
   );
 }
 
-export function LocationPickerSheet({
-  ref,
-  onSelect,
-  describeLevel,
-}: {
-  ref: React.RefObject<BottomSheetModal | null>;
-  /** `null` means the new location sits at the top of the tree. */
-  onSelect: (parent: Location | null) => void;
-  /** What the new location would be called under this parent, if anything. */
-  describeLevel?: (parent: Location | null) => string | undefined;
-}) {
-  // The path walked so far; the last entry is the level being shown.
-  const [trail, setTrail] = React.useState<Location[]>([]);
+export function LocationPickerSheet(props: SingleProps | MultiProps) {
+  const { ref, title, roots } = props;
+  const multi = props.mode === 'multi';
+
+  const [trail, setTrail] = React.useState<PickerNode[]>([]);
   const current = trail.at(-1) ?? null;
+
+  /**
+   * The full records behind the nodes walked, so single-select can hand its
+   * caller a `Location` (it needs `schemaId`) while the tree itself only ever
+   * deals in id/name/path — which is all `roots` can offer.
+   */
+  const fullById = React.useRef(new Map<string, Location>());
+
+  const atBoundedTop = roots !== undefined && current === null;
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useLocationLevel({
     variables: { parentId: current?.id ?? null },
+    // Bounded at the top there is nothing to fetch: `roots` IS the level.
+    enabled: !atBoundedTop,
   });
 
-  const items = React.useMemo(() => data?.pages.flatMap(page => page.items) ?? [], [data]);
-  const level = describeLevel?.(current);
+  const rows = React.useMemo(() => {
+    if (atBoundedTop)
+      return (roots ?? []).map(node => ({ node, canOpen: true }));
 
-  const choose = (parent: Location | null) => {
-    onSelect(parent);
+    const items = data?.pages.flatMap(page => page.items) ?? [];
+    for (const item of items)
+      fullById.current.set(item.id, item);
+
+    return items.map(item => ({
+      node: { id: item.id, name: item.name, path: item.path },
+      canOpen: item.childCount > 0,
+    }));
+  }, [atBoundedTop, roots, data]);
+
+  const isSelected = (id: string) => (props.mode === 'multi'
+    ? props.selected.some(area => area.id === id)
+    : false);
+
+  const choose = (node: PickerNode) => {
+    if (props.mode === 'multi') {
+      props.onToggle(node);
+      return;
+    }
+
+    props.onSelect(fullById.current.get(node.id) ?? null);
     setTrail([]);
   };
 
-  return (
-    <Modal ref={ref} snapPoints={['75%', '100%']} title="Choose parent location">
-      <View className="flex-1">
-        <Breadcrumb trail={trail} onJump={setTrail} />
+  const confirmCurrent = () => {
+    if (props.mode === 'multi')
+      return;
 
-        {isLoading
+    props.onSelect(current === null ? null : (fullById.current.get(current.id) ?? null));
+    setTrail([]);
+  };
+
+  const currentFull = current === null ? null : (fullById.current.get(current.id) ?? null);
+  const level = props.mode === 'multi' ? undefined : props.describeLevel?.(currentFull);
+
+  return (
+    <Modal ref={ref} snapPoints={SNAP_POINTS} title={title ?? (multi ? 'Choose areas' : 'Choose location')}>
+      <View className="flex-1">
+        <Breadcrumb trail={trail} rootLabel={roots ? 'Team areas' : 'Top level'} onJump={setTrail} />
+
+        {isLoading && !atBoundedTop
           ? (
               <View className="flex-1 items-center justify-center py-10">
                 <ActivityIndicator color={colors.primary[500]} />
@@ -153,8 +236,8 @@ export function LocationPickerSheet({
             )
           : (
               <BottomSheetFlatList
-                data={items}
-                keyExtractor={(item: Location) => item.id}
+                data={rows}
+                keyExtractor={(row: { node: PickerNode }) => row.node.id}
                 // The sheet is a fixed height; without this the list sizes to
                 // its content and shoves the footer off the bottom.
                 style={{ flex: 1 }}
@@ -172,41 +255,67 @@ export function LocationPickerSheet({
                 ListEmptyComponent={(
                   <Text className="px-2 py-8 text-center text-xs text-muted-foreground">
                     {current
-                      ? `Nothing inside ${current.name} yet — it can still be the parent.`
-                      : 'No locations yet. The first one goes at the top level.'}
+                      ? `Nothing inside ${current.name} — it can still be chosen itself.`
+                      : roots
+                        ? 'This team has no areas yet.'
+                        : 'No locations yet.'}
                   </Text>
                 )}
-                renderItem={({ item }: { item: Location }) => (
+                renderItem={({ item }: { item: { node: PickerNode; canOpen: boolean } }) => (
                   <PickerRow
-                    item={item}
-                    onOpen={() => setTrail([...trail, item])}
-                    onChoose={() => choose(item)}
+                    node={item.node}
+                    multi={multi}
+                    selected={isSelected(item.node.id)}
+                    canOpen={item.canOpen}
+                    onChoose={() => choose(item.node)}
+                    onOpen={() => setTrail([...trail, item.node])}
                   />
                 )}
               />
             )}
 
-        {/* Stop here: the new location goes inside whatever is open. */}
-        <View className="border-t border-border px-4 pt-3 pb-6">
-          {level
-            ? (
-                <Text className="pb-2 text-center text-[11px] text-muted-foreground">
-                  {`It will be created as a ${level}`}
-                </Text>
-              )
-            : null}
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => choose(current)}
-            className="flex-row items-center justify-center gap-2 rounded-2xl bg-primary-600 px-4 py-3.5 active:bg-primary-700"
-          >
-            <HugeiconsIcon icon={CheckmarkCircle02Icon} size={18} color="#ffffff" strokeWidth={2.4} />
-            <Text className="text-base font-bold text-white" numberOfLines={1}>
-              {current ? `Add inside ${current.name}` : 'Add at top level'}
-            </Text>
-          </Pressable>
-        </View>
+        <Footer
+          multi={multi}
+          count={props.mode === 'multi' ? props.selected.length : 0}
+          hint={props.mode === 'multi' ? props.emptyHint : level}
+          label={props.mode === 'multi'
+            ? 'Done'
+            : props.confirmLabel?.(currentFull)
+              ?? (current ? `Choose ${current.name}` : 'Choose top level')}
+          onPress={multi ? () => ref.current?.dismiss() : confirmCurrent}
+        />
       </View>
     </Modal>
+  );
+}
+
+function Footer({ multi, count, hint, label, onPress }: {
+  multi: boolean;
+  count: number;
+  hint: string | undefined;
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <View className="shrink-0 border-t border-border px-4 pt-3 pb-6">
+      {multi
+        ? (
+            <Text className="pb-2 text-center text-[11px] text-muted-foreground">
+              {count === 0 ? (hint ?? 'Nothing selected') : `${count} selected`}
+            </Text>
+          )
+        : hint
+          ? <Text className="pb-2 text-center text-[11px] text-muted-foreground">{`It will be created as a ${hint}`}</Text>
+          : null}
+
+      <Pressable
+        accessibilityRole="button"
+        onPress={onPress}
+        className="flex-row items-center justify-center gap-2 rounded-2xl bg-primary-600 px-4 py-3.5 active:bg-primary-700"
+      >
+        <HugeiconsIcon icon={CheckmarkCircle02Icon} size={18} color="#ffffff" strokeWidth={2.4} />
+        <Text className="text-base font-bold text-white" numberOfLines={1}>{label}</Text>
+      </Pressable>
+    </View>
   );
 }

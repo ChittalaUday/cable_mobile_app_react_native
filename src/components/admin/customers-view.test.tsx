@@ -1,4 +1,5 @@
 import type { CustomerListItem } from '@/lib/api/types';
+import type * as UseCustomersModule from '@/lib/hooks/api/use-customers';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import * as React from 'react';
@@ -133,7 +134,7 @@ jest.mock('@/lib/hooks/api/use-customers', () => ({
       isError: false,
     };
   },
-  customerItemToConsolidated: jest.requireActual('@/lib/hooks/api/use-customers').customerItemToConsolidated,
+  customerItemToConsolidated: jest.requireActual<typeof UseCustomersModule>('@/lib/hooks/api/use-customers').customerItemToConsolidated,
 }));
 
 jest.mock('@/lib/hooks/api/use-locations', () => ({
@@ -203,7 +204,6 @@ function renderWithClient(ui: React.ReactElement) {
   );
 }
 
-// eslint-disable-next-line max-lines-per-function
 describe('customersView', () => {
   beforeEach(async () => {
     await i18n.changeLanguage('en');

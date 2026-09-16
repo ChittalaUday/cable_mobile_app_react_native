@@ -1,3 +1,4 @@
+import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import axios from 'axios';
 import Env from 'env';
 import * as Crypto from 'expo-crypto';
@@ -42,18 +43,25 @@ export function setSessionExpiredHandler(handler: () => void) {
   sessionExpired = handler;
 }
 
-client.interceptors.response.use(response => response, async (error) => {
-  const request = error.config as (typeof error.config & { _retry?: boolean }) | undefined;
+// Axios types the rejection handler's argument as `any`; naming the shape is what
+// makes `.response.data.code` and the retry flag below checkable.
+type RetriableRequest = InternalAxiosRequestConfig & { _retry?: boolean };
+
+client.interceptors.response.use(response => response, async (error: AxiosError<{ code?: string }>) => {
+  const request = error.config as RetriableRequest | undefined;
   const refresh = getToken()?.refresh;
   if (error.response?.data?.code !== 'AUTH_TOKEN_EXPIRED' || !request || request._retry || !refresh)
     throw error;
 
   request._retry = true;
   refreshRequest ??= axios
-    .post(`${Env.EXPO_PUBLIC_API_URL}/auth/refresh`, { refreshToken: refresh })
+    .post<{ accessToken: string; refreshToken: string }>(
+      `${Env.EXPO_PUBLIC_API_URL}/auth/refresh`,
+      { refreshToken: refresh },
+    )
     .then(({ data }) => {
       setToken({ access: data.accessToken, refresh: data.refreshToken });
-      return data.accessToken as string;
+      return data.accessToken;
     })
     .catch((refreshError) => {
       removeToken();

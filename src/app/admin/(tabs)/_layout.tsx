@@ -2,15 +2,19 @@ import {
   CreditCardIcon,
   Home01Icon,
   MoreIcon,
+  RemoteControlIcon,
   UserMultipleIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { Tabs } from 'expo-router';
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { colors } from '@/components/ui';
 
 export default function AdminTabsLayout() {
+  const { t } = useTranslation();
+
   return (
     <Tabs
       screenOptions={{
@@ -52,6 +56,15 @@ export default function AdminTabsLayout() {
           title: 'Payments',
           tabBarIcon: ({ color, focused }) => (
             <HugeiconsIcon icon={CreditCardIcon} size={21} color={color} strokeWidth={focused ? 2.4 : 1.9} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="remote"
+        options={{
+          title: t('remote.tab'),
+          tabBarIcon: ({ color, focused }) => (
+            <HugeiconsIcon icon={RemoteControlIcon} size={21} color={color} strokeWidth={focused ? 2.4 : 1.9} />
           ),
         }}
       />

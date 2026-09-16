@@ -2,6 +2,7 @@ import type { AdminDashboard, RevenueRange } from '@/lib/utils/admin-stats';
 import { ChartBarLineIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { RevenueBars } from '@/components/common/charts';
 import { Card, NAVY, TINT } from '@/components/common/shell';
@@ -18,13 +19,14 @@ export function RevenueOverview({ revenue, range, onRange }: {
   range: RevenueRange;
   onRange: (range: RevenueRange) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <Card className="p-3.5">
       <View className="flex-row items-center gap-2.5">
         <View className="size-7 items-center justify-center rounded-lg" style={{ backgroundColor: TINT.orange.bg }}>
           <HugeiconsIcon icon={ChartBarLineIcon} size={16} color={TINT.orange.fg} strokeWidth={2.2} />
         </View>
-        <Text className="flex-1 text-[15px] font-bold text-foreground">Revenue Overview</Text>
+        <Text className="flex-1 text-[15px] font-bold text-foreground">{t('admin_dashboard.collections_overview')}</Text>
         <View className="flex-row rounded-xl bg-neutral-100 p-0.5">
           {RANGES.map(option => (
             <Pressable

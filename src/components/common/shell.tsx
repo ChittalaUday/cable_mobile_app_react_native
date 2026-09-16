@@ -135,3 +135,6 @@ export function BottomNav({ active, onSelect, bottomInset }: { active: TabKey; o
     </View>
   );
 }
+
+export { ScreenHeader } from './screen-header';
+export type { ScreenHeaderProps } from './screen-header';

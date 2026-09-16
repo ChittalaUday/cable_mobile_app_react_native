@@ -1,11 +1,13 @@
+import type * as AxiosModule from 'axios';
 import type { AxiosAdapter } from 'axios';
+import type * as ClientModule from './client';
 
 const mockStore = new Map<string, string>();
 
 jest.mock('@/lib/storage', () => ({
   getItem: (key: string) => {
     const raw = mockStore.get(key);
-    return raw ? JSON.parse(raw) : null;
+    return raw ? (JSON.parse(raw) as unknown) : null;
   },
   setItem: (key: string, value: unknown) => mockStore.set(key, JSON.stringify(value)),
   removeItem: (key: string) => mockStore.delete(key),
@@ -22,7 +24,7 @@ let mockRefreshResponse: () => Promise<{ data: unknown }> = async () => ({
 });
 
 jest.mock('axios', () => {
-  const actual = jest.requireActual('axios');
+  const actual = jest.requireActual<typeof AxiosModule>('axios');
   return {
     __esModule: true,
     default: {
@@ -66,13 +68,13 @@ describe('api client refresh', () => {
   });
 
   it('refreshes once for a burst of expired requests, and retries them all', async () => {
-    const { client } = require('./client');
+    const { client } = require<typeof ClientModule>('./client');
     const { adapter, calls } = expiredThenOk();
     client.defaults.adapter = adapter;
 
     // Six screens mounting at once is the normal case, not an edge case.
     const results = await Promise.all(
-      Array.from({ length: 6 }, (_, i) => client.get(`/thing-${i}`)),
+      Array.from({ length: 6 }, (_, i) => client.get<{ ok: boolean }>(`/thing-${i}`)),
     );
 
     expect(results.every(r => r.data.ok)).toBe(true);
@@ -91,7 +93,7 @@ describe('api client refresh', () => {
   });
 
   it('stores both halves of the rotated pair', async () => {
-    const { client } = require('./client');
+    const { client } = require<typeof ClientModule>('./client');
     const { adapter } = expiredThenOk();
     client.defaults.adapter = adapter;
 
@@ -101,7 +103,7 @@ describe('api client refresh', () => {
   });
 
   it('signs out once when the refresh itself is rejected', async () => {
-    const { client, setSessionExpiredHandler } = require('./client');
+    const { client, setSessionExpiredHandler } = require<typeof ClientModule>('./client');
     const expired = jest.fn();
     setSessionExpiredHandler(expired);
 
@@ -121,7 +123,7 @@ describe('api client refresh', () => {
   it('does not try to refresh when there is no refresh token', async () => {
     mockStore.set('token', JSON.stringify({ access: 'access-1', refresh: '' }));
 
-    const { client } = require('./client');
+    const { client } = require<typeof ClientModule>('./client');
     const { adapter } = expiredThenOk();
     client.defaults.adapter = adapter;
 
@@ -130,7 +132,7 @@ describe('api client refresh', () => {
   });
 
   it('leaves a non-auth failure alone', async () => {
-    const { client } = require('./client');
+    const { client } = require<typeof ClientModule>('./client');
 
     client.defaults.adapter = (async (config) => {
       const error = new Error('boom') as Error & { response?: unknown; config?: unknown };

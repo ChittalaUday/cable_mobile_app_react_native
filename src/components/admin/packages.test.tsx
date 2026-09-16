@@ -50,7 +50,7 @@ const mockPackages = [
 const mockGrantedPermissions = new Set<string>();
 
 jest.mock('@react-navigation/native', () => ({
-  ...jest.requireActual('@react-navigation/native'),
+  ...jest.requireActual<object>('@react-navigation/native'),
   useIsFocused: () => true,
 }));
 
@@ -62,7 +62,7 @@ jest.mock('expo-router', () => ({
 jest.mock('@/lib/hooks/api/use-packages', () => ({
   // `coverageLabel` is a pure helper, not a hook — the row renders it, so the
   // real one has to survive the mock.
-  ...jest.requireActual('@/lib/hooks/api/use-packages'),
+  ...jest.requireActual<object>('@/lib/hooks/api/use-packages'),
   usePackages: () => ({
     data: mockPackages,
     isPending: false,

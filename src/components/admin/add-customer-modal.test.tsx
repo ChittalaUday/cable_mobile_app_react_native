@@ -104,7 +104,7 @@ describe('addCustomerModal', () => {
         phone: '9876543210',
         address: 'Door 4-12, Station Road',
         stbNumber: 'STB_TEST_999',
-      }),
+      }) as unknown,
     });
   });
 });

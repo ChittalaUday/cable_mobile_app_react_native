@@ -7,7 +7,7 @@ export function AdminMoreTab() {
   return (
     <View className="flex-1 bg-surface">
       <FocusAwareStatusBar />
-      <SafeAreaView edges={['top']} className="bg-surface" />
+      <SafeAreaView edges={['top']} className="bg-card" />
       <MoreView />
     </View>
   );

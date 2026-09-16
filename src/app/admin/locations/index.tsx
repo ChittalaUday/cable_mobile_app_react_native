@@ -3,7 +3,6 @@ import type { LocationAction } from '@/components/locations/location-actions-she
 import type { Location } from '@/lib/api/types';
 import {
   Add01Icon,
-  ArrowLeft01Icon,
   FolderMinusIcon,
   Search01Icon,
 } from '@hugeicons/core-free-icons';
@@ -14,9 +13,10 @@ import * as React from 'react';
 import { Alert, RefreshControl, TextInput } from 'react-native';
 
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { ScreenHeader } from '@/components/common/screen-header';
 import { Card, Loading } from '@/components/common/shell';
 import { LocationActionsSheet } from '@/components/locations/location-actions-sheet';
-import { LoadMoreRow, LocationRow, useTreeExpansion } from '@/components/locations/location-tree';
+import { LoadMoreRow, LocationRow } from '@/components/locations/location-tree';
 import {
   colors,
   FocusAwareStatusBar,
@@ -35,6 +35,7 @@ import {
 } from '@/lib/hooks/api/use-locations';
 import { useDebounced } from '@/lib/hooks/common/use-debounced';
 import { useLocationTree } from '@/lib/hooks/common/use-location-tree';
+import { useTreeExpansion } from '@/lib/hooks/common/use-tree-expansion';
 
 /** How long a revealed row stays picked out before it settles back in. */
 const HIGHLIGHT_MS = 4000;
@@ -49,7 +50,7 @@ const HIGHLIGHT_MS = 4000;
  * screen. Searching drops to a flat result set, because a match five levels
  * down has no useful tree to sit in.
  */
-// eslint-disable-next-line max-lines-per-function
+
 export function LocationsScreen() {
   const router = useRouter();
   const sheet = useModal();
@@ -97,16 +98,26 @@ export function LocationsScreen() {
   const listRef = React.useRef<FlashListRef<typeof tree.rows[number]> | null>(null);
   const [scrollTo, setScrollTo] = React.useState<string | null>(null);
 
+  // A request stands until the row it names actually exists — the group it
+  // lives in may still be loading. `scrolled` records the one already served,
+  // which is what stops the scroll repeating on every rows change without
+  // clearing state from inside the effect.
+  const scrolled = React.useRef<string | null>(null);
   React.useEffect(() => {
-    if (!scrollTo)
+    if (!scrollTo) {
+      scrolled.current = null;
+      return;
+    }
+
+    if (scrolled.current === scrollTo)
       return;
 
     const index = tree.rows.findIndex(row => row.key === scrollTo);
     if (index < 0)
       return;
 
+    scrolled.current = scrollTo;
     listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.35 });
-    setScrollTo(null);
   }, [scrollTo, tree.rows]);
 
   React.useEffect(() => {
@@ -241,50 +252,38 @@ export function LocationsScreen() {
         onCancel={() => setPendingDelete(null)}
       />
 
-      <SafeAreaView edges={['top']} className="bg-surface">
-        <View className="flex-row items-center justify-between px-3 pt-1 pb-2">
-          <View className="flex-1 flex-row items-center gap-2">
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Back"
-              onPress={() => router.back()}
-              className="size-9 items-center justify-center rounded-lg border border-border bg-card"
-            >
-              <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color={colors.charcoal[900]} strokeWidth={2.2} />
-            </Pressable>
-            <View>
-              <Text className="text-[17px] font-bold text-foreground">Locations</Text>
-              <Text className="text-[11px] text-muted-foreground">Manage areas and sub-areas</Text>
-            </View>
-          </View>
-
-          <View className="flex-row items-center gap-2">
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Close the deepest open level"
-              accessibilityHint="Long press to close every group"
-              disabled={deepestOpen.length === 0}
-              onPress={() => collapseMany(deepestOpen)}
-              onLongPress={collapseAll}
-              className={`size-9 items-center justify-center rounded-lg border border-border bg-card ${
-                deepestOpen.length === 0 ? 'opacity-40' : ''
-              }`}
-            >
-              <HugeiconsIcon icon={FolderMinusIcon} size={18} color={colors.neutral[600]} strokeWidth={2} />
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Add location"
-              onPress={() => router.push('/admin/locations/add')}
-              className="size-9 items-center justify-center rounded-full bg-primary-600 active:bg-primary-700"
-            >
-              <HugeiconsIcon icon={Add01Icon} size={20} color="#ffffff" strokeWidth={2.4} />
-            </Pressable>
-          </View>
-        </View>
-
-        <View className="px-3 pb-2">
-          <View className="flex-row items-center rounded-xl border border-border bg-card px-3 py-2">
+      <SafeAreaView edges={['top']} className="bg-card">
+        <ScreenHeader
+          title="Locations"
+          subtitle="Manage areas and sub-areas"
+          showBack
+          rightAction={(
+            <>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Close the deepest open level"
+                accessibilityHint="Long press to close every group"
+                disabled={deepestOpen.length === 0}
+                onPress={() => collapseMany(deepestOpen)}
+                onLongPress={collapseAll}
+                className={`size-9 items-center justify-center rounded-lg border border-border bg-card active:bg-muted ${
+                  deepestOpen.length === 0 ? 'opacity-40' : ''
+                }`}
+              >
+                <HugeiconsIcon icon={FolderMinusIcon} size={18} color={colors.neutral[600]} strokeWidth={2} />
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Add location"
+                onPress={() => router.push('/admin/locations/add')}
+                className="size-9 items-center justify-center rounded-full bg-primary-600 active:bg-primary-700"
+              >
+                <HugeiconsIcon icon={Add01Icon} size={20} color="#ffffff" strokeWidth={2.4} />
+              </Pressable>
+            </>
+          )}
+        >
+          <View className="flex-row items-center rounded-xl border border-border bg-surface px-3 py-2">
             <HugeiconsIcon icon={Search01Icon} size={16} color={colors.neutral[400]} strokeWidth={2} />
             <TextInput
               value={search}
@@ -293,15 +292,13 @@ export function LocationsScreen() {
               placeholderTextColor={colors.neutral[400]}
               className="ml-2 flex-1 py-0 text-sm text-foreground"
             />
-            {search.length > 0
-              ? (
-                  <Pressable onPress={() => setSearch('')}>
-                    <Text className="text-xs font-semibold text-primary-600">Clear</Text>
-                  </Pressable>
-                )
-              : null}
+            {search.length > 0 && (
+              <Pressable onPress={() => setSearch('')}>
+                <Text className="text-xs font-semibold text-primary-600">Clear</Text>
+              </Pressable>
+            )}
           </View>
-        </View>
+        </ScreenHeader>
       </SafeAreaView>
 
       {isSearching

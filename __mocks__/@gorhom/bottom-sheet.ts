@@ -1,1 +1,1 @@
-module.exports = require('@gorhom/bottom-sheet/mock');
+module.exports = require<unknown>('@gorhom/bottom-sheet/mock');

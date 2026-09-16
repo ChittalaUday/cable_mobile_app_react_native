@@ -2,7 +2,8 @@ import type { Service } from '@/lib/api/types';
 import { Add01Icon, ArrowDown01Icon, Delete02Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as React from 'react';
-import { ScrollView, Switch, TextInput } from 'react-native';
+import { Switch, TextInput } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 import { Card } from '@/components/common/shell';
 import { colors, Pressable, Text, View } from '@/components/ui';
@@ -14,7 +15,7 @@ import { colors, Pressable, Text, View } from '@/components/ui';
  * provider at all — so an inactive one would make this look deletable and then
  * 409. The full `providers` list is the honest test.
  */
-export function canDeleteService(service: Service) {
+function canDeleteService(service: Service) {
   return (service.providers?.length ?? service.providerCount) === 0;
 }
 
@@ -53,7 +54,7 @@ export type ProviderDraft = {
  * provider row, never a second service — and can be created or retired from
  * inside the same list, so nobody has to leave the form to add one.
  */
-// eslint-disable-next-line max-lines-per-function
+
 export function ProviderDetailsForm({
   draft,
   onChange,
@@ -73,10 +74,11 @@ export function ProviderDetailsForm({
   const service = services.find(item => item.id === draft.serviceId);
 
   return (
-    <ScrollView
-      className="flex-1 px-4"
-      contentContainerClassName="pt-2 pb-28 gap-4"
+    <KeyboardAwareScrollView
+      style={{ flex: 1, paddingHorizontal: 16 }}
+      contentContainerStyle={{ gap: 16, paddingTop: 8, paddingBottom: 112 }}
       keyboardShouldPersistTaps="handled"
+      bottomOffset={24}
       showsVerticalScrollIndicator={false}
     >
       <View className="gap-1.5">
@@ -117,7 +119,7 @@ export function ProviderDetailsForm({
                       <View
                         key={item.id}
                         className={`flex-row items-center rounded-xl pr-1 ${
-                          item.id === draft.serviceId ? 'dark:bg-primary-950/60 bg-primary-50' : ''
+                          item.id === draft.serviceId ? 'bg-primary-50 dark:bg-primary-950/60' : ''
                         }`}
                       >
                         <Pressable
@@ -247,6 +249,6 @@ export function ProviderDetailsForm({
           thumbColor="#ffffff"
         />
       </View>
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }

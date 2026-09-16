@@ -13,7 +13,12 @@ export default antfu(
   {
     // Enable React and TypeScript support
     react: true,
-    typescript: true,
+    // tsconfigPath turns on the type-aware rules (ts/no-unsafe-*, no-floating-promises).
+    // Without it an `any` leaking out of an untyped API response is invisible.
+    typescript: {
+      tsconfigPath: path.join(__dirname, 'tsconfig.json'),
+      tsconfigRootDir: __dirname,
+    },
 
     // Disable JSON processing for translation files (handled by i18n-json plugin)
     jsonc: false,
@@ -51,7 +56,9 @@ export default antfu(
   {
     rules: {
       'max-params': ['error', 3],
-      'max-lines-per-function': ['error', 110],
+      // Length is not the thing that makes a function hard to read; a screen
+      // component or a route table is long because it is a list.
+      'max-lines-per-function': 'off',
       'react/display-name': 'off',
       'react/no-inline-styles': 'off',
       'react/destructuring-assignment': 'off',
@@ -112,6 +119,33 @@ export default antfu(
       'better-tailwindcss/no-unnecessary-whitespace': 'warn',
       'better-tailwindcss/no-unknown-classes': 'warn',
       'better-tailwindcss/enforce-consistent-line-wrapping': 'off', // Can be too strict for some cases
+    },
+  },
+
+  // Test files mock hooks, and a mock has to carry the name of the thing it
+  // replaces — `useRouter` cannot be called `router` and still be found by the
+  // module it stands in for.
+  {
+    files: ['**/*.test.{ts,tsx}', '**/__mocks__/**/*.{ts,tsx}', 'jest-setup.ts'],
+    rules: {
+      'react/no-unnecessary-use-prefix': 'off',
+    },
+  },
+
+  // ponytail: tsconfigPath switches on every type-aware rule, and the rest of the
+  // suite lands 467 errors on this codebase (247 of them strict-boolean-expressions).
+  // Only the `any`-leak rules are enforced for now; turn these back on one at a time.
+  {
+    files: ['**/*.{ts,tsx}'],
+    rules: {
+      'ts/strict-boolean-expressions': 'off',
+      'ts/no-misused-promises': 'off',
+      'ts/no-floating-promises': 'off',
+      'ts/promise-function-async': 'off',
+      'ts/no-unnecessary-type-assertion': 'off',
+      'ts/unbound-method': 'off',
+      'ts/await-thenable': 'off',
+      'react/no-leaked-conditional-rendering': 'off',
     },
   },
 

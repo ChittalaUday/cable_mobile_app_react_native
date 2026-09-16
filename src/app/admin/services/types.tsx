@@ -2,7 +2,6 @@ import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { Service } from '@/lib/api/types';
 import {
   Add01Icon,
-  ArrowLeft01Icon,
   Delete02Icon,
   Location01Icon,
 } from '@hugeicons/core-free-icons';
@@ -14,13 +13,12 @@ import * as React from 'react';
 import { Alert, RefreshControl } from 'react-native';
 
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
-import { Card, Loading } from '@/components/common/shell';
+import { Card, Loading, ScreenHeader } from '@/components/common/shell';
 import { ServiceFormSheet } from '@/components/services/service-form-sheet';
 import {
   colors,
   FocusAwareStatusBar,
   Pressable,
-  SafeAreaView,
   Text,
   View,
 } from '@/components/ui';
@@ -59,7 +57,7 @@ function ServiceRow({
         className="flex-row items-center justify-between"
       >
         <View className="flex-1 flex-row items-center gap-3 pr-2">
-          <View className="dark:bg-primary-950/60 size-11 items-center justify-center rounded-2xl bg-primary-50">
+          <View className="size-11 items-center justify-center rounded-2xl bg-primary-50 dark:bg-primary-950/60">
             <HugeiconsIcon
               icon={serviceIcon(service.icon)}
               size={21}
@@ -100,40 +98,6 @@ function ServiceRow({
   );
 }
 
-function Header({ onBack, onAdd }: { onBack: () => void; onAdd: () => void }) {
-  return (
-    <SafeAreaView edges={['top']} className="bg-surface">
-      <View className="flex-row items-center justify-between px-3 pt-1 pb-3">
-        <View className="flex-row items-center gap-2.5">
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Back"
-            onPress={onBack}
-            className="size-9 items-center justify-center rounded-lg border border-border bg-card"
-          >
-            <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color={colors.charcoal[900]} strokeWidth={2.2} />
-          </Pressable>
-          <View>
-            <Text className="text-xl font-bold text-foreground">Services</Text>
-            <Text className="text-xs text-muted-foreground">
-              What subscribers buy, not who supplies it
-            </Text>
-          </View>
-        </View>
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Add service"
-          onPress={onAdd}
-          className="size-10 items-center justify-center rounded-full bg-primary-600 active:bg-primary-700"
-        >
-          <HugeiconsIcon icon={Add01Icon} size={22} color="#ffffff" strokeWidth={2.4} />
-        </Pressable>
-      </View>
-    </SafeAreaView>
-  );
-}
-
 export function ServiceTypesScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -164,7 +128,22 @@ export function ServiceTypesScreen() {
   return (
     <View className="flex-1 bg-surface">
       <FocusAwareStatusBar />
-      <Header onBack={() => router.back()} onAdd={() => sheet.current?.present()} />
+      <ScreenHeader
+        title="Services"
+        subtitle="What subscribers buy, not who supplies it"
+        showBack
+        withSafeArea
+        rightAction={(
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Add service"
+            onPress={() => sheet.current?.present()}
+            className="size-9 items-center justify-center rounded-lg bg-primary-600 active:bg-primary-700"
+          >
+            <HugeiconsIcon icon={Add01Icon} size={18} color="#ffffff" strokeWidth={2.4} />
+          </Pressable>
+        )}
+      />
 
       <FlashList
         data={services}

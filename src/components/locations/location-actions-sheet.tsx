@@ -132,7 +132,7 @@ export function LocationActionsSheet({
           >
             <View
               className={`size-10 items-center justify-center rounded-xl ${
-                action.danger ? 'dark:bg-danger-950/60 bg-danger-50' : 'bg-muted'
+                action.danger ? 'bg-danger-50 dark:bg-danger-950/60' : 'bg-muted'
               }`}
             >
               <HugeiconsIcon

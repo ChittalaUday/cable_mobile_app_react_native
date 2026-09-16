@@ -107,7 +107,7 @@ export function LocationRow({
   return (
     <View
       className={`flex-row items-center gap-1.5 py-2 pr-1 ${corners} ${spacing} ${
-        isHighlighted ? 'dark:bg-primary-950/50 bg-primary-50' : 'bg-card'
+        isHighlighted ? 'bg-primary-50 dark:bg-primary-950/50' : 'bg-card'
       }`}
       style={{ paddingLeft: indentOf(depth) }}
     >
@@ -209,63 +209,4 @@ export function LoadMoreRow({
       </Text>
     </Pressable>
   );
-}
-
-/** Open/closed node ids, and the toggles the tree calls. */
-export function useTreeExpansion(initial: string[] = []) {
-  const [expanded, setExpanded] = React.useState<Set<string>>(() => new Set(initial));
-
-  const toggle = React.useCallback((id: string) => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id))
-        next.delete(id);
-      else
-        next.add(id);
-      return next;
-    });
-  }, []);
-
-  const collapse = React.useCallback((id: string) => {
-    setExpanded((prev) => {
-      if (!prev.has(id))
-        return prev;
-      const next = new Set(prev);
-      next.delete(id);
-      return next;
-    });
-  }, []);
-
-  const expand = React.useCallback((ids: string[]) => {
-    if (ids.length === 0)
-      return;
-
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      for (const id of ids)
-        next.add(id);
-      return next;
-    });
-  }, []);
-
-  const collapseMany = React.useCallback((ids: string[]) => {
-    if (ids.length === 0)
-      return;
-
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      for (const id of ids)
-        next.delete(id);
-      return next;
-    });
-  }, []);
-
-  return {
-    expanded,
-    expand,
-    toggle,
-    collapse,
-    collapseMany,
-    collapseAll: React.useCallback(() => setExpanded(new Set()), []),
-  };
 }

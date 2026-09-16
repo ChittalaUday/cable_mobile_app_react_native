@@ -1,4 +1,6 @@
 import type { ServiceProvider } from '@/lib/api/types';
+import type { DatePresetType } from '@/lib/utils/date-presets';
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import {
   ArrowDown01Icon,
   ArrowUp01Icon,
@@ -10,17 +12,11 @@ import {
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Modal,
-  ScrollView,
-  TouchableWithoutFeedback,
-} from 'react-native';
+import { ScrollView } from 'react-native';
 
 import { HierarchicalLocationSelector } from '@/components/common/hierarchical-location-selector';
-import { colors, Pressable, Text, View } from '@/components/ui';
+import { colors, Modal, Pressable, Text, useModal, View } from '@/components/ui';
 import { useServiceProviders } from '@/lib/hooks/api/use-service-providers';
-
-export type DatePresetType = 'all' | 'today' | '7d' | '30d' | 'month';
 
 export type CustomerFilterValues = {
   status?: 'active' | 'inactive' | 'pending';
@@ -37,35 +33,8 @@ export type CustomerFilterModalProps = {
   onReset: () => void;
 };
 
-export function getDateRangeFromPreset(preset?: DatePresetType): { createdFrom?: string; createdTo?: string } {
-  if (!preset || preset === 'all')
-    return {};
+const SNAP_POINTS = ['75%', '92%'];
 
-  const now = new Date();
-  if (preset === 'today') {
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-    return { createdFrom: startOfToday.toISOString() };
-  }
-
-  if (preset === '7d') {
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    return { createdFrom: sevenDaysAgo.toISOString() };
-  }
-
-  if (preset === '30d') {
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    return { createdFrom: thirtyDaysAgo.toISOString() };
-  }
-
-  if (preset === 'month') {
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
-    return { createdFrom: startOfMonth.toISOString() };
-  }
-
-  return {};
-}
-
-// eslint-disable-next-line max-lines-per-function
 export function CustomerFilterModal({
   visible,
   onClose,
@@ -74,6 +43,7 @@ export function CustomerFilterModal({
   onReset,
 }: CustomerFilterModalProps) {
   const { t } = useTranslation();
+  const sheet = useModal();
 
   const [draftStatus, setDraftStatus] = React.useState<'active' | 'inactive' | 'pending' | undefined>(filters.status);
   const [draftLocationId, setDraftLocationId] = React.useState<string | undefined>(filters.locationId);
@@ -84,15 +54,40 @@ export function CustomerFilterModal({
 
   const { data: serviceProvidersList = [] } = useServiceProviders();
 
+  const { present, dismiss } = sheet;
+
+  /**
+   * Seed the drafts from the applied filters each time the sheet opens.
+   *
+   * Adjusted during render rather than in an effect (React's documented pattern
+   * for "state that changes with a prop"): an effect would paint one frame of
+   * the previous session's drafts before correcting itself.
+   */
+  const [openedWith, setOpenedWith] = React.useState(false);
+  if (visible && !openedWith) {
+    setOpenedWith(true);
+    setDraftStatus(filters.status);
+    setDraftLocationId(filters.locationId);
+    setDraftServiceProviderId(filters.serviceProviderId);
+    setDraftDatePreset(filters.datePreset || 'all');
+    setProviderDropdownOpen(false);
+  }
+  else if (!visible && openedWith) {
+    setOpenedWith(false);
+  }
+
+  // The sheet itself is imperative, so showing it stays an effect.
+  const wasVisible = React.useRef(false);
   React.useEffect(() => {
-    if (visible) {
-      setDraftStatus(filters.status);
-      setDraftLocationId(filters.locationId);
-      setDraftServiceProviderId(filters.serviceProviderId);
-      setDraftDatePreset(filters.datePreset || 'all');
-      setProviderDropdownOpen(false);
-    }
-  }, [visible, filters]);
+    if (visible === wasVisible.current)
+      return;
+
+    wasVisible.current = visible;
+    if (visible)
+      present();
+    else
+      dismiss();
+  }, [visible, present, dismiss]);
 
   const selectedProvider = React.useMemo(() => {
     if (!draftServiceProviderId)
@@ -107,6 +102,7 @@ export function CustomerFilterModal({
       serviceProviderId: draftServiceProviderId,
       datePreset: draftDatePreset,
     });
+    sheet.dismiss();
     onClose();
   };
 
@@ -116,6 +112,7 @@ export function CustomerFilterModal({
     setDraftServiceProviderId(undefined);
     setDraftDatePreset('all');
     onReset();
+    sheet.dismiss();
     onClose();
   };
 
@@ -134,235 +131,236 @@ export function CustomerFilterModal({
     { key: 'month', label: t('customers_list.date_this_month') },
   ];
 
+  if (!visible) {
+    return null;
+  }
+
   return (
     <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
+      ref={sheet.ref}
+      snapPoints={SNAP_POINTS}
+      onDismiss={onClose}
     >
-      <TouchableWithoutFeedback onPress={onClose}>
-        <View className="flex-1 justify-end bg-black/50">
-          <TouchableWithoutFeedback>
-            <View className="max-h-[85%] rounded-t-3xl border-t border-border bg-card">
-              {/* Header */}
-              <View className="flex-row items-center justify-between border-b border-border/60 px-5 py-4">
-                <Text className="text-base font-extrabold text-foreground">
-                  {t('customers_list.filters_title')}
+      <View className="flex-1">
+        {/* Header */}
+        <View className="flex-row items-center justify-between border-b border-border/60 px-5 py-3">
+          <Text className="text-base font-extrabold text-foreground">
+            {t('customers_list.filters_title')}
+          </Text>
+          <View className="flex-row items-center gap-3">
+            <Pressable
+              accessibilityRole="button"
+              onPress={handleReset}
+              className="rounded-lg px-2.5 py-1 active:bg-muted"
+            >
+              <Text className="text-xs font-bold text-muted-foreground">
+                {t('customers_list.reset')}
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="close modal"
+              onPress={() => {
+                sheet.dismiss();
+                onClose();
+              }}
+              className="size-8 items-center justify-center rounded-full border border-border bg-surface active:bg-muted"
+            >
+              <HugeiconsIcon icon={Cancel01Icon} size={16} color={colors.neutral[600]} />
+            </Pressable>
+          </View>
+        </View>
+        <BottomSheetScrollView
+          className="flex-1 px-5 py-4"
+          contentContainerClassName="gap-5 pb-6"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* 1. Status Filter */}
+          <View className="gap-2">
+            <Text className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
+              {t('customers_list.filter_status')}
+            </Text>
+            <View className="flex-row flex-wrap gap-2">
+              {statusOptions.map((opt) => {
+                const isSelected = draftStatus === opt.key;
+                return (
+                  <Pressable
+                    key={opt.key || 'all'}
+                    accessibilityRole="button"
+                    onPress={() => setDraftStatus(opt.key)}
+                    className={`rounded-xl border px-3.5 py-2 ${
+                      isSelected
+                        ? 'border-primary-500 bg-primary-500'
+                        : 'border-border bg-surface active:bg-muted/40'
+                    }`}
+                  >
+                    <Text
+                      className={`text-xs font-bold ${
+                        isSelected ? 'text-white' : 'text-foreground'
+                      }`}
+                    >
+                      {opt.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* 2. Location Filter */}
+          <HierarchicalLocationSelector
+            selectedLocationId={draftLocationId}
+            onSelectLocation={loc => setDraftLocationId(loc?.id)}
+          />
+
+          {/* 3. Created Date Filter */}
+          <View className="gap-2">
+            <View className="flex-row items-center gap-1.5">
+              <HugeiconsIcon icon={Calendar01Icon} size={14} color={colors.primary[500]} />
+              <Text className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
+                {t('customers_list.filter_created_date')}
+              </Text>
+            </View>
+            <View className="flex-row flex-wrap gap-2">
+              {dateOptions.map((opt) => {
+                const isSelected = draftDatePreset === opt.key;
+                return (
+                  <Pressable
+                    key={opt.key}
+                    accessibilityRole="button"
+                    onPress={() => setDraftDatePreset(opt.key)}
+                    className={`rounded-xl border px-3.5 py-2 ${
+                      isSelected
+                        ? 'border-primary-500 bg-primary-500'
+                        : 'border-border bg-surface active:bg-muted/40'
+                    }`}
+                  >
+                    <Text
+                      className={`text-xs font-bold ${
+                        isSelected ? 'text-white' : 'text-foreground'
+                      }`}
+                    >
+                      {opt.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* 4. Service Provider Filter */}
+          <View className="gap-2">
+            <Text className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
+              {t('customers_list.filter_service_provider')}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Select Service Provider"
+              onPress={() => setProviderDropdownOpen(!providerDropdownOpen)}
+              className="flex-row items-center justify-between rounded-xl border border-border bg-surface p-3 active:bg-muted/30"
+            >
+              <View className="flex-1 flex-row items-center gap-2">
+                <HugeiconsIcon icon={Tv01Icon} size={16} color={colors.primary[500]} />
+                <Text className="flex-1 text-xs font-semibold text-foreground" numberOfLines={1}>
+                  {selectedProvider ? selectedProvider.name : t('customers_list.all_providers')}
                 </Text>
-                <View className="flex-row items-center gap-3">
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={handleReset}
-                    className="rounded-lg px-2.5 py-1 active:bg-muted"
-                  >
-                    <Text className="text-xs font-bold text-muted-foreground">
-                      {t('customers_list.reset')}
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={onClose}
-                    className="size-8 items-center justify-center rounded-full border border-border bg-surface active:bg-muted"
-                  >
-                    <HugeiconsIcon icon={Cancel01Icon} size={16} color={colors.neutral[600]} />
-                  </Pressable>
-                </View>
               </View>
+              <HugeiconsIcon
+                icon={providerDropdownOpen ? ArrowUp01Icon : ArrowDown01Icon}
+                size={16}
+                color={colors.neutral[500]}
+              />
+            </Pressable>
 
-              {/* Filter Options Content */}
-              <ScrollView
-                className="px-5 py-4"
-                contentContainerClassName="gap-5 pb-6"
-                showsVerticalScrollIndicator={false}
-              >
-                {/* 1. Status Filter */}
-                <View className="gap-2">
-                  <Text className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
-                    {t('customers_list.filter_status')}
-                  </Text>
-                  <View className="flex-row flex-wrap gap-2">
-                    {statusOptions.map((opt) => {
-                      const isSelected = draftStatus === opt.key;
-                      return (
-                        <Pressable
-                          key={opt.key || 'all'}
-                          accessibilityRole="button"
-                          onPress={() => setDraftStatus(opt.key)}
-                          className={`rounded-xl border px-3.5 py-2 ${
-                            isSelected
-                              ? 'border-primary-500 bg-primary-500'
-                              : 'border-border bg-surface active:bg-muted/40'
-                          }`}
-                        >
-                          <Text
-                            className={`text-xs font-bold ${
-                              isSelected ? 'text-white' : 'text-foreground'
+            {providerDropdownOpen
+              ? (
+                  <View className="max-h-56 rounded-xl border border-border bg-card p-1">
+                    <ScrollView nestedScrollEnabled showsVerticalScrollIndicator>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Provider Option: All Providers"
+                        onPress={() => {
+                          setDraftServiceProviderId(undefined);
+                          setProviderDropdownOpen(false);
+                        }}
+                        className={`flex-row items-center justify-between rounded-lg p-2.5 ${
+                          !draftServiceProviderId ? 'bg-primary-50 dark:bg-muted' : 'active:bg-muted'
+                        }`}
+                      >
+                        <Text className={`text-xs ${!draftServiceProviderId ? 'font-extrabold text-primary-600' : 'font-medium text-foreground'}`}>
+                          {t('customers_list.all_providers')}
+                        </Text>
+                        {!draftServiceProviderId
+                          ? (
+                              <HugeiconsIcon icon={CheckmarkCircle02Icon} size={14} color={colors.primary[500]} />
+                            )
+                          : null}
+                      </Pressable>
+
+                      {serviceProvidersList.map((prov: ServiceProvider) => {
+                        const isSel = draftServiceProviderId === prov.id;
+                        return (
+                          <Pressable
+                            key={prov.id}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Provider Option: ${prov.name}`}
+                            onPress={() => {
+                              setDraftServiceProviderId(prov.id);
+                              setProviderDropdownOpen(false);
+                            }}
+                            className={`flex-row items-center justify-between rounded-lg p-2.5 ${
+                              isSel ? 'bg-primary-50 dark:bg-muted' : 'active:bg-muted'
                             }`}
                           >
-                            {opt.label}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                </View>
-
-                {/* 2. Location Filter */}
-                <HierarchicalLocationSelector
-                  selectedLocationId={draftLocationId}
-                  onSelectLocation={loc => setDraftLocationId(loc?.id)}
-                />
-
-                {/* 3. Created Date Filter */}
-                <View className="gap-2">
-                  <View className="flex-row items-center gap-1.5">
-                    <HugeiconsIcon icon={Calendar01Icon} size={14} color={colors.primary[500]} />
-                    <Text className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
-                      {t('customers_list.filter_created_date')}
-                    </Text>
-                  </View>
-                  <View className="flex-row flex-wrap gap-2">
-                    {dateOptions.map((opt) => {
-                      const isSelected = draftDatePreset === opt.key;
-                      return (
-                        <Pressable
-                          key={opt.key}
-                          accessibilityRole="button"
-                          onPress={() => setDraftDatePreset(opt.key)}
-                          className={`rounded-xl border px-3.5 py-2 ${
-                            isSelected
-                              ? 'border-primary-500 bg-primary-500'
-                              : 'border-border bg-surface active:bg-muted/40'
-                          }`}
-                        >
-                          <Text
-                            className={`text-xs font-bold ${
-                              isSelected ? 'text-white' : 'text-foreground'
-                            }`}
-                          >
-                            {opt.label}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                </View>
-
-                {/* 4. Service Provider Filter */}
-                <View className="gap-2">
-                  <Text className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
-                    {t('customers_list.filter_service_provider')}
-                  </Text>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Select Service Provider"
-                    onPress={() => setProviderDropdownOpen(!providerDropdownOpen)}
-                    className="flex-row items-center justify-between rounded-xl border border-border bg-surface p-3 active:bg-muted/30"
-                  >
-                    <View className="flex-1 flex-row items-center gap-2">
-                      <HugeiconsIcon icon={Tv01Icon} size={16} color={colors.primary[500]} />
-                      <Text className="flex-1 text-xs font-semibold text-foreground" numberOfLines={1}>
-                        {selectedProvider ? selectedProvider.name : t('customers_list.all_providers')}
-                      </Text>
-                    </View>
-                    <HugeiconsIcon
-                      icon={providerDropdownOpen ? ArrowUp01Icon : ArrowDown01Icon}
-                      size={16}
-                      color={colors.neutral[500]}
-                    />
-                  </Pressable>
-
-                  {providerDropdownOpen
-                    ? (
-                        <View className="max-h-44 rounded-xl border border-border bg-card p-1">
-                          <ScrollView nestedScrollEnabled showsVerticalScrollIndicator>
-                            <Pressable
-                              accessibilityRole="button"
-                              accessibilityLabel="Provider Option: All Providers"
-                              onPress={() => {
-                                setDraftServiceProviderId(undefined);
-                                setProviderDropdownOpen(false);
-                              }}
-                              className={`flex-row items-center justify-between rounded-lg p-2.5 ${
-                                !draftServiceProviderId ? 'dark:bg-primary-950/40 bg-primary-50' : 'active:bg-muted'
-                              }`}
-                            >
-                              <Text className={`text-xs ${!draftServiceProviderId ? 'font-extrabold text-primary-600' : 'font-medium text-foreground'}`}>
-                                {t('customers_list.all_providers')}
+                            <View className="flex-1 pr-2">
+                              <Text className={`text-xs ${isSel ? 'font-extrabold text-primary-600' : 'font-medium text-foreground'}`} numberOfLines={1}>
+                                {prov.name}
                               </Text>
-                              {!draftServiceProviderId
+                              {prov.code
                                 ? (
-                                    <HugeiconsIcon icon={CheckmarkCircle02Icon} size={14} color={colors.primary[500]} />
+                                    <Text className="text-[10px] text-muted-foreground">{prov.code}</Text>
                                   )
                                 : null}
-                            </Pressable>
+                            </View>
+                            {isSel
+                              ? (
+                                  <HugeiconsIcon icon={CheckmarkCircle02Icon} size={14} color={colors.primary[500]} />
+                                )
+                              : null}
+                          </Pressable>
+                        );
+                      })}
+                    </ScrollView>
+                  </View>
+                )
+              : null}
+          </View>
+        </BottomSheetScrollView>
 
-                            {serviceProvidersList.map((prov: ServiceProvider) => {
-                              const isSel = draftServiceProviderId === prov.id;
-                              return (
-                                <Pressable
-                                  key={prov.id}
-                                  accessibilityRole="button"
-                                  accessibilityLabel={`Provider Option: ${prov.name}`}
-                                  onPress={() => {
-                                    setDraftServiceProviderId(prov.id);
-                                    setProviderDropdownOpen(false);
-                                  }}
-                                  className={`flex-row items-center justify-between rounded-lg p-2.5 ${
-                                    isSel ? 'dark:bg-primary-950/40 bg-primary-50' : 'active:bg-muted'
-                                  }`}
-                                >
-                                  <View className="flex-1 pr-2">
-                                    <Text className={`text-xs ${isSel ? 'font-extrabold text-primary-600' : 'font-medium text-foreground'}`} numberOfLines={1}>
-                                      {prov.name}
-                                    </Text>
-                                    {prov.code
-                                      ? (
-                                          <Text className="text-[10px] text-muted-foreground">{prov.code}</Text>
-                                        )
-                                      : null}
-                                  </View>
-                                  {isSel
-                                    ? (
-                                        <HugeiconsIcon icon={CheckmarkCircle02Icon} size={14} color={colors.primary[500]} />
-                                      )
-                                    : null}
-                                </Pressable>
-                              );
-                            })}
-                          </ScrollView>
-                        </View>
-                      )
-                    : null}
-                </View>
-              </ScrollView>
-
-              {/* Footer Buttons */}
-              <View className="flex-row items-center gap-3 border-t border-border/60 bg-card p-4">
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={handleReset}
-                  className="flex-1 items-center justify-center rounded-xl border border-border bg-surface py-3 active:bg-muted"
-                >
-                  <Text className="text-xs font-bold text-foreground">
-                    {t('customers_list.clear_all')}
-                  </Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={handleApply}
-                  className="flex-1 items-center justify-center rounded-xl bg-primary-500 py-3 active:bg-primary-600"
-                >
-                  <Text className="text-xs font-extrabold text-white">
-                    {t('customers_list.apply_filters')}
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-          </TouchableWithoutFeedback>
+        {/* Footer Buttons */}
+        <View className="flex-row items-center gap-3 border-t border-border/60 bg-card p-4 pb-8">
+          <Pressable
+            accessibilityRole="button"
+            onPress={handleReset}
+            className="flex-1 items-center justify-center rounded-xl border border-border bg-surface py-3 active:bg-muted"
+          >
+            <Text className="text-xs font-bold text-foreground">
+              {t('customers_list.clear_all')}
+            </Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            onPress={handleApply}
+            className="flex-1 items-center justify-center rounded-xl bg-primary-500 py-3 active:bg-primary-600"
+          >
+            <Text className="text-xs font-extrabold text-white">
+              {t('customers_list.apply_filters')}
+            </Text>
+          </Pressable>
         </View>
-      </TouchableWithoutFeedback>
+      </View>
     </Modal>
   );
 }
+
+export type { DatePresetType };

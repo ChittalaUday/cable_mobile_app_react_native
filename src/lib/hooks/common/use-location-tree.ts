@@ -134,7 +134,7 @@ export function revealPlan(chain: LocationAncestor[]) {
 // Destructured in the signature, so the fetch depends on the two ids and not
 // on the identity of the object literal the caller rebuilds every render.
 export function useLocationTree(expanded: ReadonlySet<string>, { serviceId, providerId }: CoverageBounds = {}) {
-  const [levels, setLevels] = React.useState<Map<string, Level>>(new Map());
+  const [levels, setLevels] = React.useState<Map<string, Level>>(() => new Map());
   const [refreshing, setRefreshing] = React.useState(false);
 
   // Guards against a level being fetched twice — by a re-render, or by the
@@ -148,6 +148,7 @@ export function useLocationTree(expanded: ReadonlySet<string>, { serviceId, prov
       return;
 
     inFlight.current.add(token);
+    // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect -- `load` is a fetch called from an effect and this stores its result; that is what the effect is for, not state derived from a prop
     const mark = (loading: boolean, result?: Page<Location>) => setLevels((prev) => {
       const next = new Map(prev);
       const level = next.get(key);

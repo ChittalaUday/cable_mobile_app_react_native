@@ -2,17 +2,18 @@ import type { IconSvgElement } from '@hugeicons/react-native';
 import type { TintKey } from '@/components/common/shell';
 import {
   ArrowRight01Icon,
-  Layers01Icon,
   Location01Icon,
+  Logout01Icon,
+  Package01Icon,
   Tv01Icon,
+  UserGroupIcon,
   UserIcon,
   Wifi01Icon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
-import { Alert } from 'react-native';
-
+import { ScreenHeader } from '@/components/common/screen-header';
 import { Card, IconTile, TINT } from '@/components/common/shell';
 import {
   Button,
@@ -25,6 +26,7 @@ import {
 } from '@/components/ui';
 import { useAuthStore } from '@/lib/hooks/stores/use-auth-store';
 import { initials } from '@/lib/utils/admin-format';
+import { ConfirmDialog } from '../common/confirm-dialog';
 
 type NavItem = {
   key: string;
@@ -32,7 +34,13 @@ type NavItem = {
   subtitle: string;
   icon: IconSvgElement;
   tint: TintKey;
-  route: '/admin/services' | '/admin/packages' | '/admin/channels' | '/admin/locations' | '/admin/profile';
+  route:
+    | '/admin/services'
+    | '/admin/channels'
+    | '/admin/locations'
+    | '/admin/staff'
+    | '/admin/inventory'
+    | '/admin/profile';
 };
 
 const NAV_ITEMS: NavItem[] = [
@@ -43,14 +51,6 @@ const NAV_ITEMS: NavItem[] = [
     icon: Wifi01Icon,
     tint: 'blue',
     route: '/admin/services',
-  },
-  {
-    key: 'packages',
-    title: 'Packages',
-    subtitle: 'Base packs, bouquets & a-la-carte plans',
-    icon: Layers01Icon,
-    tint: 'orange',
-    route: '/admin/packages',
   },
   {
     key: 'channels',
@@ -69,6 +69,22 @@ const NAV_ITEMS: NavItem[] = [
     route: '/admin/locations',
   },
   {
+    key: 'staff',
+    title: 'Staff & Teams',
+    subtitle: 'People, crews & the areas each of them covers',
+    icon: UserGroupIcon,
+    tint: 'purple',
+    route: '/admin/staff',
+  },
+  {
+    key: 'inventory',
+    title: 'Inventory',
+    subtitle: 'Manage equipment, stock & customer assignments',
+    icon: Package01Icon,
+    tint: 'orange',
+    route: '/admin/inventory',
+  },
+  {
     key: 'profile',
     title: 'Profile',
     subtitle: 'Account details, settings, and security',
@@ -83,26 +99,24 @@ export function MoreView() {
   const user = useAuthStore.use.user();
   const role = useAuthStore.use.role();
   const signOut = useAuthStore.use.signOut();
-
   const name = user?.displayName ?? user?.email?.split('@')[0] ?? 'Admin Operator';
-
+  const [openConfirmDialog, setOpenConfirmDialog] = React.useState(false);
   const confirmSignOut = () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out of this device?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Sign Out', style: 'destructive', onPress: signOut },
-      ],
-    );
+    setOpenConfirmDialog(true);
   };
-
+  const handleConfirmSignOut = () => {
+    signOut();
+    setOpenConfirmDialog(false);
+  };
+  const handleCancelSignOut = () => {
+    setOpenConfirmDialog(false);
+  };
   return (
     <View className="flex-1 bg-surface">
-      <View className="border-b border-border bg-card px-4 py-3">
-        <Text className="text-xl font-bold text-foreground">More</Text>
-        <Text className="text-xs text-muted-foreground">Manage services, network catalog, and account</Text>
-      </View>
+      <ScreenHeader
+        title="More"
+        subtitle="Manage services, network catalog, staff, and account"
+      />
 
       <ScrollView
         className="flex-1"
@@ -177,6 +191,16 @@ export function MoreView() {
           />
         </View>
       </ScrollView>
+
+      <ConfirmDialog
+        visible={openConfirmDialog}
+        title="Sign Out"
+        message="Are you sure you want to sign out of this device?"
+        onConfirm={handleConfirmSignOut}
+        onCancel={handleCancelSignOut}
+        icon={Logout01Icon}
+        tone="danger"
+      />
     </View>
   );
 }

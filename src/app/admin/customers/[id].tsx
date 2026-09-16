@@ -12,7 +12,7 @@ export default function CustomerDetailsDynamicScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
 
-  const customerId = Array.isArray(id) ? id[0] : id;
+  const customerId = id;
 
   const {
     data: customer,

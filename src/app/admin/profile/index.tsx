@@ -1,6 +1,5 @@
 import type { IconSvgElement } from '@hugeicons/react-native';
 import {
-  ArrowLeft01Icon,
   ArrowRight01Icon,
   HeadsetIcon,
   Logout01Icon,
@@ -9,13 +8,12 @@ import {
   UserIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
-import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { Alert } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
 
-import { Card, comingSoon, Divider, IconTile, TINT } from '@/components/common/shell';
-import { colors, FocusAwareStatusBar, Image, Pressable, SafeAreaView, ScrollView, Text, View } from '@/components/ui';
+import { Card, comingSoon, Divider, IconTile, ScreenHeader, TINT } from '@/components/common/shell';
+import { colors, FocusAwareStatusBar, Image, Pressable, ScrollView, Text, View } from '@/components/ui';
 import { useAuthStore } from '@/lib/hooks/stores/use-auth-store';
 import { translate } from '@/lib/i18n';
 import { initials } from '@/lib/utils/admin-format';
@@ -33,7 +31,6 @@ export function ProfileScreen() {
   const role = useAuthStore.use.role();
   const signOut = useAuthStore.use.signOut();
   const signOutEverywhere = useAuthStore.use.signOutEverywhere();
-  const router = useRouter();
   const [signingOut, setSigningOut] = React.useState<'current' | 'all' | null>(null);
 
   const name = user?.displayName ?? user?.email?.split('@')[0] ?? 'Admin';
@@ -63,14 +60,12 @@ export function ProfileScreen() {
   return (
     <View className="flex-1 bg-surface">
       <FocusAwareStatusBar />
-      <SafeAreaView edges={['top']} className="bg-surface">
-        <View className="flex-row items-center gap-2 px-3 pt-1 pb-2">
-          <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} className="size-9 items-center justify-center">
-            <HugeiconsIcon icon={ArrowLeft01Icon} size={22} color={colors.charcoal[900]} strokeWidth={2.2} />
-          </Pressable>
-          <Text className="flex-1 text-[17px] font-bold text-foreground">Profile</Text>
-        </View>
-      </SafeAreaView>
+      <ScreenHeader
+        title="Profile"
+        subtitle="Account details, settings, and security"
+        showBack
+        withSafeArea
+      />
 
       <ScrollView className="flex-1" contentContainerClassName="gap-2.5 px-3 pb-8" showsVerticalScrollIndicator={false}>
         <Card className="items-center gap-1 p-5">

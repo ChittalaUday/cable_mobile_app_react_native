@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react-native';
-import { useTreeExpansion } from './location-tree';
+import { useTreeExpansion } from '@/lib/hooks/common/use-tree-expansion';
 
 describe('useTreeExpansion', () => {
   it('opens, closes, and keeps siblings independent', () => {

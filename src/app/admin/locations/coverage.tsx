@@ -1,30 +1,18 @@
 import type { CoverageScope, Mark } from '@/components/locations/coverage-marks';
-import type { Coverage, Location } from '@/lib/api/types';
+import type { Coverage } from '@/lib/api/types';
 import type { CoverageEntryInput } from '@/lib/hooks/api/use-locations';
-import {
-  ArrowLeft01Icon,
-  Cancel01Icon,
-  CheckmarkCircle02Icon,
-  InformationCircleIcon,
-} from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
-import { FlashList } from '@shopify/flash-list';
+
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as React from 'react';
 import { Alert } from 'react-native';
 
 import { SaveBar } from '@/components/common/save-bar';
-import { Card, Loading } from '@/components/common/shell';
-import { boundsFor } from '@/components/locations/coverage-marks';
-import { CoveragePicker, entriesFromMarks, marksFromCoverage } from '@/components/locations/coverage-picker';
+import { Loading, ScreenHeader } from '@/components/common/shell';
+import { boundsFor, entriesFromMarks, marksFromCoverage } from '@/components/locations/coverage-marks';
+import { CoveragePicker } from '@/components/locations/coverage-picker';
 import {
-  colors,
   FocusAwareStatusBar,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  Text,
   View,
 } from '@/components/ui';
 import {
@@ -73,8 +61,7 @@ export function CoverageScreen() {
     providerId?: string;
   }>();
 
-  const [marks, setMarks] = React.useState<Map<string, Mark>>(new Map());
-  const hydrated = React.useRef(false);
+  const [marks, setMarks] = React.useState<Map<string, Mark>>(() => new Map());
 
   const serviceCoverage = useServiceCoverage({ variables: { id }, enabled: scope === 'service' });
   const providerCoverage = useServiceProviderCoverage({ variables: { id }, enabled: scope === 'provider' });
@@ -90,14 +77,13 @@ export function CoverageScreen() {
 
   const rows: Coverage[] = React.useMemo(() => query.data ?? [], [query.data]);
 
-  // Seed the marks from what is already saved, once.
-  React.useEffect(() => {
-    if (query.isLoading || hydrated.current)
-      return;
-
-    hydrated.current = true;
+  // Seed the marks from what is already saved, once. Done during render so the
+  // picker never paints an empty map over saved coverage.
+  const [hydrated, setHydrated] = React.useState(false);
+  if (!query.isLoading && !hydrated) {
+    setHydrated(true);
     setMarks(marksFromCoverage(rows));
-  }, [query.isLoading, rows]);
+  }
 
   const entries: CoverageEntryInput[] = React.useMemo(() => entriesFromMarks(marks), [marks]);
 
@@ -125,24 +111,12 @@ export function CoverageScreen() {
   return (
     <View className="flex-1 bg-surface">
       <FocusAwareStatusBar />
-      <SafeAreaView edges={['top']} className="bg-surface">
-        <View className="flex-row items-center gap-3 px-3 pt-1 pb-2">
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Back"
-            onPress={() => router.back()}
-            className="size-9 items-center justify-center rounded-lg border border-border bg-card"
-          >
-            <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color={colors.charcoal[900]} strokeWidth={2.2} />
-          </Pressable>
-          <View className="flex-1">
-            <Text className="text-[17px] font-bold text-foreground">{copy.title}</Text>
-            <Text className="text-[11px] text-muted-foreground" numberOfLines={1}>
-              {name ?? copy.blurb}
-            </Text>
-          </View>
-        </View>
-      </SafeAreaView>
+      <ScreenHeader
+        title={copy.title}
+        subtitle={name ?? copy.blurb}
+        showBack
+        withSafeArea
+      />
 
       {query.isLoading
         ? <Loading />

@@ -1,5 +1,5 @@
 import type { Channel, ChannelResolution } from '@/lib/api/types';
-import { ArrowLeft01Icon, CheckmarkCircle02Icon, Search01Icon } from '@hugeicons/core-free-icons';
+import { CheckmarkCircle02Icon, Search01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
@@ -8,7 +8,7 @@ import { TextInput } from 'react-native';
 
 import { ResolutionBadge } from '@/components/common/resolution-badge';
 import { SaveBar } from '@/components/common/save-bar';
-import { Card, Loading } from '@/components/common/shell';
+import { Card, Loading, ScreenHeader } from '@/components/common/shell';
 import { getChannelBrand } from '@/components/services/provider-brand-utils';
 import {
   ActivityIndicator,
@@ -16,7 +16,6 @@ import {
   FocusAwareStatusBar,
   Image,
   Pressable,
-  SafeAreaView,
   ScrollView,
   Text,
   View,
@@ -108,7 +107,6 @@ function ChannelRowItem({
   );
 }
 
-// eslint-disable-next-line max-lines-per-function
 export function PackageChannelsScreen() {
   const router = useRouter();
   const providerId = usePackageFormStore(s => s.providerId);
@@ -166,25 +164,13 @@ export function PackageChannelsScreen() {
   return (
     <View className="flex-1 bg-surface">
       <FocusAwareStatusBar />
-      <SafeAreaView edges={['top']} className="bg-surface">
-        <View className="flex-row items-center gap-3 px-3 pt-1 pb-3">
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Back"
-            onPress={() => router.back()}
-            className="size-9 items-center justify-center rounded-lg border border-border bg-card"
-          >
-            <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color={colors.charcoal[900]} strokeWidth={2.2} />
-          </Pressable>
-          <View className="flex-1">
-            <Text className="text-xl font-bold text-foreground">Package Channels</Text>
-            <Text className="text-xs text-muted-foreground" numberOfLines={1}>
-              {[providerName, packageName].filter(Boolean).join(' - ') || 'Select channels'}
-            </Text>
-          </View>
-        </View>
-
-        <View className="px-3 pb-3">
+      <ScreenHeader
+        title="Package Channels"
+        subtitle={[providerName, packageName].filter(Boolean).join(' - ') || 'Select channels'}
+        showBack
+        withSafeArea
+      >
+        <View className="gap-2.5">
           <View className="flex-row items-center rounded-2xl border border-border bg-card px-3.5 py-2.5">
             <HugeiconsIcon icon={Search01Icon} size={18} color={colors.neutral[400]} strokeWidth={2} />
             <TextInput
@@ -202,35 +188,34 @@ export function PackageChannelsScreen() {
                 )
               : null}
           </View>
-        </View>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          className="pb-3"
-          contentContainerClassName="px-3 gap-2"
-        >
-          {([
-            { key: 'all' as const, label: filter === 'all' ? `All (${total})` : 'All' },
-            { key: 'selected' as const, label: `Selected (${selectedChannelIds.length})` },
-            ...RESOLUTIONS.map(resolution => ({ key: resolution, label: resolution })),
-          ]).map(pill => (
-            <Pressable
-              key={pill.key}
-              accessibilityRole="button"
-              accessibilityState={{ selected: filter === pill.key }}
-              onPress={() => setFilter(pill.key)}
-              className={`rounded-full px-4 py-1.5 ${
-                filter === pill.key ? 'bg-primary-600' : 'border border-border bg-card'
-              }`}
-            >
-              <Text className={`text-xs font-semibold ${filter === pill.key ? 'text-white' : 'text-foreground'}`}>
-                {pill.label}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-      </SafeAreaView>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerClassName="gap-2"
+          >
+            {([
+              { key: 'all' as const, label: filter === 'all' ? `All (${total})` : 'All' },
+              { key: 'selected' as const, label: `Selected (${selectedChannelIds.length})` },
+              ...RESOLUTIONS.map(resolution => ({ key: resolution, label: resolution })),
+            ]).map(pill => (
+              <Pressable
+                key={pill.key}
+                accessibilityRole="button"
+                accessibilityState={{ selected: filter === pill.key }}
+                onPress={() => setFilter(pill.key)}
+                className={`rounded-full px-4 py-1.5 ${
+                  filter === pill.key ? 'bg-primary-600' : 'border border-border bg-card'
+                }`}
+              >
+                <Text className={`text-xs font-semibold ${filter === pill.key ? 'text-white' : 'text-foreground'}`}>
+                  {pill.label}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+      </ScreenHeader>
 
       <View className="flex-1 px-3">
         {!hasProvider

@@ -18,9 +18,10 @@ import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { InteractionManager, Modal, ScrollView, TextInput, TouchableOpacity } from 'react-native';
-
 import { colors, Text, View } from '@/components/ui';
+
 import { useAppSearch } from '@/lib/hooks/common/use-app-search';
+import { useDismissKeyboardOnExit } from '@/lib/hooks/common/use-dismiss-keyboard';
 
 export type GlobalSearchModalProps = {
   visible: boolean;
@@ -43,6 +44,8 @@ const ICON_MAP: Record<string, typeof Search01Icon> = {
 };
 
 export function GlobalSearchModal({ visible, onClose }: GlobalSearchModalProps) {
+  useDismissKeyboardOnExit(visible);
+
   const [query, setQuery] = React.useState('');
   const router = useRouter();
   const { results, isSearching } = useAppSearch(query);
@@ -94,7 +97,7 @@ export function GlobalSearchModal({ visible, onClose }: GlobalSearchModalProps) 
           </View>
 
           {/* Search Results List */}
-          <ScrollView className="max-h-96 min-h-45 p-2">
+          <ScrollView className="max-h-96 min-h-45 p-2" keyboardShouldPersistTaps="handled">
             {results.length === 0
               ? (
                   <View className="items-center justify-center py-10">

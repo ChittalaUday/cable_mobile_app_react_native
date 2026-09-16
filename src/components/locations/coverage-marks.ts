@@ -98,3 +98,15 @@ export function nextMarks(node: Location, marks: ReadonlyMap<string, Mark>): Map
 
   return next;
 }
+
+/** The marks a saved coverage list starts from. */
+export function marksFromCoverage(rows: { locationId: string; isAvailable: boolean }[]) {
+  return new Map<string, Mark>(
+    rows.map(row => [row.locationId, row.isAvailable ? 'served' : 'excluded'] as const),
+  );
+}
+
+/** The entries a marks map sends back to the API. */
+export function entriesFromMarks(marks: ReadonlyMap<string, Mark>) {
+  return [...marks].map(([locationId, mark]) => ({ locationId, isAvailable: mark === 'served' }));
+}

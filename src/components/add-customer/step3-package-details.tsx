@@ -24,15 +24,15 @@ export function Step3PackageDetails() {
     <View>
       <View className="mb-4 flex-row items-center rounded-2xl bg-neutral-100 p-1 dark:bg-neutral-800">
         {[
-          { id: 'cable', label: 'Cable TV', icon: Tv01Icon },
-          { id: 'broadband', label: 'Internet', icon: Wifi01Icon },
-          { id: 'iptv', label: 'IPTV', icon: Tv02Icon },
+          { id: 'cable' as const, label: 'Cable TV', icon: Tv01Icon },
+          { id: 'broadband' as const, label: 'Internet', icon: Wifi01Icon },
+          { id: 'iptv' as const, label: 'IPTV', icon: Tv02Icon },
         ].map((tab) => {
           const isActive = activeTab === tab.id;
           return (
             <Pressable
               key={tab.id}
-              onPress={() => setStep3({ activeTab: tab.id as any })}
+              onPress={() => setStep3({ activeTab: tab.id })}
               className={`flex-1 flex-row items-center justify-center rounded-xl px-2 py-2.5 ${
                 isActive ? 'bg-[#F95716]' : 'bg-transparent'
               }`}

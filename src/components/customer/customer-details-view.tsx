@@ -1,16 +1,11 @@
 import type { CustomerDetail, CustomerEquipment, CustomerSubscription, CustomerTransaction } from '@/lib/api/types';
 import {
-  AlertCircleIcon,
   ArrowLeft02Icon,
-  Calendar01Icon,
   Call02Icon,
-  CheckmarkCircle02Icon,
   Comment01Icon,
   CreditCardIcon,
   File01Icon,
-  Invoice01Icon,
   Location01Icon,
-  PackageIcon,
   PencilEdit02Icon,
   Tv01Icon,
   Wifi01Icon,
@@ -322,7 +317,6 @@ function TransactionCardItem({ tx }: { tx: CustomerTransaction }) {
   );
 }
 
-// eslint-disable-next-line max-lines-per-function
 export function CustomerDetailsView({
   customer: rawCustomer,
   role,
@@ -652,7 +646,7 @@ export function CustomerDetailsView({
                       className="flex-row items-center justify-between p-3.5 active:bg-muted/40"
                     >
                       <View className="flex-row items-center">
-                        <View className="dark:bg-primary-950/40 size-8 items-center justify-center rounded-lg bg-primary-50">
+                        <View className="size-8 items-center justify-center rounded-lg bg-primary-50 dark:bg-primary-950/40">
                           <HugeiconsIcon icon={item.icon} size={16} color={colors.primary[500]} />
                         </View>
                         <Text className="ml-3 text-sm font-bold text-foreground">

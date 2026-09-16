@@ -1,14 +1,18 @@
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { Service } from '@/lib/api/types';
-import { BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet';
+import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import * as React from 'react';
 
-import { Alert } from 'react-native';
+import { Alert, Keyboard } from 'react-native';
 import { colors, Modal, Pressable, Text, View } from '@/components/ui';
+import BottomSheetKeyboardAwareScrollView from '@/components/ui/modal-keyboard-aware-scroll-view';
 import { useCreateService } from '@/lib/hooks/api/use-services';
 import { SERVICE_ICONS } from '@/lib/service-icons';
+
+/** Stable identity: `Modal` memoises on this, so a literal re-lays out the sheet. */
+const SNAP_POINTS = ['72%', '100%'];
 
 /**
  * Creates a service — what a subscriber buys, not who supplies it.
@@ -18,7 +22,7 @@ import { SERVICE_ICONS } from '@/lib/service-icons';
  * provider row rather than a second service. The copy here says so, because
  * naming a service after a brand is the easy mistake to make.
  */
-// eslint-disable-next-line max-lines-per-function
+
 export function ServiceFormSheet({
   ref,
   onCreated,
@@ -59,6 +63,9 @@ export function ServiceFormSheet({
 
       await queryClient.invalidateQueries({ queryKey: ['services'] });
       reset();
+      // The sheet closes without unmounting, so nothing else takes the focus
+      // away — the keyboard would stay up over whatever it closed onto.
+      Keyboard.dismiss();
       onCreated?.(created);
     }
     catch (err) {
@@ -67,8 +74,8 @@ export function ServiceFormSheet({
   };
 
   return (
-    <Modal ref={ref} snapPoints={['72%', '100%']} title="Add service">
-      <BottomSheetScrollView
+    <Modal ref={ref} snapPoints={SNAP_POINTS} title="Add service">
+      <BottomSheetKeyboardAwareScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
         keyboardShouldPersistTaps="handled"
@@ -110,7 +117,7 @@ export function ServiceFormSheet({
               onPress={() => setIcon(entry.key)}
               className={`h-16 w-[22%] items-center justify-center gap-1 rounded-2xl border ${
                 icon === entry.key
-                  ? 'dark:bg-primary-950/60 border-primary-500 bg-primary-50'
+                  ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/60'
                   : 'border-border bg-card'
               }`}
             >
@@ -154,7 +161,7 @@ export function ServiceFormSheet({
             {createService.isPending ? 'Adding Service…' : 'Add Service'}
           </Text>
         </Pressable>
-      </BottomSheetScrollView>
+      </BottomSheetKeyboardAwareScrollView>
     </Modal>
   );
 }

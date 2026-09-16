@@ -10,6 +10,11 @@ import { ActivityIndicator, Pressable, SafeAreaView, Text, View } from '@/compon
  * — the bar read as a second, heavier surface under the content. Being outside
  * the ScrollView, it needs `KeyboardStickyView` or the keyboard covers it just
  * as the last field is being filled in.
+ *
+ * The inset is a bare `SafeAreaView` spacer UNDER the row rather than padding on
+ * a `SafeAreaView` wrapping it: that way the gap below the button is `pb-2` plus
+ * the inset, so the button still has a margin on a device whose bottom inset is
+ * zero — which is where it was sitting flush against the edge.
  */
 export function SaveBar({
   label,
@@ -31,17 +36,17 @@ export function SaveBar({
 
   return (
     <KeyboardStickyView>
-      <SafeAreaView edges={['bottom']} className="bg-surface px-4 pt-2 pb-3">
-        <View className="flex-row gap-2.5">
+      <View className="bg-surface px-4 py-2">
+        <View className="flex-row gap-2">
           {secondary
             ? (
                 <Pressable
                   accessibilityRole="button"
                   disabled={busy}
                   onPress={secondary.onPress}
-                  className="flex-1 items-center justify-center rounded-2xl border border-border bg-card px-4 py-3.5 active:bg-muted/40"
+                  className="min-w-0 flex-1 items-center justify-center rounded-xl border border-border bg-card px-4 py-3 active:bg-muted/40"
                 >
-                  <Text className="text-base font-bold text-foreground" numberOfLines={1}>
+                  <Text className="text-sm font-bold text-foreground" numberOfLines={1}>
                     {secondary.label}
                   </Text>
                 </Pressable>
@@ -52,17 +57,18 @@ export function SaveBar({
             accessibilityState={{ disabled: isBlocked, busy }}
             disabled={isBlocked}
             onPress={onPress}
-            className={`flex-1 flex-row items-center justify-center gap-2 rounded-2xl bg-primary-600 px-4 py-3.5 active:bg-primary-700 ${
+            className={`min-w-0 flex-1 flex-row items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-3 active:bg-primary-700 ${
               isBlocked ? 'opacity-60' : ''
             }`}
           >
             {busy ? <ActivityIndicator size="small" color="#ffffff" /> : null}
-            <Text className="text-base font-bold text-white" numberOfLines={1}>
+            <Text className="text-sm font-bold text-white" numberOfLines={1}>
               {busy ? (busyLabel ?? label) : label}
             </Text>
           </Pressable>
         </View>
-      </SafeAreaView>
+        <SafeAreaView edges={['bottom']} />
+      </View>
     </KeyboardStickyView>
   );
 }

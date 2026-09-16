@@ -13,7 +13,7 @@ const mockServices = [
 const mockPush = jest.fn();
 
 jest.mock('@react-navigation/native', () => ({
-  ...jest.requireActual('@react-navigation/native'),
+  ...jest.requireActual<object>('@react-navigation/native'),
   useIsFocused: () => true,
 }));
 

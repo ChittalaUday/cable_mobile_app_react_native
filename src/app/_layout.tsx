@@ -4,7 +4,7 @@ import { ThemeProvider } from '@react-navigation/native';
 import { Stack, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import * as React from 'react';
-import { StyleSheet } from 'react-native';
+import { Keyboard, StyleSheet } from 'react-native';
 import FlashMessage from 'react-native-flash-message';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
@@ -53,6 +53,19 @@ export default function RootLayout() {
   }, []);
 
   React.useEffect(() => hydrate(), [hydrate]);
+
+  /**
+   * One keyboard dismissal for the whole app, on every route change.
+   *
+   * A keyboard is not tied to the screen that raised it: tap a search result
+   * and the detail screen opens underneath a keyboard nobody can see the input
+   * for. Doing it here rather than per screen means it also covers the back
+   * button, a deep link, and every screen added later — none of which can
+   * forget to opt in.
+   */
+  React.useEffect(() => {
+    Keyboard.dismiss();
+  }, [pathname]);
 
   React.useEffect(() => {
     if (userId) {

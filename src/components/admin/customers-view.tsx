@@ -24,8 +24,9 @@ import {
 } from '@/lib/hooks/api/use-customers';
 import { useLocations } from '@/lib/hooks/api/use-locations';
 import { useDebounced } from '@/lib/hooks/common/use-debounced';
+import { getDateRangeFromPreset } from '@/lib/utils/date-presets';
 import { AddCustomerModal } from './add-customer-modal';
-import { CustomerFilterModal, getDateRangeFromPreset } from './customer-filter-modal';
+import { CustomerFilterModal } from './customer-filter-modal';
 
 type FilterType = 'all' | 'active' | 'inactive' | 'multi' | 'pending';
 
@@ -67,7 +68,7 @@ function CustomerSearchBar({
         onPress={onOpenFilters}
         className={`size-10 items-center justify-center rounded-xl border ${
           hasActiveFilters
-            ? 'dark:bg-primary-950/40 border-primary-500 bg-primary-50'
+            ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/40'
             : 'border-border bg-card active:bg-muted/40'
         }`}
       >
@@ -223,7 +224,6 @@ function useCustomerResults(query: string, filter: FilterType, modalFilters: Cus
   };
 }
 
-// eslint-disable-next-line max-lines-per-function
 export function CustomersView({
   onRecharge,
   onRaiseTicket,
@@ -354,7 +354,7 @@ export function CustomersView({
                           setModalFilters(prev => ({ ...prev, status: undefined }));
                           setFilter('all');
                         }}
-                        className="dark:bg-primary-950/40 flex-row items-center gap-1 rounded-full border border-primary-500/40 bg-primary-50 px-2.5 py-1"
+                        className="flex-row items-center gap-1 rounded-full border border-primary-500/40 bg-primary-50 px-2.5 py-1 dark:bg-primary-950/40"
                       >
                         <Text className="text-[11px] font-bold text-primary-600 dark:text-primary-400">
                           {t('customers_list.filter_status')}
@@ -371,7 +371,7 @@ export function CustomersView({
                       <Pressable
                         accessibilityRole="button"
                         onPress={() => setModalFilters(prev => ({ ...prev, locationId: undefined }))}
-                        className="dark:bg-primary-950/40 flex-row items-center gap-1 rounded-full border border-primary-500/40 bg-primary-50 px-2.5 py-1"
+                        className="flex-row items-center gap-1 rounded-full border border-primary-500/40 bg-primary-50 px-2.5 py-1 dark:bg-primary-950/40"
                       >
                         <Text className="text-[11px] font-bold text-primary-600 dark:text-primary-400" numberOfLines={1}>
                           {activeLocationDisplay
@@ -388,7 +388,7 @@ export function CustomersView({
                       <Pressable
                         accessibilityRole="button"
                         onPress={() => setModalFilters(prev => ({ ...prev, serviceProviderId: undefined }))}
-                        className="dark:bg-primary-950/40 flex-row items-center gap-1 rounded-full border border-primary-500/40 bg-primary-50 px-2.5 py-1"
+                        className="flex-row items-center gap-1 rounded-full border border-primary-500/40 bg-primary-50 px-2.5 py-1 dark:bg-primary-950/40"
                       >
                         <Text className="text-[11px] font-bold text-primary-600 dark:text-primary-400">
                           {t('customers_list.filter_service_provider')}
@@ -403,7 +403,7 @@ export function CustomersView({
                       <Pressable
                         accessibilityRole="button"
                         onPress={() => setModalFilters(prev => ({ ...prev, datePreset: 'all' }))}
-                        className="dark:bg-primary-950/40 flex-row items-center gap-1 rounded-full border border-primary-500/40 bg-primary-50 px-2.5 py-1"
+                        className="flex-row items-center gap-1 rounded-full border border-primary-500/40 bg-primary-50 px-2.5 py-1 dark:bg-primary-950/40"
                       >
                         <Text className="text-[11px] font-bold text-primary-600 dark:text-primary-400">
                           {t('customers_list.filter_created_date')}

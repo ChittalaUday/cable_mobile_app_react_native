@@ -6,23 +6,14 @@ import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, RefreshControl, TextInput } from 'react-native';
-
 import { AdminRecordForm } from '@/components/admin/admin-record-form';
+
 import { Card, LoadError, Loading } from '@/components/common/shell';
 import { colors, FocusAwareStatusBar, Pressable, SafeAreaView, ScrollView, Text, View } from '@/components/ui';
+import { apiErrorMessage } from '@/lib/utils/api-error';
 
 export type AdminRecord = { id: string };
 
-export function apiErrorMessage(error: unknown, fallback: string) {
-  if (typeof error === 'object' && error && 'response' in error) {
-    const response = (error as { response?: { data?: { message?: string } } }).response;
-    if (response?.data?.message)
-      return response.data.message;
-  }
-  return error instanceof Error ? error.message : fallback;
-}
-
-// eslint-disable-next-line max-lines-per-function
 export function AdminCrudScreen<T extends AdminRecord>({
   title,
   items,
@@ -63,6 +54,7 @@ export function AdminCrudScreen<T extends AdminRecord>({
   const { t } = useTranslation();
   const router = useRouter();
   const [query, setQuery] = React.useState('');
+
   const [editing, setEditing] = React.useState<T | null | undefined>(undefined);
   const [saving, setSaving] = React.useState(false);
   const [formError, setFormError] = React.useState<string | null>(null);
@@ -131,6 +123,7 @@ export function AdminCrudScreen<T extends AdminRecord>({
           ? <Loading />
           : (
               <ScrollView
+                keyboardShouldPersistTaps="handled"
                 contentContainerClassName="gap-3 px-3 py-3 pb-8"
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary[600]} />}
               >

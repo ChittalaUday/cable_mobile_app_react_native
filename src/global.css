@@ -49,6 +49,8 @@
   --color-primary-700: #E56100;
   --color-primary-800: #CC5600;
   --color-primary-900: #B24C00;
+  /* Dark-mode surface tint; used only under `dark:` at low opacity. */
+  --color-primary-950: #6B2E00;
 
   /* Success palette */
   --color-success-50: #F0FDF4;
@@ -85,6 +87,8 @@
   --color-danger-700: #B91C1C;
   --color-danger-800: #991B1B;
   --color-danger-900: #7F1D1D;
+  /* This ramp is Tailwind's red; 950 is its documented next step. */
+  --color-danger-950: #450A0A;
 
   /* Semantic colors - using primary for main brand color */
   --color-background: #ffffff;

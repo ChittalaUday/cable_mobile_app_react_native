@@ -3,7 +3,6 @@ import type { ProviderDraft } from '@/components/services/provider-details-form'
 import type { Service, ServiceProvider } from '@/lib/api/types';
 import {
   Add01Icon,
-  ArrowLeft01Icon,
   CheckmarkCircle02Icon,
   Location01Icon,
   PackageIcon,
@@ -14,18 +13,18 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { Alert, ScrollView } from 'react-native';
-
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
+
 import { SaveBar } from '@/components/common/save-bar';
-import { Card } from '@/components/common/shell';
-import { CoveragePicker, entriesFromMarks } from '@/components/locations/coverage-picker';
+import { Card, ScreenHeader } from '@/components/common/shell';
+import { entriesFromMarks } from '@/components/locations/coverage-marks';
+import { CoveragePicker } from '@/components/locations/coverage-picker';
 import { ProviderDetailsForm } from '@/components/services/provider-details-form';
 import { ServiceFormSheet } from '@/components/services/service-form-sheet';
 import {
   colors,
   FocusAwareStatusBar,
   Pressable,
-  SafeAreaView,
   Text,
   useModal,
   View,
@@ -122,20 +121,21 @@ function StepRail({
  * step past the first can be skipped: a provider with no coverage sells
  * wherever its service does, and one with no packages is simply not selling yet.
  */
-// eslint-disable-next-line max-lines-per-function
+
 export function AddProviderScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const serviceSheet = useModal();
 
   const [step, setStep] = React.useState<Step>('details');
+
   const [draft, setDraft] = React.useState<ProviderDraft>(EMPTY_DRAFT);
-  const [marks, setMarks] = React.useState<Map<string, Mark>>(new Map());
+  const [marks, setMarks] = React.useState<Map<string, Mark>>(() => new Map());
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [provider, setProvider] = React.useState<ServiceProvider | null>(null);
   const [confirming, setConfirming] = React.useState<Step | null>(null);
   const [pendingDelete, setPendingDelete] = React.useState<Service | null>(null);
-  const [done, setDone] = React.useState<Set<Step>>(new Set());
+  const [done, setDone] = React.useState<Set<Step>>(() => new Set());
 
   const { data: services = [] } = useServices();
   const createProvider = useCreateServiceProvider();
@@ -298,43 +298,28 @@ export function AddProviderScreen() {
         onCancel={() => setPendingDelete(null)}
       />
 
-      <SafeAreaView edges={['top']} className="bg-surface">
-        <View className="flex-row items-center justify-between gap-3 px-3 pt-1 pb-3">
-          <View className="flex-1 flex-row items-center gap-3">
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Back"
-              onPress={() => router.back()}
-              className="size-9 items-center justify-center rounded-lg border border-border bg-card"
-            >
-              <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color={colors.charcoal[900]} strokeWidth={2.2} />
-            </Pressable>
-            <View className="flex-1">
-              <Text className="text-xl font-bold text-foreground">
-                {provider?.name ?? 'Add Provider'}
-              </Text>
-              <Text className="text-xs text-muted-foreground" numberOfLines={1}>
-                {provider ? 'Saved — the rest is optional' : 'Register a service provider'}
-              </Text>
-            </View>
-          </View>
-
-          {step === 'details'
+      <ScreenHeader
+        title={provider?.name ?? 'Add Provider'}
+        subtitle={provider ? 'Saved — the rest is optional' : 'Register a service provider'}
+        showBack
+        withSafeArea
+        rightAction={
+          step === 'details'
             ? (
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Add a service"
                   onPress={serviceSheet.present}
-                  className="size-9 items-center justify-center rounded-full bg-primary-600 active:bg-primary-700"
+                  className="size-9 items-center justify-center rounded-lg bg-primary-600 active:bg-primary-700"
                 >
-                  <HugeiconsIcon icon={Add01Icon} size={20} color="#ffffff" strokeWidth={2.4} />
+                  <HugeiconsIcon icon={Add01Icon} size={18} color="#ffffff" strokeWidth={2.4} />
                 </Pressable>
               )
-            : null}
-        </View>
-
+            : null
+        }
+      >
         <StepRail step={step} done={done} onJump={jumpTo} />
-      </SafeAreaView>
+      </ScreenHeader>
 
       {step === 'details'
         ? (

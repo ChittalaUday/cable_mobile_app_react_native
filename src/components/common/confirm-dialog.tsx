@@ -65,7 +65,7 @@ export function ConfirmDialog({
         <Pressable className="w-full max-w-sm rounded-3xl border border-border bg-card p-5">
           <View
             className={`size-12 items-center justify-center rounded-full ${
-              isDanger ? 'dark:bg-danger-950/60 bg-danger-50' : 'dark:bg-primary-950/60 bg-primary-50'
+              isDanger ? 'bg-danger-50 dark:bg-danger-950/60' : 'bg-primary-50 dark:bg-primary-950/60'
             }`}
           >
             <HugeiconsIcon

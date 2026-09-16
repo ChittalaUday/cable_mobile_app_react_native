@@ -114,7 +114,7 @@ describe('iR command validation', () => {
     { protocol: 'unknown' },
   ])('rejects an invalid protocol command: $protocol', (command) => {
     expect(() => encodeIrCommand(command as unknown as IrCommand)).toThrow(
-      expect.objectContaining({ code: 'ERR_IR_INVALID_COMMAND' }),
+      expect.objectContaining({ code: 'ERR_IR_INVALID_COMMAND' }) as Error,
     );
   });
 
@@ -129,7 +129,7 @@ describe('iR command validation', () => {
     { carrierFrequencyHz: 38_000, pattern: [2_147_483_648] },
   ])('rejects an invalid raw signal: %#', (command) => {
     expect(() => encodeIrCommand({ protocol: 'raw', ...command })).toThrow(
-      expect.objectContaining({ code: 'ERR_IR_INVALID_COMMAND' }),
+      expect.objectContaining({ code: 'ERR_IR_INVALID_COMMAND' }) as Error,
     );
   });
 
@@ -146,6 +146,6 @@ describe('iR command validation', () => {
       protocol: 'raw',
       carrierFrequencyHz: 38_000,
       pattern: [1_000_000, 1_000_000],
-    })).toThrow(expect.objectContaining({ code: 'ERR_IR_PATTERN_TOO_LONG' }));
+    })).toThrow(expect.objectContaining({ code: 'ERR_IR_PATTERN_TOO_LONG' }) as Error);
   });
 });

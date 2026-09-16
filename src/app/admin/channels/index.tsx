@@ -1,15 +1,14 @@
 import {
-  ArrowLeft01Icon,
   RefreshIcon,
   Search01Icon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { FlashList } from '@shopify/flash-list';
-import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { RefreshControl, TextInput } from 'react-native';
 
 import { ResolutionBadge } from '@/components/common/resolution-badge';
+import { ScreenHeader } from '@/components/common/screen-header';
 import { Card, Loading } from '@/components/common/shell';
 import {
   ActivityIndicator,
@@ -34,9 +33,7 @@ function merge(current: string[], incoming: string[]): string[] {
   return next.size === current.length ? current : [...next].sort();
 }
 
-// eslint-disable-next-line max-lines-per-function
 export function ChannelsScreen() {
-  const router = useRouter();
   const [search, setSearch] = React.useState('');
   const [selectedGenre, setSelectedGenre] = React.useState<string | null>(null);
   const [selectedLanguage, setSelectedLanguage] = React.useState<string | null>(null);
@@ -74,10 +71,14 @@ export function ChannelsScreen() {
   const [genres, setGenres] = React.useState<string[]>([]);
   const [languages, setLanguages] = React.useState<string[]>([]);
 
-  React.useEffect(() => {
+  // Folded in during render rather than in an effect, so a newly loaded page's
+  // genres are pickable on the same frame the rows appear.
+  const [mergedFrom, setMergedFrom] = React.useState(allChannels);
+  if (mergedFrom !== allChannels) {
+    setMergedFrom(allChannels);
     setGenres(prev => merge(prev, allChannels.map(c => c.genre)));
     setLanguages(prev => merge(prev, allChannels.flatMap(c => c.languages ?? [])));
-  }, [allChannels]);
+  }
 
   // `q` and `genre` are already applied by the API; language is not a server
   // filter, so it is the only one left to apply here.
@@ -92,39 +93,23 @@ export function ChannelsScreen() {
   return (
     <View className="flex-1 bg-surface">
       <FocusAwareStatusBar />
-      <SafeAreaView edges={['top']} className="bg-surface">
-        <View className="flex-row items-center justify-between px-3 pt-1 pb-2">
-          <View className="flex-row items-center gap-2">
+      <SafeAreaView edges={['top']} className="bg-card">
+        <ScreenHeader
+          title="Channel Lineup"
+          subtitle={`${totalChannels} Available Channels`}
+          showBack
+          rightAction={(
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Back"
-              onPress={() => router.back()}
-              className="size-9 items-center justify-center rounded-lg border border-border bg-card"
+              accessibilityLabel="Refresh"
+              onPress={() => refetchChannels()}
+              className="size-9 items-center justify-center rounded-lg border border-border bg-card active:bg-muted"
             >
-              <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color={colors.charcoal[900]} strokeWidth={2.2} />
+              <HugeiconsIcon icon={RefreshIcon} size={18} color={colors.neutral[600]} strokeWidth={2} />
             </Pressable>
-            <View>
-              <Text className="text-[17px] font-bold text-foreground">Channel Lineup</Text>
-              <Text className="text-[11px] text-muted-foreground">
-                {totalChannels}
-                {' '}
-                Available Channels
-              </Text>
-            </View>
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Refresh"
-            onPress={() => refetchChannels()}
-            className="size-9 items-center justify-center rounded-lg border border-border bg-card"
-          >
-            <HugeiconsIcon icon={RefreshIcon} size={18} color={colors.neutral[600]} strokeWidth={2} />
-          </Pressable>
-        </View>
-
-        {/* Search Input */}
-        <View className="px-3 pb-2">
-          <View className="flex-row items-center rounded-xl border border-border bg-card px-3 py-2">
+          )}
+        >
+          <View className="flex-row items-center rounded-xl border border-border bg-surface px-3 py-2">
             <HugeiconsIcon icon={Search01Icon} size={16} color={colors.neutral[400]} strokeWidth={2} />
             <TextInput
               value={search}
@@ -139,98 +124,99 @@ export function ChannelsScreen() {
               </Pressable>
             )}
           </View>
-        </View>
+        </ScreenHeader>
+      </SafeAreaView>
 
-        {/* Genre Filter Chips */}
-        {genres.length > 0 && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            className="pb-1.5"
-            contentContainerClassName="px-3 gap-1.5"
+      {/* Genre Filter Chips */}
+      {genres.length > 0 && (
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="pb-1.5"
+          contentContainerClassName="px-3 gap-1.5"
+        >
+          <Pressable
+            onPress={() => setSelectedGenre(null)}
+            className={`rounded-full px-2.5 py-1 ${
+              selectedGenre === null ? 'bg-primary-600' : 'border border-border bg-card'
+            }`}
           >
+            <Text className={`text-[11px] font-semibold ${selectedGenre === null ? 'text-white' : 'text-foreground'}`}>
+              All Genres
+            </Text>
+          </Pressable>
+          {genres.map(g => (
             <Pressable
-              onPress={() => setSelectedGenre(null)}
+              key={g}
+              onPress={() => setSelectedGenre(selectedGenre === g ? null : g)}
               className={`rounded-full px-2.5 py-1 ${
-                selectedGenre === null ? 'bg-primary-600' : 'border border-border bg-card'
+                selectedGenre === g ? 'bg-primary-600' : 'border border-border bg-card'
               }`}
             >
-              <Text className={`text-[11px] font-semibold ${selectedGenre === null ? 'text-white' : 'text-foreground'}`}>
-                All Genres
+              <Text className={`text-[11px] font-semibold ${selectedGenre === g ? 'text-white' : 'text-foreground'}`}>
+                {g}
               </Text>
             </Pressable>
-            {genres.map(g => (
-              <Pressable
-                key={g}
-                onPress={() => setSelectedGenre(selectedGenre === g ? null : g)}
-                className={`rounded-full px-2.5 py-1 ${
-                  selectedGenre === g ? 'bg-primary-600' : 'border border-border bg-card'
-                }`}
-              >
-                <Text className={`text-[11px] font-semibold ${selectedGenre === g ? 'text-white' : 'text-foreground'}`}>
-                  {g}
-                </Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-        )}
+          ))}
+        </ScrollView>
+      )}
 
-        {/* Language Filter Chips */}
-        {languages.length > 0 && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            className="pb-2.5"
-            contentContainerClassName="px-3 gap-1.5"
+      {/* Language Filter Chips */}
+      {languages.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="pb-2.5"
+          contentContainerClassName="px-3 gap-1.5"
+        >
+          <Pressable
+            onPress={() => setSelectedLanguage(null)}
+            className={`rounded-full px-2.5 py-1 ${
+              selectedLanguage === null ? 'bg-neutral-800 dark:bg-neutral-200' : 'border border-border bg-card'
+            }`}
           >
+            <Text
+              className={`text-[11px] font-semibold ${
+                selectedLanguage === null ? 'text-white dark:text-neutral-900' : 'text-foreground'
+              }`}
+            >
+              All Languages
+            </Text>
+          </Pressable>
+          {languages.map(l => (
             <Pressable
-              onPress={() => setSelectedLanguage(null)}
+              key={l}
+              onPress={() => setSelectedLanguage(selectedLanguage === l ? null : l)}
               className={`rounded-full px-2.5 py-1 ${
-                selectedLanguage === null ? 'bg-neutral-800 dark:bg-neutral-200' : 'border border-border bg-card'
+                selectedLanguage === l ? 'bg-neutral-800 dark:bg-neutral-200' : 'border border-border bg-card'
               }`}
             >
               <Text
                 className={`text-[11px] font-semibold ${
-                  selectedLanguage === null ? 'text-white dark:text-neutral-900' : 'text-foreground'
+                  selectedLanguage === l ? 'text-white dark:text-neutral-900' : 'text-foreground'
                 }`}
               >
-                All Languages
+                {l}
               </Text>
             </Pressable>
-            {languages.map(l => (
-              <Pressable
-                key={l}
-                onPress={() => setSelectedLanguage(selectedLanguage === l ? null : l)}
-                className={`rounded-full px-2.5 py-1 ${
-                  selectedLanguage === l ? 'bg-neutral-800 dark:bg-neutral-200' : 'border border-border bg-card'
-                }`}
-              >
-                <Text
-                  className={`text-[11px] font-semibold ${
-                    selectedLanguage === l ? 'text-white dark:text-neutral-900' : 'text-foreground'
-                  }`}
-                >
-                  {l}
-                </Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-        )}
+          ))}
+        </ScrollView>
+      )}
 
-        <View className="flex-row items-center justify-between border-b border-border px-3 pb-2">
-          <Text className="text-xs font-semibold text-muted-foreground">
-            Showing
-            {' '}
-            {filteredChannels.length}
-            {' '}
-            of
-            {' '}
-            {totalChannels}
-            {' '}
-            channels
-          </Text>
-        </View>
-      </SafeAreaView>
+      <View className="flex-row items-center justify-between border-b border-border px-3 pb-2">
+        <Text className="text-xs font-semibold text-muted-foreground">
+          Showing
+          {' '}
+          {filteredChannels.length}
+          {' '}
+          of
+          {' '}
+          {totalChannels}
+          {' '}
+          channels
+        </Text>
+      </View>
 
       {channelsLoading
         ? (

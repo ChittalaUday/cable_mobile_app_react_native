@@ -1,7 +1,6 @@
 import type { NormalizedPackage } from '@/lib/hooks/api/use-packages';
 import {
   Add01Icon,
-  ArrowLeft01Icon,
   Delete02Icon,
   Location01Icon,
   PackageIcon,
@@ -15,13 +14,12 @@ import * as React from 'react';
 import { Alert, Linking, RefreshControl, TextInput } from 'react-native';
 
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
-import { Card, Loading } from '@/components/common/shell';
+import { Card, Loading, ScreenHeader } from '@/components/common/shell';
 import { getProviderBrand } from '@/components/services/provider-brand-utils';
 import {
   colors,
   FocusAwareStatusBar,
   Pressable,
-  SafeAreaView,
   Text,
   View,
 } from '@/components/ui';
@@ -50,7 +48,7 @@ function PackageItemCard({ pkg, onEdit }: { pkg: NormalizedPackage; onEdit: () =
         className="flex-row items-center justify-between"
       >
         <View className="flex-1 flex-row items-center gap-3 pr-2">
-          <View className="dark:bg-primary-950/60 size-11 items-center justify-center rounded-2xl bg-primary-50">
+          <View className="size-11 items-center justify-center rounded-2xl bg-primary-50 dark:bg-primary-950/60">
             <HugeiconsIcon icon={PackageIcon} size={22} color={colors.primary[600]} strokeWidth={2.2} />
           </View>
 
@@ -112,7 +110,6 @@ function InfoRow({ label, value, onPress }: { label: string; value: string; onPr
   );
 }
 
-// eslint-disable-next-line max-lines-per-function
 export function ProviderDetailsScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -225,17 +222,12 @@ export function ProviderDetailsScreen() {
         onCancel={() => setConfirmDelete(false)}
       />
 
-      <SafeAreaView edges={['top']} className="bg-surface">
-        <View className="flex-row items-center justify-between px-3 pt-1 pb-2">
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Back"
-            onPress={() => router.back()}
-            className="size-9 items-center justify-center rounded-lg border border-border bg-card"
-          >
-            <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color={colors.charcoal[900]} strokeWidth={2.2} />
-          </Pressable>
-          <Text className="text-xl font-bold text-foreground">Provider Details</Text>
+      <ScreenHeader
+        title="Provider Details"
+        subtitle={provider.name}
+        showBack
+        withSafeArea
+        rightAction={(
           <View className="flex-row items-center gap-2">
             <Pressable
               accessibilityRole="button"
@@ -264,8 +256,8 @@ export function ProviderDetailsScreen() {
               <HugeiconsIcon icon={Delete02Icon} size={19} color={colors.danger[500]} strokeWidth={2} />
             </Pressable>
           </View>
-        </View>
-      </SafeAreaView>
+        )}
+      />
 
       {/*
         One list: the provider card scrolls away and the "Packages" bar pins to

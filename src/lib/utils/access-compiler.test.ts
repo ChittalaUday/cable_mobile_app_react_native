@@ -1,4 +1,3 @@
-/* eslint-disable max-lines-per-function */
 import type { RoleDoc, UserAccessDoc, UserProfileDoc } from '@/types/access';
 import { PERMISSIONS } from '@/constants/permissions';
 import { compileUserAccess, evaluateScopeAccess, mergeScopes } from './access-compiler';

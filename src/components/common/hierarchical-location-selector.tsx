@@ -110,7 +110,7 @@ export function LocationBreadcrumb({
         accessibilityLabel="Top level"
         onPress={() => onJump([])}
         className={`flex-row items-center gap-1 rounded-lg px-2.5 py-1 ${
-          trail.length === 0 ? 'dark:bg-primary-950/40 bg-primary-50' : 'bg-muted/50 active:bg-muted'
+          trail.length === 0 ? 'bg-primary-50 dark:bg-primary-950/40' : 'bg-muted/50 active:bg-muted'
         }`}
       >
         <HugeiconsIcon
@@ -138,7 +138,7 @@ export function LocationBreadcrumb({
               accessibilityLabel={step.name}
               onPress={() => onJump(trail.slice(0, index + 1))}
               className={`max-w-[140px] rounded-lg px-2.5 py-1 ${
-                isCurrent ? 'dark:bg-primary-950/40 bg-primary-50' : 'bg-muted/50 active:bg-muted'
+                isCurrent ? 'bg-primary-50 dark:bg-primary-950/40' : 'bg-muted/50 active:bg-muted'
               }`}
             >
               <Text
@@ -157,7 +157,6 @@ export function LocationBreadcrumb({
   );
 }
 
-// eslint-disable-next-line max-lines-per-function
 export function HierarchicalLocationSelector({
   selectedLocationId,
   onSelectLocation,
@@ -197,11 +196,11 @@ export function HierarchicalLocationSelector({
 
   const locationsList = React.useMemo(() => locationsPage?.items ?? [], [locationsPage?.items]);
 
-  React.useEffect(() => {
-    if (!selectedLocationId) {
-      setPickedLocation(null);
-    }
-  }, [selectedLocationId]);
+  // The pick follows the prop that owns it: clearing the selection upstream
+  // clears what is shown. Adjusted during render, since an effect would leave
+  // the old location on screen for a frame after it was cleared.
+  if (!selectedLocationId && pickedLocation !== null)
+    setPickedLocation(null);
 
   // Current level locations from useLocationLevel with fallback to useLocations
   const currentItems = React.useMemo(() => {
@@ -264,7 +263,7 @@ export function HierarchicalLocationSelector({
         className={`flex-row items-center justify-between rounded-xl border border-border bg-surface p-3 active:bg-muted/30 ${triggerClassName ?? ''}`}
       >
         <View className="flex-1 flex-row items-center gap-2.5">
-          <View className="dark:bg-primary-950/50 size-7 items-center justify-center rounded-lg bg-primary-50">
+          <View className="size-7 items-center justify-center rounded-lg bg-primary-50 dark:bg-primary-950/50">
             <HugeiconsIcon icon={Location01Icon} size={16} color={colors.primary[500]} strokeWidth={2.2} />
           </View>
           <View className="flex-1">
@@ -330,7 +329,7 @@ export function HierarchicalLocationSelector({
                       onPress={() => handleSelect(null)}
                       className={`flex-row items-center justify-between rounded-xl border p-2.5 ${
                         !selectedLocationId
-                          ? 'dark:bg-primary-950/40 border-primary-500/50 bg-primary-50'
+                          ? 'border-primary-500/50 bg-primary-50 dark:bg-primary-950/40'
                           : 'border-border/60 bg-surface active:bg-muted/40'
                       }`}
                     >
@@ -355,7 +354,7 @@ export function HierarchicalLocationSelector({
                         onPress={() => handleSelect(currentParent)}
                         className={`flex-row items-center justify-between rounded-xl border p-2.5 ${
                           selectedLocationId === currentParent.id
-                            ? 'dark:bg-primary-950/40 border-primary-500/50 bg-primary-50'
+                            ? 'border-primary-500/50 bg-primary-50 dark:bg-primary-950/40'
                             : 'border-border/60 bg-surface active:bg-muted/40'
                         }`}
                       >
@@ -407,7 +406,7 @@ export function HierarchicalLocationSelector({
                                 key={loc.id}
                                 className={`flex-row items-center justify-between rounded-xl border p-2.5 ${
                                   isSelected
-                                    ? 'dark:bg-primary-950/40 border-primary-500/50 bg-primary-50'
+                                    ? 'border-primary-500/50 bg-primary-50 dark:bg-primary-950/40'
                                     : 'border-border/60 bg-surface'
                                 }`}
                               >

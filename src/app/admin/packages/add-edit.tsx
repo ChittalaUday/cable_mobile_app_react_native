@@ -1,19 +1,19 @@
 import type { ServiceProvider } from '@/lib/api/types';
-import { ArrowDown01Icon, ArrowLeft01Icon, ArrowRight01Icon, Location01Icon, PackageIcon } from '@hugeicons/core-free-icons';
+import { ArrowDown01Icon, ArrowRight01Icon, Location01Icon, PackageIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
-import { Alert, ScrollView, Switch, TextInput } from 'react-native';
+import { Alert, Switch, TextInput } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { SaveBar } from '@/components/common/save-bar';
-import { Card } from '@/components/common/shell';
+import { Card, ScreenHeader } from '@/components/common/shell';
 import {
   colors,
   FocusAwareStatusBar,
   Pressable,
-  SafeAreaView,
   Text,
   View,
 } from '@/components/ui';
@@ -81,7 +81,7 @@ function ProviderPicker({
                         onSelect(provider);
                         setOpen(false);
                       }}
-                      className={`rounded-xl px-4 py-2.5 ${provider.id === selectedId ? 'dark:bg-primary-950/60 bg-primary-50' : ''}`}
+                      className={`rounded-xl px-4 py-2.5 ${provider.id === selectedId ? 'bg-primary-50 dark:bg-primary-950/60' : ''}`}
                     >
                       <Text className={`text-sm font-semibold ${provider.id === selectedId ? 'text-primary-600' : 'text-foreground'}`}>
                         {provider.name}
@@ -96,7 +96,6 @@ function ProviderPicker({
   );
 }
 
-// eslint-disable-next-line max-lines-per-function
 export function AddEditPackageScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -213,31 +212,18 @@ export function AddEditPackageScreen() {
   return (
     <View className="flex-1 bg-surface">
       <FocusAwareStatusBar />
-      <SafeAreaView edges={['top']} className="bg-surface">
-        <View className="flex-row items-center gap-3 px-3 pt-1 pb-3">
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Back"
-            onPress={() => router.back()}
-            className="size-9 items-center justify-center rounded-lg border border-border bg-card"
-          >
-            <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color={colors.charcoal[900]} strokeWidth={2.2} />
-          </Pressable>
-          <View>
-            <Text className="text-xl font-bold text-foreground">
-              {editingPackageId ? 'Edit Package' : 'Add Package'}
-            </Text>
-            <Text className="text-xs text-muted-foreground">
-              {editingPackageId ? 'Update package details' : 'Create a new package'}
-            </Text>
-          </View>
-        </View>
-      </SafeAreaView>
+      <ScreenHeader
+        title={editingPackageId ? 'Edit Package' : 'Add Package'}
+        subtitle={editingPackageId ? 'Update package details' : 'Create a new package'}
+        showBack
+        withSafeArea
+      />
 
-      <ScrollView
-        className="flex-1 px-4"
-        contentContainerClassName="pt-2 pb-28 gap-4"
+      <KeyboardAwareScrollView
+        style={{ flex: 1, paddingHorizontal: 16 }}
+        contentContainerStyle={{ gap: 16, paddingTop: 8, paddingBottom: 112 }}
         keyboardShouldPersistTaps="handled"
+        bottomOffset={24}
         showsVerticalScrollIndicator={false}
       >
         <View className="gap-1.5">
@@ -297,7 +283,7 @@ export function AddEditPackageScreen() {
                         setField('billingCycle', opt.key);
                         setCycleDropdownOpen(false);
                       }}
-                      className={`rounded-xl px-4 py-2.5 ${billingCycle === opt.key ? 'dark:bg-primary-950/60 bg-primary-50' : ''}`}
+                      className={`rounded-xl px-4 py-2.5 ${billingCycle === opt.key ? 'bg-primary-50 dark:bg-primary-950/60' : ''}`}
                     >
                       <Text className={`text-sm font-semibold ${billingCycle === opt.key ? 'text-primary-600' : 'text-foreground'}`}>
                         {opt.label}
@@ -386,7 +372,7 @@ export function AddEditPackageScreen() {
             thumbColor="#ffffff"
           />
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       <SaveBar
         label={editingPackageId ? 'Save Changes' : 'Save Package'}

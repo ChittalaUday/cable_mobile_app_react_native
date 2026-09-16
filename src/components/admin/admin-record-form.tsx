@@ -4,8 +4,10 @@ import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, Switch, TextInput } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { Button, colors, Pressable, Text, View } from '@/components/ui';
 
-import { Button, colors, Pressable, ScrollView, Text, View } from '@/components/ui';
+import { useDismissKeyboardOnExit } from '@/lib/hooks/common/use-dismiss-keyboard';
 
 export type FormValue = boolean | string | string[];
 export type FormValues = Record<string, FormValue>;
@@ -67,6 +69,8 @@ export function AdminRecordForm({ title, fields, initialValues, saving, error, o
   const [values, setValues] = React.useState(initialValues);
   const [missing, setMissing] = React.useState<string[]>([]);
 
+  useDismissKeyboardOnExit();
+
   const submit = () => {
     const nextMissing = fields.filter(field => field.required && !values[field.key]).map(field => field.key);
     setMissing(nextMissing);
@@ -84,7 +88,11 @@ export function AdminRecordForm({ title, fields, initialValues, saving, error, o
               <HugeiconsIcon icon={Cancel01Icon} size={22} color={colors.neutral[500]} />
             </Pressable>
           </View>
-          <ScrollView contentContainerClassName="gap-4 px-5 py-5 pb-10" keyboardShouldPersistTaps="handled">
+          <KeyboardAwareScrollView
+            contentContainerStyle={{ gap: 16, paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40 }}
+            keyboardShouldPersistTaps="handled"
+            bottomOffset={24}
+          >
             {fields.map((field) => {
               const value = values[field.key] ?? (field.type === 'boolean' ? false : field.type === 'multiselect' ? [] : '');
               if (field.type === 'boolean') {
@@ -123,7 +131,7 @@ export function AdminRecordForm({ title, fields, initialValues, saving, error, o
             })}
             {error ? <Text selectable className="text-sm font-semibold text-danger-500">{error}</Text> : null}
             <Button label={t('admin.save')} loading={saving} onPress={submit} />
-          </ScrollView>
+          </KeyboardAwareScrollView>
         </View>
       </View>
     </Modal>
