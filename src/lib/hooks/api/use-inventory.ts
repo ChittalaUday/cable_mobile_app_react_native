@@ -71,7 +71,7 @@ export const useIssueEquipment = createMutation<
 
 export const useCreateCatalogItem = createMutation<StockItem, { payload: CatalogItemPayload }, Error>({
   mutationFn: async ({ payload }) => {
-    const response = await client.post<StockItem>('/inventory/items', payload);
+    const response = await client.post<StockItem>('/inventory/catalog', payload);
     return response.data;
   },
 });
@@ -82,7 +82,7 @@ export const useCreateApprovalRequest = createMutation<
   Error
 >({
   mutationFn: async ({ payload }) => {
-    const response = await client.post<ApprovalRequest>('/inventory/requests', payload);
+    const response = await client.post<ApprovalRequest>('/inventory/approval-requests', payload);
     return response.data;
   },
 });
@@ -90,7 +90,7 @@ export const useCreateApprovalRequest = createMutation<
 export const useApprovalRequests = createQuery<ApprovalRequest[], void, Error>({
   queryKey: ['inventory', 'requests'],
   fetcher: async () => {
-    const response = await client.get<ApprovalRequest[]>('/inventory/requests');
+    const response = await client.get<ApprovalRequest[]>('/inventory/approval-requests');
     return response.data;
   },
   staleTime: 30 * 1000,
@@ -102,7 +102,7 @@ export const useReviewApprovalRequest = createMutation<
   Error
 >({
   mutationFn: async ({ id, patch }) => {
-    const response = await client.post<ApprovalRequest>(`/inventory/requests/${id}/review`, patch);
+    const response = await client.patch<ApprovalRequest>(`/inventory/approval-requests/${id}`, patch);
     return response.data;
   },
 });

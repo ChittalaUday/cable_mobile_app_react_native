@@ -2,6 +2,7 @@ import type { ConsolidatedCustomer } from '@/types/customer-connection';
 import { MotiView } from 'moti';
 import * as React from 'react';
 import { CustomerConnectionCard } from '@/components/common/customer-connection-card';
+import { NotificationBell } from '@/components/notifications/notification-bell';
 import { Button, Pressable, ScrollView, Text, View } from '@/components/ui';
 import { useAuthStore } from '@/lib/hooks/stores/use-auth-store';
 
@@ -65,10 +66,13 @@ export function CustomerDashboardScreen() {
     <View className="flex-1 bg-background">
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerClassName="gap-5 px-4 pb-28 pt-5">
         <MotiView from={{ opacity: 0, translateY: -12 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', duration: 300 }}>
-          <View className="gap-1">
-            <Text className="text-sm font-semibold tracking-widest text-primary-500 uppercase">Satya Cable & Broadband</Text>
-            <Text selectable className="text-3xl font-bold text-foreground">{customerContent.title}</Text>
-            <Text selectable className="text-muted-foreground">{user?.email ?? 'Customer account'}</Text>
+          <View className="flex-row items-start justify-between gap-2">
+            <View className="flex-1 gap-1">
+              <Text className="text-sm font-semibold tracking-widest text-primary-500 uppercase">Satya Cable & Broadband</Text>
+              <Text selectable className="text-3xl font-bold text-foreground">{customerContent.title}</Text>
+              <Text selectable className="text-muted-foreground">{user?.email ?? 'Customer account'}</Text>
+            </View>
+            <NotificationBell />
           </View>
         </MotiView>
 

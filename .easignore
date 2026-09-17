@@ -8,8 +8,6 @@ npm-debug.*
 *.key
 *firebase-adminsdk*.json
 service-account*.json
-GoogleService-Info*.plist
-google-services*.json
 *.mobileprovision
 *.orig.*
 web-build/
@@ -21,10 +19,3 @@ yarn-error.log
 /android
 **/.gradle/
 **/build/
-
-
-expo-env.d.ts
-.env
-.env.*
-!.env.example
-# @end expo-cli

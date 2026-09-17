@@ -4,7 +4,7 @@ import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { colors, Pressable, Text, View } from '@/components/ui';
+import { colors, Input, Pressable, Text, View } from '@/components/ui';
 
 const DEVICE_TYPES: { type: RemoteDeviceType; icon: typeof Tv01Icon }[] = [
   { type: 'tv', icon: Tv01Icon },
@@ -26,16 +26,30 @@ export function RemotePicker({ deviceType, onDeviceType, remotes, onSelect }: {
   onSelect: (remote: RemoteSummary) => void;
 }) {
   const { t } = useTranslation();
+  const [search, setSearch] = React.useState('');
+
+  const filtered = React.useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q)
+      return remotes;
+    return remotes.filter(r => r.brand.toLowerCase().includes(q) || r.model.toLowerCase().includes(q));
+  }, [remotes, search]);
 
   const brands = React.useMemo(() => {
     const grouped = new Map<string, RemoteSummary[]>();
-    for (const remote of remotes)
+    for (const remote of filtered)
       grouped.set(remote.brand, [...(grouped.get(remote.brand) ?? []), remote]);
     return [...grouped.entries()];
-  }, [remotes]);
+  }, [filtered]);
 
   return (
     <View className="gap-4">
+      <Input
+        placeholder={t('remote.search_placeholder')}
+        value={search}
+        onChangeText={setSearch}
+        testID="remote-search-input"
+      />
       <View className="flex-row gap-2 rounded-2xl border border-border bg-card p-2">
         {DEVICE_TYPES.map(({ type, icon }) => {
           const active = deviceType === type;

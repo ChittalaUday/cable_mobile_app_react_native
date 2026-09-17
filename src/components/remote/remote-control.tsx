@@ -1,4 +1,4 @@
-import type { RemoteButton, RemoteDetail, RemoteDeviceType, RemoteSummary } from '@/lib/api/types';
+import type { RemoteButton, RemoteCapture, RemoteDetail, RemoteDeviceType, RemoteSummary } from '@/lib/api/types';
 import type { IrCapabilities, IrCapabilityStatus } from '@/lib/ir-blaster';
 import { CirclePowerIcon, RemoteControlIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
@@ -7,8 +7,9 @@ import { useTranslation } from 'react-i18next';
 
 import { ActivityIndicator, Button, colors, Pressable, Text, View } from '@/components/ui';
 import { useRemote, useRemotes } from '@/lib/hooks/api/use-remotes';
-import { getCapabilities, transmit } from '@/lib/ir-blaster';
+import { captureToCommand, getCapabilities, transmit } from '@/lib/ir-blaster';
 
+import { RemoteCapturesView } from './remote-captures';
 import { RemotePicker } from './remote-picker';
 
 const statusKeys: Record<Exclude<IrCapabilityStatus, 'available'>, 'remote.hardware_error' | 'remote.module_unavailable' | 'remote.no_emitter' | 'remote.service_unavailable' | 'remote.unsupported_platform'> = {
@@ -61,11 +62,17 @@ export function RemoteControl() {
   const [capabilities, setCapabilities] = React.useState<IrCapabilities | null>(null);
   const [deviceType, setDeviceType] = React.useState<RemoteDeviceType>('tv');
   const [selected, setSelected] = React.useState<RemoteSummary | null>(null);
+  const [activeTab, setActiveTab] = React.useState<'captures' | 'pad'>('pad');
   const [sending, setSending] = React.useState<string | null>(null);
   const [feedback, setFeedback] = React.useState<{ kind: 'error' | 'success'; text: string } | null>(null);
 
   const remotes = useRemotes({ variables: { deviceType } });
   const remote = useRemote({ variables: { id: selected?.id ?? '' }, enabled: selected !== null });
+
+  const handleSelect = React.useCallback((next: RemoteSummary | null) => {
+    setSelected(next);
+    setActiveTab('pad');
+  }, []);
 
   const refreshCapabilities = React.useCallback(async () => {
     setCapabilities(null);
@@ -104,6 +111,30 @@ export function RemoteControl() {
     }
   };
 
+  const sendCapture = async (capture: RemoteCapture) => {
+    if (!ready || sending !== null)
+      return;
+
+    const key = capture.buttonKey || capture.buttonName;
+    setSending(key);
+    setFeedback(null);
+    try {
+      const command = captureToCommand(capture);
+      await transmit(command);
+      const displayLabel = t(`remote.keys.${capture.buttonKey}`, { defaultValue: capture.buttonName });
+      setFeedback({ kind: 'success', text: t('remote.sent', { key: displayLabel }) });
+    }
+    catch {
+      setFeedback({ kind: 'error', text: t('remote.transmit_failed') });
+    }
+    finally {
+      setSending(null);
+    }
+  };
+
+  const hasCaptures = (remote.data?.captures?.length ?? 0) > 0;
+  const hasButtons = (remote.data?.buttons?.length ?? 0) > 0;
+
   return (
     <View className="gap-4">
       <View className="gap-3 rounded-2xl border border-border bg-card p-4">
@@ -139,7 +170,7 @@ export function RemoteControl() {
                     against this appliance — say so rather than let a dead button
                     look like a broken emitter. */}
                 {selected.verified ? null : <Text className="text-xs text-orange-700">{t('remote.unverified_warning')}</Text>}
-                <Button label={t('remote.change')} variant="outline" size="sm" onPress={() => setSelected(null)} />
+                <Button label={t('remote.change')} variant="outline" size="sm" onPress={() => handleSelect(null)} />
               </View>
             )
           : null}
@@ -151,13 +182,76 @@ export function RemoteControl() {
               deviceType={deviceType}
               onDeviceType={setDeviceType}
               query={remotes}
-              onSelect={setSelected}
+              onSelect={handleSelect}
             />
           )
         : remote.isPending
           ? <ActivityIndicator className="py-8" color={colors.primary[600]} />
           : remote.data
-            ? <RemotePad remote={remote.data} disabled={!ready} sending={sending} onPress={send} />
+            ? (
+                <View className="gap-3">
+                  {hasCaptures && hasButtons
+                    ? (
+                        <View className="flex-row gap-2 rounded-2xl border border-border bg-card p-1.5">
+                          <Pressable
+                            accessibilityRole="tab"
+                            accessibilityState={{ selected: activeTab === 'pad' }}
+                            onPress={() => setActiveTab('pad')}
+                            className={`flex-1 items-center justify-center rounded-xl py-2.5 ${
+                              activeTab === 'pad' ? 'bg-primary-600' : ''
+                            }`}
+                          >
+                            <Text
+                              className={`text-xs font-bold ${
+                                activeTab === 'pad' ? 'text-white' : 'text-muted-foreground'
+                              }`}
+                            >
+                              {t('remote.pad_tab')}
+                            </Text>
+                          </Pressable>
+                          <Pressable
+                            accessibilityRole="tab"
+                            accessibilityState={{ selected: activeTab === 'captures' }}
+                            onPress={() => setActiveTab('captures')}
+                            className={`flex-1 items-center justify-center rounded-xl py-2.5 ${
+                              activeTab === 'captures' ? 'bg-primary-600' : ''
+                            }`}
+                          >
+                            <Text
+                              className={`text-xs font-bold ${
+                                activeTab === 'captures' ? 'text-white' : 'text-muted-foreground'
+                              }`}
+                            >
+                              {t('remote.captures_tab')}
+                              {' '}
+                              (
+                              {remote.data.captures?.length}
+                              )
+                            </Text>
+                          </Pressable>
+                        </View>
+                      )
+                    : null}
+
+                  {activeTab === 'captures' && remote.data.captures && remote.data.captures.length > 0
+                    ? (
+                        <RemoteCapturesView
+                          captures={remote.data.captures}
+                          disabled={!ready}
+                          sending={sending}
+                          onPress={sendCapture}
+                        />
+                      )
+                    : (
+                        <RemotePad
+                          remote={remote.data}
+                          disabled={!ready}
+                          sending={sending}
+                          onPress={send}
+                        />
+                      )}
+                </View>
+              )
             : (
                 <View className="items-center gap-2 rounded-2xl border border-border bg-card p-6">
                   <Text className="text-center text-muted-foreground">{t('remote.load_failed')}</Text>

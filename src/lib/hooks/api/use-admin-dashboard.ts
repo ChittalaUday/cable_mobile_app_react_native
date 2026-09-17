@@ -93,7 +93,7 @@ export function mapAdminDashboard(dto: AdminDashboardResponse): AdminDashboard {
 
 export const useAdminDashboard = createQuery<AdminDashboard, DashboardVariables, Error>({
   queryKey: [QUERY_KEYS.ADMIN_DASHBOARD],
-  fetcher: async () => mapAdminDashboard((await client.get<AdminDashboardResponse>('/analytics/admin-dashboard')).data),
+  fetcher: async () => mapAdminDashboard((await client.get<AdminDashboardResponse>('/analytics/dashboard/admin')).data),
   staleTime: 5 * 60 * 1000,
 });
 

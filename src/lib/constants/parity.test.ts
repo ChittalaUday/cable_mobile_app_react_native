@@ -16,7 +16,7 @@ import path from 'node:path';
  */
 
 const BACKEND = path.resolve(__dirname, '../../../../cable-backend/src/shared/constants');
-const MIRRORED = ['crm', 'geo', 'tenancy', 'inventory', 'remotes', 'auth'] as const;
+const MIRRORED = ['crm', 'geo', 'tenancy', 'inventory', 'remotes', 'auth', 'notify'] as const;
 
 /** Every `export const NAME = [...] as const` in a file, as a name → values map. */
 function readConstants(file: string): Record<string, string[]> {

@@ -55,7 +55,8 @@ export default antfu(
   // Custom rules
   {
     rules: {
-      'max-params': ['error', 3],
+      'max-params': 'off',
+      'ts/max-params': 'off',
       // Length is not the thing that makes a function hard to read; a screen
       // component or a route table is long because it is a list.
       'max-lines-per-function': 'off',

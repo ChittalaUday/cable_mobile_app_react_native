@@ -1,4 +1,5 @@
 import type { IconSvgElement } from '@hugeicons/react-native';
+import type { Href } from 'expo-router';
 import {
   ArrowRight01Icon,
   HeadsetIcon,
@@ -8,6 +9,7 @@ import {
   UserIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
+import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { Alert } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
@@ -19,14 +21,15 @@ import { translate } from '@/lib/i18n';
 import { initials } from '@/lib/utils/admin-format';
 import { authErrorMessage } from '@/lib/utils/auth-error';
 
-const ROWS: { key: string; icon: IconSvgElement; tint: keyof typeof TINT; label: string }[] = [
+const ROWS: { key: string; icon: IconSvgElement; tint: keyof typeof TINT; label: string; route?: Href }[] = [
   { key: 'account', icon: UserIcon, tint: 'blue', label: 'Account details' },
-  { key: 'notifications', icon: Notification03Icon, tint: 'orange', label: 'Notifications' },
+  { key: 'notifications', icon: Notification03Icon, tint: 'orange', label: 'Notifications', route: '/notifications' },
   { key: 'language', icon: TranslateIcon, tint: 'purple', label: 'Language' },
   { key: 'support', icon: HeadsetIcon, tint: 'green', label: 'Help & support' },
 ];
 
 export function ProfileScreen() {
+  const router = useRouter();
   const user = useAuthStore.use.user();
   const role = useAuthStore.use.role();
   const signOut = useAuthStore.use.signOut();
@@ -91,7 +94,11 @@ export function ProfileScreen() {
           {ROWS.map((row, index) => (
             <View key={row.key}>
               {index > 0 && <Divider />}
-              <Pressable accessibilityRole="button" onPress={() => comingSoon(row.label)} className="flex-row items-center gap-3 py-3.5">
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => (row.route === undefined ? comingSoon(row.label) : router.push(row.route))}
+                className="flex-row items-center gap-3 py-3.5"
+              >
                 <IconTile icon={row.icon} tint={row.tint} size={32} iconSize={17} />
                 <Text className="flex-1 text-[14px] text-charcoal-900">{row.label}</Text>
                 <HugeiconsIcon icon={ArrowRight01Icon} size={16} color={colors.neutral[400]} strokeWidth={2.2} />

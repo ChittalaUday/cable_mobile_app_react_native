@@ -24,17 +24,23 @@
     "preview": {
       "channel": "preview",
       "autoIncrement": true,
-      "distribution": "store",
+      "distribution": "internal",
       "ios": {
-        "image": "latest"
+        "simulator": false
       },
       "android": {
-        "buildType": "apk",
-        "image": "latest"
+        "buildType": "apk"
       },
-      "environment": "preview",
       "env": {
         "EXPO_PUBLIC_APP_ENV": "preview",
+        "EXPO_PUBLIC_API_URL": "https://cable-staging.onmog.tech/api/v1",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyAktICNxaF1PsI0X7pGYH3clMJTsBJ1aLU",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "cableapp-642c4.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "cableapp-642c4",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "cableapp-642c4.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "128237611073",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:128237611073:android:19f1b0a11e72d47e4d7ec0",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "128237611073-jmftq3qlgfcof12ur2165n1s3hhuq2m1.apps.googleusercontent.com",
         "NODE_ENV": "production"
       }
     },

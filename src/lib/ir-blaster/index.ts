@@ -1,3 +1,4 @@
+import type { RemoteCapture } from '@/lib/api/types';
 import type {
   IrBlasterErrorCode,
   IrCapabilities,
@@ -12,6 +13,33 @@ import { IrBlasterError } from '@/lib/ir-blaster/types';
 
 export { encodeIrCommand } from '@/lib/ir-blaster/encode';
 export * from '@/lib/ir-blaster/types';
+
+/**
+ * Converts a stored raw signal capture to an emitter-ready IrCommand.
+ */
+export function captureToCommand(capture: RemoteCapture): IrCommand {
+  const proto = capture.protocol.toLowerCase();
+  if (proto === 'nec') {
+    const addr = capture.address.startsWith('0x') ? Number.parseInt(capture.address, 16) : Number(capture.address);
+    return {
+      protocol: 'nec',
+      address: Number.isNaN(addr) ? 0 : addr,
+      command: capture.commandNumber,
+    };
+  }
+  if (capture.rawTimings && capture.rawTimings.length > 0) {
+    return {
+      protocol: 'raw',
+      carrierFrequencyHz: 38000,
+      pattern: capture.rawTimings.map(t => Math.abs(t)),
+    };
+  }
+  return {
+    protocol: 'nec',
+    address: 0,
+    command: capture.commandNumber,
+  };
+}
 
 const nativeErrorCodes: IrBlasterErrorCode[] = [
   'ERR_IR_SERVICE_UNAVAILABLE',

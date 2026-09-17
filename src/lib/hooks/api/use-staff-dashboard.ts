@@ -52,6 +52,6 @@ export function mapStaffDashboard(dto: StaffDashboardResponse): StaffDashboard {
 
 export const useStaffDashboard = createQuery<StaffDashboard, void, Error>({
   queryKey: ['staff-dashboard'],
-  fetcher: async () => mapStaffDashboard((await client.get<StaffDashboardResponse>('/analytics/staff-dashboard')).data),
+  fetcher: async () => mapStaffDashboard((await client.get<StaffDashboardResponse>('/analytics/dashboard/staff')).data),
   staleTime: 5 * 60 * 1000,
 });

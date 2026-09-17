@@ -13,8 +13,10 @@ import { logScreenView, setUserId as setAnalyticsUserId } from '@/lib/analytics'
 import { APIProvider, queryClient } from '@/lib/api';
 import { initFirebaseAppCheck } from '@/lib/app-check';
 import { setCrashlyticsUserId } from '@/lib/crashlytics';
+import { useNotificationSync } from '@/lib/hooks/common/use-notification-sync';
 import { loadSelectedTheme } from '@/lib/hooks/common/use-selected-theme';
 import { useAuthStore } from '@/lib/hooks/stores/use-auth-store';
+import { registerBackgroundHandler } from '@/lib/notifications';
 // Import  global CSS file
 import '../global.css';
 
@@ -28,6 +30,9 @@ export const unstable_settings = {
 loadSelectedTheme();
 // Must run before Firebase monitoring makes its first request.
 initFirebaseAppCheck();
+// Must be registered before React mounts, not inside a component: the native
+// side looks for it as soon as a push arrives with the app in the background.
+registerBackgroundHandler();
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 // Set the animation options. This is optional.
@@ -98,6 +103,7 @@ export default function RootLayout() {
 
   return (
     <Providers onLayout={onLayoutRootView}>
+      <NotificationSync />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="select-tenant" options={{ headerShown: false }} />
@@ -105,9 +111,24 @@ export default function RootLayout() {
         <Stack.Screen name="admin" options={{ headerShown: false }} />
         <Stack.Screen name="staff" options={{ headerShown: false }} />
         <Stack.Screen name="customer" options={{ headerShown: false }} />
+        <Stack.Screen name="notifications" options={{ headerShown: false }} />
+        <Stack.Screen name="remote" options={{ headerShown: false }} />
       </Stack>
     </Providers>
   );
+}
+
+/**
+ * Push registration, the foreground handler and the in-app message pull.
+ *
+ * A component rather than a hook call in `RootLayout`, because it reads React
+ * Query and the provider for that is rendered by `Providers` — below the root,
+ * so a hook called in the root would have no client. Mounted once, and inside
+ * the provider, so it still covers launches nobody is signed in for.
+ */
+function NotificationSync() {
+  useNotificationSync();
+  return null;
 }
 
 function Providers({

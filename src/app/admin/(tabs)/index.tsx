@@ -63,10 +63,7 @@ export function AdminHomeScreen() {
                   className="flex-1"
                 >
                   <View className="gap-2.5">
-                    <OperatorHeader
-                      onNotifications={() => comingSoon('Notifications')}
-                      onSearch={() => setSearchVisible(true)}
-                    />
+                    <OperatorHeader onSearch={() => setSearchVisible(true)} />
                     <Greeting greeting={greeting(now)} name={firstName} />
                     <KpiGrid data={data} />
                     <QuickActions onPress={onQuickAction} onSeeAll={() => router.push('/admin/analytics')} />

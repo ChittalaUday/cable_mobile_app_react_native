@@ -1,4 +1,4 @@
-import type { RemoteDetail, RemoteDeviceType, RemoteSummary } from '@/lib/api/types';
+import type { RemoteCapture, RemoteDetail, RemoteDeviceType, RemoteSummary } from '@/lib/api/types';
 import { createQuery } from 'react-query-kit';
 import { client } from '@/lib/api/client';
 
@@ -22,6 +22,16 @@ export const useRemote = createQuery<RemoteDetail, { id: string }, Error>({
   queryKey: ['remotes', 'detail'],
   fetcher: async ({ id }) => {
     const response = await client.get<RemoteDetail>(`/remotes/${id}`);
+    return response.data;
+  },
+  staleTime: 60 * 60 * 1000,
+});
+
+/** Signal captures recorded for a handset. */
+export const useRemoteCaptures = createQuery<RemoteCapture[], { id: string }, Error>({
+  queryKey: ['remotes', 'captures'],
+  fetcher: async ({ id }) => {
+    const response = await client.get<RemoteCapture[]>(`/remotes/${id}/captures`);
     return response.data;
   },
   staleTime: 60 * 60 * 1000,

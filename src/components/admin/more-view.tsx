@@ -126,7 +126,7 @@ export function MoreView() {
         <Card className="border border-border p-3.5">
           <Pressable
             accessibilityRole="button"
-            onPress={() => router.push('/profile')}
+            onPress={() => router.push('/admin/profile')}
             className="flex-row items-center justify-between"
           >
             <View className="flex-row items-center gap-3">

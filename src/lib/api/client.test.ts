@@ -15,6 +15,7 @@ jest.mock('@/lib/storage', () => ({
 
 jest.mock('env', () => ({ __esModule: true, default: { EXPO_PUBLIC_API_URL: 'https://api.test', EXPO_PUBLIC_VERSION: '1.0.0' } }));
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'device-1' }));
+jest.mock('expo-constants', () => ({ __esModule: true, default: { expoConfig: { hostUri: '172.16.16.219:8081' } } }));
 
 // The refresh call deliberately bypasses the instance, so it is the bare
 // `axios.post` that has to be intercepted here.
@@ -146,5 +147,24 @@ describe('api client refresh', () => {
     // A 500 is not a reason to throw the session away.
     expect(mockRefreshCalls).toEqual([]);
     expect(mockStore.has('token')).toBe(true);
+  });
+});
+
+describe('devHostUrl', () => {
+  it('points a loopback address at the machine Metro is served from', () => {
+    const { devHostUrl } = require<typeof ClientModule>('./client');
+
+    // Without this, every request from a real device fails as "Network Error":
+    // localhost on the phone is the phone.
+    expect(devHostUrl('http://localhost:5050/api/v1')).toBe('http://172.16.16.219:5050/api/v1');
+    expect(devHostUrl('http://127.0.0.1:5050/api/v1')).toBe('http://172.16.16.219:5050/api/v1');
+  });
+
+  it('leaves a real host alone', () => {
+    const { devHostUrl } = require<typeof ClientModule>('./client');
+
+    expect(devHostUrl('https://api.example.com/api/v1')).toBe('https://api.example.com/api/v1');
+    // Only the host is matched, never a path that happens to say localhost.
+    expect(devHostUrl('https://api.example.com/localhost')).toBe('https://api.example.com/localhost');
   });
 });

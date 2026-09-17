@@ -883,8 +883,26 @@ export type RemoteSummary = {
   buttonCount: number;
 };
 
+export type RemoteCapture = {
+  id: string;
+  remoteId: string | null;
+  buttonName: string;
+  buttonKey: string;
+  protocol: string;
+  address: string;
+  command: string;
+  commandNumber: number;
+  rawData: string;
+  bits: number;
+  bitOrder: string;
+  repeat: boolean;
+  rawTimings: number[];
+  capturedAt: string | null;
+};
+
 export type RemoteDetail = Omit<RemoteSummary, 'buttonCount'> & {
   buttons: RemoteButton[];
+  captures?: RemoteCapture[];
 };
 
 /**
@@ -914,5 +932,11 @@ export type {
   StockMovementType,
   TrackingType,
 } from '@/lib/constants/inventory';
+export type {
+  NotificationCategory,
+  NotificationChannel,
+  NotificationDelivery,
+  NotificationStatus,
+} from '@/lib/constants/notify';
 export type { RemoteDeviceType, RemoteSource } from '@/lib/constants/remotes';
 export type { MembershipSettableStatus, MembershipStatus } from '@/lib/constants/tenancy';

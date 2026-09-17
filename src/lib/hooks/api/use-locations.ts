@@ -110,7 +110,7 @@ export const useDeleteLocation = createMutation<void, { id: string }, Error>({
 export const useLocationAvailability = createQuery<Availability, { id: string }, Error>({
   queryKey: ['locations', 'availability'],
   fetcher: async ({ id }) => {
-    const response = await client.get<Availability>(`/locations/${id}/availability`);
+    const response = await client.get<Availability>(`/locations/${id}/available-services`);
     return response.data;
   },
   staleTime: 5 * 60 * 1000,

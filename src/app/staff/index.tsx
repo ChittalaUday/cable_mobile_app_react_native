@@ -10,6 +10,7 @@ import { useRouter } from 'expo-router';
 import { MotiView } from 'moti';
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
+import { NotificationBell } from '@/components/notifications/notification-bell';
 import { RemoteControl } from '@/components/remote/remote-control';
 import { StaffCollectionsCard } from '@/components/staff/staff-collections-card';
 import {
@@ -62,14 +63,17 @@ export function StaffDashboardScreen() {
           animate={{ opacity: 1, translateY: 0 }}
           transition={{ type: 'timing', duration: 300 }}
         >
-          <View className="gap-0.5">
-            <Text className="text-xs font-bold tracking-widest text-primary-600 uppercase">
-              Good morning, Technician
-            </Text>
-            <Text selectable className="text-2xl font-black text-foreground">
-              {user?.displayName ?? user?.email?.split('@')[0] ?? 'Field Officer'}
-            </Text>
-            <Text className="text-xs text-muted-foreground">Here's what's happening today.</Text>
+          <View className="flex-row items-start justify-between gap-2">
+            <View className="flex-1 gap-0.5">
+              <Text className="text-xs font-bold tracking-widest text-primary-600 uppercase">
+                Good morning, Technician
+              </Text>
+              <Text selectable className="text-2xl font-black text-foreground">
+                {user?.displayName ?? user?.email?.split('@')[0] ?? 'Field Officer'}
+              </Text>
+              <Text className="text-xs text-muted-foreground">Here's what's happening today.</Text>
+            </View>
+            <NotificationBell />
           </View>
         </MotiView>
 

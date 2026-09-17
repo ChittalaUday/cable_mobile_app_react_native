@@ -45,6 +45,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
       NSCameraUsageDescription: 'Allow $(PRODUCT_NAME) to access your camera to scan barcodes.',
+      // Lets a push wake the app long enough to update the badge and inbox.
+      UIBackgroundModes: ['remote-notification'],
+    },
+    entitlements: {
+      // Sandbox APNs for anything but a store build. A debug build carrying
+      // `production` registers against the wrong APNs environment and every
+      // push is dropped with no error on either side.
+      'aps-environment': Env.EXPO_PUBLIC_APP_ENV === 'production' ? 'production' : 'development',
     },
   },
   experiments: {
@@ -57,6 +65,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
     package: Env.EXPO_PUBLIC_PACKAGE,
     googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? './google-services.json',
+    // Android 13+ will not show a notification without the user granting this.
+    permissions: ['android.permission.POST_NOTIFICATIONS'],
   },
   web: {
     favicon: './assets/favicon.png',
@@ -78,6 +88,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ['@react-native-firebase/app', { ios: { disableSPM: true } }],
     '@react-native-firebase/crashlytics',
     './plugins/with-firebase-modular-headers',
+    './plugins/with-notifee-maven',
+    './plugins/with-notification-icon',
     '@react-native-firebase/app-check',
     '@react-native-firebase/perf',
     [
