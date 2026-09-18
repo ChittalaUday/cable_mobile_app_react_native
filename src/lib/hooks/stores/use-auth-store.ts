@@ -29,7 +29,7 @@ type AuthState = {
   user: AuthUser | null;
   hydrate: () => () => void;
   signIn: (identifier: string, password: string) => Promise<void>;
-  requestOtp: (phone: string) => Promise<number>;
+  requestOtp: (phone: string) => Promise<{ expiresInSeconds: number; nextCooldownSeconds: number }>;
   verifyOtp: (phone: string, code: string) => Promise<void>;
   switchTenant: (tenantId: string, persist?: boolean) => void;
   /** Drop back to the picker without signing out. */
@@ -84,6 +84,9 @@ function roleFor(isSuperAdmin: boolean, membership?: Membership): UserRole | nul
     return membership.roleId;
   return USER_ROLES.CUSTOMER;
 }
+
+/** The backend's base resend cooldown, used only when it does not send its own. */
+const OTP_BASE_COOLDOWN_SECONDS = 60;
 
 const signedOut = {
   error: null,
@@ -217,7 +220,12 @@ const _useAuthStore = create<AuthState>((set, get) => ({
   requestOtp: async (phone) => {
     set({ error: null });
     const response = await client.post<OtpRequestResponse>('/auth/otp/request', { phone });
-    return response.data.expiresInSeconds;
+    return {
+      expiresInSeconds: response.data.expiresInSeconds,
+      // A server older than the escalating ladder sends no rung. Falling back to
+      // its base cooldown beats counting the resend button down from NaN.
+      nextCooldownSeconds: response.data.nextCooldownSeconds ?? OTP_BASE_COOLDOWN_SECONDS,
+    };
   },
 
   verifyOtp: async (phone, code) => {

@@ -91,6 +91,8 @@ export type OtpRequestResponse = {
   status: 'accepted';
   channel: string;
   expiresInSeconds: number;
+  /** Absent on a server older than the escalating resend ladder. */
+  nextCooldownSeconds?: number;
 };
 
 export type OtpVerifyRequest = {

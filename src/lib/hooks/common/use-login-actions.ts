@@ -12,7 +12,7 @@ export type LoginCredentials = {
   code: string;
   mode: 'password' | 'otp';
   otpRequested: boolean;
-  onOtpRequested: () => void;
+  onOtpRequested: (nextCooldownSeconds: number) => void;
 };
 
 export function useLoginActions({ email, password, phone, code, mode, otpRequested, onOtpRequested }: LoginCredentials) {
@@ -28,8 +28,8 @@ export function useLoginActions({ email, password, phone, code, mode, otpRequest
     }
     setLoading(true);
     try {
-      const expiresInSeconds = await requestOtp(phone);
-      onOtpRequested();
+      const { expiresInSeconds, nextCooldownSeconds } = await requestOtp(phone);
+      onOtpRequested(nextCooldownSeconds);
       showMessage({ message: translate('login.otp_sent', { seconds: expiresInSeconds }), type: 'success' });
     }
     catch (error) {

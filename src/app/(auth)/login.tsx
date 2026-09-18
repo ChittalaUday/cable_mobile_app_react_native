@@ -9,7 +9,6 @@ import { useLoginActions } from '@/lib/hooks/common/use-login-actions';
 import { getItem, removeItem, setItem } from '@/lib/storage';
 
 const REMEMBERED_EMAIL = 'login.remembered-email';
-const OTP_RESEND_SECONDS = 60;
 
 export function LoginScreen() {
   const remembered = React.useRef(getItem<string>(REMEMBERED_EMAIL)).current;
@@ -36,10 +35,9 @@ export function LoginScreen() {
     return () => clearTimeout(timeout);
   }, [resendIn]);
 
-  const onOtpRequested = () => {
+  const onOtpRequested = (nextCooldownSeconds: number) => {
     setOtpRequested(true);
-    // ponytail: backend does not expose its resend cooldown; it remains authoritative.
-    setResendIn(OTP_RESEND_SECONDS);
+    setResendIn(nextCooldownSeconds);
   };
 
   const { loading, resendOtp, submit } = useLoginActions({ email, password, phone, code, mode, otpRequested, onOtpRequested });

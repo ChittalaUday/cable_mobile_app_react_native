@@ -90,6 +90,36 @@ describe('useAuthStore OTP authentication', () => {
   });
 });
 
+describe('requesting an OTP', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('hands the screen the cooldown the server asked for, not a guess', async () => {
+    jest.mocked(client.post).mockResolvedValueOnce({
+      data: { status: 'accepted', channel: 'whatsapp', expiresInSeconds: 300, nextCooldownSeconds: 120 },
+    } as never);
+
+    // The ladder is the server's to decide: a second unverified resend costs 120s,
+    // and the screen counts down whatever it is told rather than a fixed 60.
+    await expect(useAuthStore.getState().requestOtp('9876543210'))
+      .resolves
+      .toEqual({ expiresInSeconds: 300, nextCooldownSeconds: 120 });
+
+    expect(client.post).toHaveBeenCalledWith('/auth/otp/request', { phone: '9876543210' });
+  });
+
+  it('falls back to the base cooldown when the server sends none', async () => {
+    // A backend older than the ladder. Without the fallback the resend button
+    // counts down from undefined and never re-enables.
+    jest.mocked(client.post).mockResolvedValueOnce({
+      data: { status: 'accepted', channel: 'whatsapp', expiresInSeconds: 300 },
+    } as never);
+
+    await expect(useAuthStore.getState().requestOtp('9876543210'))
+      .resolves
+      .toEqual({ expiresInSeconds: 300, nextCooldownSeconds: 60 });
+  });
+});
+
 describe('restoring a session on launch', () => {
   beforeEach(() => {
     jest.clearAllMocks();
