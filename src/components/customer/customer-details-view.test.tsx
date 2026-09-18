@@ -29,6 +29,7 @@ const mockDetail: CustomerDetail = {
       endDate: null,
       billingCycle: 'monthly',
       price: '350.00',
+      outstandingBalance: '0.00',
       installationAddress: 'Opp. Old Bus Stand, Flat 101',
       service: { id: 's1', name: 'Cable TV', slug: 'cable-tv', icon: 'tv' },
       provider: { id: 'p1', name: 'ACT Digital', slug: 'act-digital' },

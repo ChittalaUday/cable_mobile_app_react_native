@@ -1,169 +1,156 @@
 import type { RemoteCapture } from '@/lib/api/types';
-import { CirclePowerIcon, RemoteControlIcon } from '@hugeicons/core-free-icons';
+import { WirelessIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ActivityIndicator, colors, Pressable, Text, View } from '@/components/ui';
+import { isPowerKey, KEY_ICONS, labelFor } from './keys';
+import { PAD } from './remote-key';
 
 type CategoryKey = 'all' | 'digits' | 'media' | 'nav' | 'power_vol';
 
-const CATEGORIES: { key: CategoryKey; label: string }[] = [
-  { key: 'all', label: 'All' },
-  { key: 'power_vol', label: 'Power & Vol' },
-  { key: 'nav', label: 'Nav & Menu' },
-  { key: 'digits', label: '0-9' },
-  { key: 'media', label: 'Media & Extra' },
-];
+const CATEGORIES: CategoryKey[] = ['all', 'power_vol', 'nav', 'digits', 'media'];
 
-function categorizeCapture(capture: RemoteCapture): CategoryKey {
-  const k = (capture.buttonKey || capture.buttonName).toLowerCase();
-  if (k.startsWith('digit_') || /^\d$/.test(capture.buttonName))
+const NAV_KEYS = new Set(['up', 'down', 'left', 'right', 'ok', 'menu', 'back', 'exit', 'guide', 'info', 'home']);
+
+function categorize(capture: RemoteCapture): CategoryKey {
+  const key = (capture.buttonKey || capture.buttonName).toLowerCase();
+
+  if (key.startsWith('digit_') || /^\d$/.test(capture.buttonName))
     return 'digits';
-  if (k.includes('power') || k.includes('mute') || k.includes('volume') || k.includes('audio'))
+  if (isPowerKey(key) || key === 'mute' || key.startsWith('volume') || key === 'audio')
     return 'power_vol';
-  if (
-    k.includes('up')
-    || k.includes('down')
-    || k.includes('left')
-    || k.includes('right')
-    || k === 'ok'
-    || k === 'menu'
-    || k === 'back'
-    || k === 'exit'
-    || k === 'guide'
-    || k === 'info'
-    || k.includes('page')
-  ) {
+  if (NAV_KEYS.has(key) || key.startsWith('page_'))
     return 'nav';
-  }
   return 'media';
 }
 
-export function RemoteCapturesView({
-  captures,
-  disabled,
-  sending,
-  onPress,
-}: {
+/**
+ * The raw signals recorded off a real handset, one tile per capture.
+ *
+ * This is the technician's view rather than the customer's: each tile carries
+ * the command byte it will put on the wire, because when a moulded key does
+ * nothing the next question is always which code it actually sent.
+ */
+export function RemoteCapturesView({ captures, disabled, sending, onPress }: {
   captures: RemoteCapture[];
   disabled: boolean;
-  sending: string | null;
   onPress: (capture: RemoteCapture) => void;
+  sending: string | null;
 }) {
   const { t } = useTranslation();
-  const [selectedCategory, setSelectedCategory] = React.useState<CategoryKey>('all');
+  const [category, setCategory] = React.useState<CategoryKey>('all');
 
-  const filteredCaptures = React.useMemo(() => {
-    if (selectedCategory === 'all')
-      return captures;
-    return captures.filter(c => categorizeCapture(c) === selectedCategory);
-  }, [captures, selectedCategory]);
+  const shown = React.useMemo(
+    () => (category === 'all' ? captures : captures.filter(c => categorize(c) === category)),
+    [captures, category],
+  );
 
-  const firstProtocol = captures[0]?.protocol ?? 'IR';
-  const firstAddress = captures[0]?.address ?? '0x0';
+  const protocol = captures[0]?.protocol ?? 'IR';
+  const address = captures[0]?.address ?? '0x0';
 
   return (
     <View className="gap-3">
-      {/* Capture info badge */}
-      <View className="flex-row items-center justify-between rounded-xl border border-border bg-card px-3 py-2.5">
+      <View className="flex-row items-center justify-between rounded-2xl border border-border bg-card px-3.5 py-3">
         <View className="flex-row items-center gap-2">
-          <HugeiconsIcon icon={RemoteControlIcon} size={16} color={colors.primary[600]} strokeWidth={2.2} />
-          <Text className="text-xs font-semibold text-foreground">
+          <HugeiconsIcon icon={WirelessIcon} size={16} color={colors.primary[600]} strokeWidth={2.2} />
+          <Text className="text-xs font-bold text-foreground">
             {t('remote.capture_count', { count: captures.length })}
           </Text>
         </View>
-        <View className="flex-row items-center gap-2">
-          <View className="rounded-md border border-border bg-surface px-2 py-0.5">
-            <Text className="font-mono text-[10px] font-bold text-muted-foreground">
-              {firstProtocol}
-            </Text>
-          </View>
-          <View className="rounded-md border border-border bg-surface px-2 py-0.5">
-            <Text className="font-mono text-[10px] font-bold text-muted-foreground">
-              ADDR:
-              {' '}
-              {firstAddress}
-            </Text>
-          </View>
+        <View className="flex-row items-center gap-1.5">
+          <Chip>{protocol}</Chip>
+          <Chip>{`ADDR ${address}`}</Chip>
         </View>
       </View>
 
-      {/* Category filter pills */}
       <View className="flex-row flex-wrap gap-1.5">
-        {CATEGORIES.map((cat) => {
-          const active = selectedCategory === cat.key;
+        {CATEGORIES.map((key) => {
+          const active = category === key;
           return (
             <Pressable
-              key={cat.key}
+              key={key}
               accessibilityRole="tab"
               accessibilityState={{ selected: active }}
-              onPress={() => setSelectedCategory(cat.key)}
-              className={`rounded-lg border px-2.5 py-1.5 ${
-                active
-                  ? 'border-primary-600 bg-primary-600'
-                  : 'border-border bg-card'
+              onPress={() => setCategory(key)}
+              className={`rounded-full border px-3 py-1.5 ${
+                active ? 'border-transparent bg-foreground' : 'border-border bg-card active:bg-muted'
               }`}
             >
               <Text className={`text-xs font-semibold ${active ? 'text-white' : 'text-muted-foreground'}`}>
-                {cat.label}
+                {t(`remote.categories.${key}`)}
               </Text>
             </Pressable>
           );
         })}
       </View>
 
-      {/* Captures grid */}
-      <View className="flex-row flex-wrap gap-2">
-        {filteredCaptures.map((capture) => {
-          const isPending = sending === (capture.buttonKey || capture.id);
-          const isPower = (capture.buttonKey || capture.buttonName).toLowerCase().includes('power');
-          const displayLabel = t(`remote.keys.${capture.buttonKey}`, { defaultValue: capture.buttonName });
+      <View className="flex-row flex-wrap gap-2 rounded-3xl p-3" style={{ backgroundColor: PAD.bodyBottom }}>
+        {shown.map((capture) => {
+          const key = capture.buttonKey || capture.buttonName;
+          const power = isPowerKey(key);
+          const label = labelFor(t, capture.buttonKey, capture.buttonName);
+          const icon = KEY_ICONS[key];
 
           return (
             <Pressable
               key={capture.id}
               accessibilityRole="button"
-              accessibilityLabel={`${displayLabel} ${capture.command}`}
+              accessibilityLabel={`${label} ${capture.command}`}
               accessibilityState={{ disabled }}
               disabled={disabled || sending !== null}
+              // Keyed exactly as the sender sets it, so the spinner lands on the
+              // tile that was pressed.
               onPress={() => onPress(capture)}
-              className={`min-h-[58px] min-w-[30%] flex-1 basis-[30%] items-center justify-center rounded-xl border p-2.5 ${
-                isPower
-                  ? 'border-red-200 bg-red-50 active:bg-red-100'
-                  : 'border-border bg-card active:bg-primary-50'
-              } disabled:opacity-50`}
+              className="min-w-[30%] grow basis-0 items-center justify-center gap-1 rounded-2xl px-2 py-3"
+              style={{
+                backgroundColor: power ? PAD.powerFace : PAD.face,
+                borderWidth: 1,
+                borderColor: power ? '#6B2F33' : PAD.faceEdge,
+                opacity: disabled ? 0.35 : 1,
+              }}
             >
-              {isPending
-                ? (
-                    <ActivityIndicator size="small" color={colors.primary[600]} />
-                  )
+              {sending === key
+                ? <ActivityIndicator size="small" color={PAD.label} />
                 : (
-                    <View className="items-center gap-0.5">
-                      <View className="flex-row items-center gap-1">
-                        {isPower
+                    <>
+                      <View className="flex-row items-center gap-1.5">
+                        {icon
                           ? (
-                              <HugeiconsIcon icon={CirclePowerIcon} size={15} color="#DC2626" strokeWidth={2.2} />
+                              <HugeiconsIcon
+                                icon={icon}
+                                size={14}
+                                color={power ? PAD.power : PAD.label}
+                                strokeWidth={2.2}
+                              />
                             )
                           : null}
                         <Text
                           numberOfLines={1}
-                          className={`text-center text-xs font-bold ${
-                            isPower ? 'text-red-700' : 'text-foreground'
-                          }`}
+                          className="text-center text-xs font-bold"
+                          style={{ color: power ? PAD.power : PAD.label }}
                         >
-                          {displayLabel}
+                          {label}
                         </Text>
                       </View>
-                      <Text className="font-mono text-[10px] text-muted-foreground">
+                      <Text className="font-mono text-[10px]" style={{ color: PAD.labelMuted }}>
                         {capture.command}
                       </Text>
-                    </View>
+                    </>
                   )}
             </Pressable>
           );
         })}
       </View>
+    </View>
+  );
+}
+
+function Chip({ children }: { children: React.ReactNode }) {
+  return (
+    <View className="rounded-md border border-border bg-surface px-2 py-0.5">
+      <Text className="font-mono text-[10px] font-bold text-muted-foreground">{children}</Text>
     </View>
   );
 }

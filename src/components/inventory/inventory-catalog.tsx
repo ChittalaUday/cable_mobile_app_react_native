@@ -214,7 +214,9 @@ export function InventoryCatalogScreen({ basePath }: { basePath: '/admin/invento
                         <Text className="text-xs font-bold text-foreground">
                           {Number(item.defaultSalePrice) > 0 ? `₹${item.defaultSalePrice}` : 'On Loan'}
                         </Text>
-                        <Text className="text-[11px] text-muted-foreground capitalize">{item.trackingType}</Text>
+                        <Text className="text-[11px] text-muted-foreground">
+                          {item.isBundle ? `Kit · ${item.bundleContents.length} items` : 'Unit'}
+                        </Text>
                       </View>
                     </Pressable>
                   ))}

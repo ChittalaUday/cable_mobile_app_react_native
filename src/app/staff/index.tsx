@@ -10,6 +10,7 @@ import { useRouter } from 'expo-router';
 import { MotiView } from 'moti';
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
+import { LoadError } from '@/components/common/shell';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { RemoteControl } from '@/components/remote/remote-control';
 import { StaffCollectionsCard } from '@/components/staff/staff-collections-card';
@@ -24,27 +25,24 @@ import {
 import { useStaffDashboard } from '@/lib/hooks/api/use-staff-dashboard';
 import { useAuthStore } from '@/lib/hooks/stores/use-auth-store';
 
-const DEFAULT_DASHBOARD: StaffDashboard = {
-  personal: {
-    today: 42500,
-    week: 125000,
-    month: 380000,
-    todayReceipts: 31,
-    weekReceipts: 85,
-    monthReceipts: 260,
-  },
+/**
+ * What the card shows while the round has not loaded, or could not.
+ *
+ * Every figure is zero on purpose. This used to carry invented takings —
+ * ₹42,500 collected today, 31 receipts — which nobody noticed were invented
+ * because the endpoint behind it answered 403 to every staff member (it asked
+ * for `staff.view`, which no staff role is granted). A collector reconciling
+ * cash against a number the app made up is the worst way for that to surface.
+ */
+const NO_DASHBOARD: StaffDashboard = {
+  personal: { today: 0, week: 0, month: 0, todayReceipts: 0, weekReceipts: 0, monthReceipts: 0 },
   team: null,
-  workload: {
-    customers: 48,
-    dueCustomers: 17,
-    outstanding: 28400,
-    activeConnections: 45,
-    inactiveConnections: 3,
-  },
+  workload: { customers: 0, dueCustomers: 0, outstanding: 0, activeConnections: 0, inactiveConnections: 0 },
   recentCollections: [],
 };
 
 const staffTabs = ['Today', 'My Route', 'Receipts', 'More'] as const;
+const RECEIPTS_TAB = staffTabs.indexOf('Receipts');
 
 export function StaffDashboardScreen() {
   const { t } = useTranslation();
@@ -53,8 +51,22 @@ export function StaffDashboardScreen() {
   const signOut = useAuthStore.use.signOut();
   const [tab, setTab] = React.useState(0);
   const tabs = [...staffTabs, t('remote.tab')];
-  const { data: dashboard } = useStaffDashboard();
-  const activeDashboard = dashboard ?? DEFAULT_DASHBOARD;
+  const { data: dashboard, error: dashboardError, refetch: refetchDashboard } = useStaffDashboard();
+
+  /**
+   * Receipts is a screen, not a panel. A virtualised list nested in this
+   * ScrollView scrolls against its parent and warns about it, so the tab opens
+   * the route that already renders the round properly.
+   */
+  const openTab = (index: number) => {
+    if (index === RECEIPTS_TAB) {
+      router.push('/staff/receipts');
+      return;
+    }
+
+    setTab(index);
+  };
+  const activeDashboard = dashboard ?? NO_DASHBOARD;
   return (
     <View className="flex-1 bg-surface">
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerClassName="gap-4 px-4 pb-28 pt-4">
@@ -124,7 +136,9 @@ export function StaffDashboardScreen() {
         >
           {tab === 0
             ? (
-                <StaffCollectionsCard dashboard={activeDashboard} />
+                dashboardError
+                  ? <LoadError message={dashboardError.message} onRetry={refetchDashboard} />
+                  : <StaffCollectionsCard dashboard={activeDashboard} />
               )
             : tab === staffTabs.length
               ? <RemoteControl />
@@ -147,7 +161,7 @@ export function StaffDashboardScreen() {
             key={label}
             accessibilityRole="tab"
             accessibilityState={{ selected: tab === index }}
-            onPress={() => setTab(index)}
+            onPress={() => openTab(index)}
             className={`flex-1 items-center rounded-xl py-2.5 ${tab === index ? 'bg-primary-600' : ''}`}
           >
             <Text className={`text-xs font-bold ${tab === index ? 'text-white' : 'text-muted-foreground'}`}>

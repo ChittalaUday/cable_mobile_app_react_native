@@ -165,7 +165,9 @@ export function InventoryItemDetailsScreen({
             </View>
             <View className="flex-row justify-between py-2.5">
               <Text className="text-xs text-muted-foreground">Serial No.</Text>
-              <Text className="text-xs font-bold text-foreground capitalize">{item.trackingType}</Text>
+              <Text className="text-xs font-bold text-foreground">
+                {item.isBundle ? `Kit of ${item.bundleContents.length}` : 'Single unit'}
+              </Text>
             </View>
             <View className="flex-row justify-between py-2.5">
               <Text className="text-xs text-muted-foreground">Total Stock</Text>

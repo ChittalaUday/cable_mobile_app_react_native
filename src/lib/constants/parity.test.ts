@@ -15,8 +15,16 @@ import path from 'node:path';
  * it stays green rather than failing for the wrong reason.
  */
 
-const BACKEND = path.resolve(__dirname, '../../../../cable-backend/src/shared/constants');
-const MIRRORED = ['crm', 'geo', 'tenancy', 'inventory', 'remotes', 'auth', 'notify'] as const;
+/**
+ * The backend moved these from `src/shared/constants` to `src/constants`, and
+ * this path did not follow. `existsSync` then reported the backend absent and
+ * every case skipped — silently, which is the one failure mode this check was
+ * written to stop. Both spellings are tried so neither move breaks it again.
+ */
+const BACKEND = ['src/constants', 'src/shared/constants']
+  .map(dir => path.resolve(__dirname, '../../../../cable-backend', dir))
+  .find(dir => fs.existsSync(dir)) ?? '';
+const MIRRORED = ['crm', 'geo', 'tenancy', 'inventory', 'remotes', 'auth', 'notify', 'billing'] as const;
 
 /** Every `export const NAME = [...] as const` in a file, as a name → values map. */
 function readConstants(file: string): Record<string, string[]> {
@@ -29,7 +37,7 @@ function readConstants(file: string): Record<string, string[]> {
   return found;
 }
 
-const available = fs.existsSync(BACKEND);
+const available = BACKEND !== '';
 const describeIfAvailable = available ? describe : describe.skip;
 
 describeIfAvailable('constants mirror the backend', () => {

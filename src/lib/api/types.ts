@@ -16,7 +16,6 @@ import type {
   InventoryRequestType,
   InventoryStatus,
   StockMovementType,
-  TrackingType,
 } from '@/lib/constants/inventory';
 import type { RemoteDeviceType, RemoteSource } from '@/lib/constants/remotes';
 import type { MembershipSettableStatus, MembershipStatus } from '@/lib/constants/tenancy';
@@ -122,6 +121,8 @@ export type CustomerSubscription = {
   endDate: string | null;
   billingCycle: BillingCycle;
   price: string;
+  /** What this line owes right now; the customer total is the sum of its lines. */
+  outstandingBalance: string;
   installationAddress: string | null;
   service: { id: string; name: string; slug: string; icon: ServiceIcon | null };
   provider: { id: string; name: string; slug: string };
@@ -675,8 +676,9 @@ export type StockItem = {
   brand: string | null;
   model: string | null;
   itemType: string;
-  trackingType: TrackingType;
   isBundle: boolean;
+  /** What a bundle holds. Empty for anything that is not one. */
+  bundleContents: BundleComponent[];
   defaultOwnership: EquipmentOwnership;
   defaultSalePrice: string;
   defaultDepositAmount: string;
@@ -905,6 +907,7 @@ export type RemoteDetail = Omit<RemoteSummary, 'buttonCount'> & {
   captures?: RemoteCapture[];
 };
 
+export type { OtpChannel, StaffRole } from '@/lib/constants/auth';
 /**
  * The shared vocabularies, re-exported from where they are now defined.
  *
@@ -912,7 +915,7 @@ export type RemoteDetail = Omit<RemoteSummary, 'buttonCount'> & {
  * and types now come from `@/lib/constants/*` so the runtime array and the type
  * cannot disagree. See `src/lib/constants/README.md`.
  */
-export type { OtpChannel, StaffRole } from '@/lib/constants/auth';
+export type { CollectionOutcome, PaymentMethod } from '@/lib/constants/billing';
 export type {
   BillingCycle,
   ChannelResolution,
@@ -930,7 +933,6 @@ export type {
   InventoryRequestType,
   InventoryStatus,
   StockMovementType,
-  TrackingType,
 } from '@/lib/constants/inventory';
 export type {
   NotificationCategory,

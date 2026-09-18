@@ -1,7 +1,15 @@
-import type { RemoteButton, RemoteCapture, RemoteDetail, RemoteDeviceType, RemoteSummary } from '@/lib/api/types';
+import type { RemoteButton, RemoteCapture, RemoteDeviceType, RemoteSummary } from '@/lib/api/types';
 import type { IrCapabilities, IrCapabilityStatus } from '@/lib/ir-blaster';
-import { CirclePowerIcon, RemoteControlIcon } from '@hugeicons/core-free-icons';
+import {
+  Alert02Icon,
+  CheckmarkCircle02Icon,
+  RemoteControlIcon,
+  RepeatIcon,
+  SatelliteDishIcon,
+  Tv01Icon,
+} from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
+import { AnimatePresence, MotiView } from 'moti';
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -9,7 +17,10 @@ import { ActivityIndicator, Button, colors, Pressable, Text, View } from '@/comp
 import { useRemote, useRemotes } from '@/lib/hooks/api/use-remotes';
 import { captureToCommand, getCapabilities, transmit } from '@/lib/ir-blaster';
 
+import { labelFor } from './keys';
 import { RemoteCapturesView } from './remote-captures';
+import { PAD } from './remote-key';
+import { RemotePad } from './remote-pad';
 import { RemotePicker } from './remote-picker';
 
 const statusKeys: Record<Exclude<IrCapabilityStatus, 'available'>, 'remote.hardware_error' | 'remote.module_unavailable' | 'remote.no_emitter' | 'remote.service_unavailable' | 'remote.unsupported_platform'> = {
@@ -20,32 +31,7 @@ const statusKeys: Record<Exclude<IrCapabilityStatus, 'available'>, 'remote.hardw
   'unsupported-platform': 'remote.unsupported_platform',
 };
 
-/**
- * Where each known key sits on the moulded pad. `''` is a gap.
- *
- * A stored handset supplies whatever keys it has, so a row with nothing on it
- * is dropped rather than drawn empty, and any key this layout does not name
- * still reaches the user through the extras grid below. That is what lets a
- * learned handset with an odd button work without a change here.
- */
-const LAYOUT: readonly (readonly string[])[] = [
-  ['power', 'input', 'mute'],
-  ['volume_up', 'volume_down', 'channel_up', 'channel_down'],
-  ['menu', 'up', 'back'],
-  ['left', 'ok', 'right'],
-  ['gap_dpad_l', 'down', 'gap_dpad_r'],
-  ['digit_1', 'digit_2', 'digit_3'],
-  ['digit_4', 'digit_5', 'digit_6'],
-  ['digit_7', 'digit_8', 'digit_9'],
-  ['gap_zero_l', 'digit_0', 'gap_zero_r'],
-  ['rewind', 'play', 'pause', 'forward'],
-  ['red', 'green', 'yellow', 'blue'],
-];
-
-/** A `gap_*` slot holds the pad's shape where no button sits. */
-const isGap = (key: string) => key.startsWith('gap_');
-
-const LAID_OUT = new Set(LAYOUT.flat().filter(key => !isGap(key)));
+type Feedback = { id: number; kind: 'error' | 'success'; text: string };
 
 function formatKilohertz(value: number) {
   return Number((value / 1000).toFixed(1)).toString();
@@ -64,7 +50,7 @@ export function RemoteControl() {
   const [selected, setSelected] = React.useState<RemoteSummary | null>(null);
   const [activeTab, setActiveTab] = React.useState<'captures' | 'pad'>('pad');
   const [sending, setSending] = React.useState<string | null>(null);
-  const [feedback, setFeedback] = React.useState<{ kind: 'error' | 'success'; text: string } | null>(null);
+  const [feedback, setFeedback] = React.useState<Feedback | null>(null);
 
   const remotes = useRemotes({ variables: { deviceType } });
   const remote = useRemote({ variables: { id: selected?.id ?? '' }, enabled: selected !== null });
@@ -72,6 +58,7 @@ export function RemoteControl() {
   const handleSelect = React.useCallback((next: RemoteSummary | null) => {
     setSelected(next);
     setActiveTab('pad');
+    setFeedback(null);
   }, []);
 
   const refreshCapabilities = React.useCallback(async () => {
@@ -91,90 +78,60 @@ export function RemoteControl() {
       ? t('remote.ir_ready')
       : t(statusKeys[capabilities.status as Exclude<IrCapabilityStatus, 'available'>]);
 
-  const send = async (button: RemoteButton) => {
+  const say = (kind: Feedback['kind'], text: string) =>
+    setFeedback({ id: Date.now(), kind, text });
+
+  /**
+   * One send path for a moulded key and a raw capture alike.
+   *
+   * `key` is what the pad and the capture list both watch to draw the spinner,
+   * so it has to be derived the same way on both sides — they used to disagree
+   * on the fallback and a capture without a mapped key span the wrong button.
+   */
+  const run = async (key: string, label: string, command: () => Parameters<typeof transmit>[0]) => {
     if (!ready || sending !== null)
       return;
 
-    setSending(button.key);
-    setFeedback(null);
-    try {
-      // The stored command is already in the shape the emitter takes, so it
-      // goes straight through — nothing between the database and the LED.
-      await transmit(button.command);
-      setFeedback({ kind: 'success', text: t('remote.sent', { key: labelFor(t, button) }) });
-    }
-    catch {
-      setFeedback({ kind: 'error', text: t('remote.transmit_failed') });
-    }
-    finally {
-      setSending(null);
-    }
-  };
-
-  const sendCapture = async (capture: RemoteCapture) => {
-    if (!ready || sending !== null)
-      return;
-
-    const key = capture.buttonKey || capture.buttonName;
     setSending(key);
     setFeedback(null);
     try {
-      const command = captureToCommand(capture);
-      await transmit(command);
-      const displayLabel = t(`remote.keys.${capture.buttonKey}`, { defaultValue: capture.buttonName });
-      setFeedback({ kind: 'success', text: t('remote.sent', { key: displayLabel }) });
+      await transmit(command());
+      say('success', t('remote.sent', { key: label }));
     }
     catch {
-      setFeedback({ kind: 'error', text: t('remote.transmit_failed') });
+      say('error', t('remote.transmit_failed'));
     }
     finally {
       setSending(null);
     }
   };
 
-  const hasCaptures = (remote.data?.captures?.length ?? 0) > 0;
-  const hasButtons = (remote.data?.buttons?.length ?? 0) > 0;
+  const send = (button: RemoteButton) =>
+    // The stored command is already in the shape the emitter takes, so it goes
+    // straight through — nothing between the database and the LED.
+    run(button.key, labelFor(t, button.key, button.label), () => button.command);
+
+  const sendCapture = (capture: RemoteCapture) =>
+    run(
+      capture.buttonKey || capture.buttonName,
+      labelFor(t, capture.buttonKey, capture.buttonName),
+      () => captureToCommand(capture),
+    );
+
+  const captures = remote.data?.captures ?? [];
+  const hasCaptures = captures.length > 0;
+  const hasButtons = (remote.data?.buttons.length ?? 0) > 0;
 
   return (
     <View className="gap-4">
-      <View className="gap-3 rounded-2xl border border-border bg-card p-4">
-        <View className="flex-row items-center gap-3">
-          <View className="size-11 items-center justify-center rounded-xl bg-primary-50">
-            <HugeiconsIcon icon={RemoteControlIcon} size={23} color={colors.primary[600]} strokeWidth={2.2} />
-          </View>
-          <View className="min-w-0 flex-1">
-            <Text className="text-lg font-bold text-foreground">
-              {selected ? `${selected.brand} ${selected.model}` : t('remote.pick_title')}
-            </Text>
-            <Text selectable className={`text-xs ${ready ? 'text-green-700' : 'text-muted-foreground'}`}>{status}</Text>
-          </View>
-          {capabilities === null ? <ActivityIndicator color={colors.primary[600]} /> : null}
-        </View>
-
-        {ready
-          ? (
-              <Text selectable className="text-xs text-muted-foreground">
-                {capabilities.carrierFrequencyRanges.length
-                  ? formatRanges(capabilities)
-                  : t('remote.no_frequency_ranges')}
-              </Text>
-            )
-          : capabilities
-            ? <Button label={t('remote.retry')} variant="outline" size="sm" onPress={refreshCapabilities} />
-            : null}
-
-        {selected
-          ? (
-              <View className="gap-2">
-                {/* Unverified codes come from a public database nobody has tested
-                    against this appliance — say so rather than let a dead button
-                    look like a broken emitter. */}
-                {selected.verified ? null : <Text className="text-xs text-orange-700">{t('remote.unverified_warning')}</Text>}
-                <Button label={t('remote.change')} variant="outline" size="sm" onPress={() => handleSelect(null)} />
-              </View>
-            )
-          : null}
-      </View>
+      <StatusBar
+        capabilities={capabilities}
+        ready={ready}
+        selected={selected}
+        status={status}
+        onRetry={refreshCapabilities}
+        onChange={() => handleSelect(null)}
+      />
 
       {selected === null
         ? (
@@ -186,57 +143,36 @@ export function RemoteControl() {
             />
           )
         : remote.isPending
-          ? <ActivityIndicator className="py-8" color={colors.primary[600]} />
+          ? <ActivityIndicator className="py-10" color={colors.primary[600]} />
           : remote.data
             ? (
                 <View className="gap-3">
+                  {/* Unverified codes come from a public database nobody has tested
+                      against this appliance — say so rather than let a dead button
+                      look like a broken emitter. */}
+                  {selected.verified ? null : <UnverifiedNotice />}
+
                   {hasCaptures && hasButtons
                     ? (
-                        <View className="flex-row gap-2 rounded-2xl border border-border bg-card p-1.5">
-                          <Pressable
-                            accessibilityRole="tab"
-                            accessibilityState={{ selected: activeTab === 'pad' }}
+                        <View className="flex-row rounded-2xl bg-muted p-1">
+                          <TabButton
+                            label={t('remote.pad_tab')}
+                            active={activeTab === 'pad'}
                             onPress={() => setActiveTab('pad')}
-                            className={`flex-1 items-center justify-center rounded-xl py-2.5 ${
-                              activeTab === 'pad' ? 'bg-primary-600' : ''
-                            }`}
-                          >
-                            <Text
-                              className={`text-xs font-bold ${
-                                activeTab === 'pad' ? 'text-white' : 'text-muted-foreground'
-                              }`}
-                            >
-                              {t('remote.pad_tab')}
-                            </Text>
-                          </Pressable>
-                          <Pressable
-                            accessibilityRole="tab"
-                            accessibilityState={{ selected: activeTab === 'captures' }}
+                          />
+                          <TabButton
+                            label={`${t('remote.captures_tab')} (${captures.length})`}
+                            active={activeTab === 'captures'}
                             onPress={() => setActiveTab('captures')}
-                            className={`flex-1 items-center justify-center rounded-xl py-2.5 ${
-                              activeTab === 'captures' ? 'bg-primary-600' : ''
-                            }`}
-                          >
-                            <Text
-                              className={`text-xs font-bold ${
-                                activeTab === 'captures' ? 'text-white' : 'text-muted-foreground'
-                              }`}
-                            >
-                              {t('remote.captures_tab')}
-                              {' '}
-                              (
-                              {remote.data.captures?.length}
-                              )
-                            </Text>
-                          </Pressable>
+                          />
                         </View>
                       )
                     : null}
 
-                  {activeTab === 'captures' && remote.data.captures && remote.data.captures.length > 0
+                  {activeTab === 'captures' && hasCaptures
                     ? (
                         <RemoteCapturesView
-                          captures={remote.data.captures}
+                          captures={captures}
                           disabled={!ready}
                           sending={sending}
                           onPress={sendCapture}
@@ -253,30 +189,204 @@ export function RemoteControl() {
                 </View>
               )
             : (
-                <View className="items-center gap-2 rounded-2xl border border-border bg-card p-6">
-                  <Text className="text-center text-muted-foreground">{t('remote.load_failed')}</Text>
-                  <Button label={t('remote.retry')} variant="outline" size="sm" onPress={() => void remote.refetch()} />
-                </View>
+                <ErrorCard onRetry={() => void remote.refetch()} />
               )}
 
-      {feedback
-        ? (
-            <Text
-              accessibilityLiveRegion="polite"
-              selectable
-              className={`text-center text-sm font-semibold ${feedback.kind === 'error' ? 'text-red-700' : 'text-green-700'}`}
-            >
-              {feedback.text}
-            </Text>
-          )
-        : null}
+      <Toast feedback={feedback} onDone={() => setFeedback(null)} />
     </View>
   );
 }
 
-/** Known keys get a translated label; anything learned falls back to what it was stored as. */
-function labelFor(t: (key: string, options?: Record<string, unknown>) => string, button: RemoteButton) {
-  return t(`remote.keys.${button.key}`, { defaultValue: button.label });
+/**
+ * The one line that says whether a press can do anything at all.
+ *
+ * Kept at the top and kept short, because on a screen this tall it is the only
+ * thing that explains a pad full of keys that do nothing.
+ */
+function StatusBar({ capabilities, ready, selected, status, onRetry, onChange }: {
+  capabilities: IrCapabilities | null;
+  onChange: () => void;
+  onRetry: () => void;
+  ready: boolean;
+  selected: RemoteSummary | null;
+  status: string;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <View className="gap-3 rounded-3xl border border-border bg-card p-4">
+      <View className="flex-row items-center gap-3">
+        <View
+          className="size-11 items-center justify-center rounded-2xl"
+          style={{ backgroundColor: ready ? colors.success[50] : colors.neutral[100] }}
+        >
+          <HugeiconsIcon
+            icon={selected?.deviceType === 'stb' ? SatelliteDishIcon : selected ? Tv01Icon : RemoteControlIcon}
+            size={22}
+            color={ready ? colors.success[600] : colors.neutral[500]}
+            strokeWidth={2.2}
+          />
+        </View>
+
+        <View className="min-w-0 flex-1">
+          <Text className="text-[17px] font-bold text-foreground" numberOfLines={1}>
+            {selected ? selected.model : t('remote.pick_title')}
+          </Text>
+          <View className="flex-row items-center gap-1.5">
+            {capabilities === null
+              ? null
+              : (
+                  <View
+                    className="size-1.5 rounded-full"
+                    style={{ backgroundColor: ready ? colors.success[500] : colors.danger[500] }}
+                  />
+                )}
+            <Text
+              selectable
+              numberOfLines={1}
+              className={`min-w-0 flex-1 text-xs ${ready ? 'text-success-700' : 'text-muted-foreground'}`}
+            >
+              {selected ? `${selected.brand} · ${status}` : status}
+            </Text>
+          </View>
+        </View>
+
+        {capabilities === null ? <ActivityIndicator color={colors.primary[600]} /> : null}
+
+        {selected
+          ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('remote.change')}
+                onPress={onChange}
+                className="size-9 items-center justify-center rounded-xl border border-border bg-surface active:bg-muted"
+              >
+                <HugeiconsIcon icon={RepeatIcon} size={16} color={colors.neutral[600]} strokeWidth={2.2} />
+              </Pressable>
+            )
+          : null}
+      </View>
+
+      {capabilities?.available
+        ? (
+            <Text selectable className="text-[11px] text-muted-foreground">
+              {capabilities.carrierFrequencyRanges.length
+                ? formatRanges(capabilities)
+                : t('remote.no_frequency_ranges')}
+            </Text>
+          )
+        : capabilities
+          ? <Button label={t('remote.retry')} variant="outline" size="sm" onPress={onRetry} />
+          : null}
+    </View>
+  );
+}
+
+function UnverifiedNotice() {
+  const { t } = useTranslation();
+  return (
+    <View className="flex-row items-start gap-2.5 rounded-2xl border border-warning-200 bg-warning-50 p-3">
+      <HugeiconsIcon icon={Alert02Icon} size={16} color={colors.warning[700]} strokeWidth={2.4} />
+      <Text className="min-w-0 flex-1 text-xs/5 text-warning-800">
+        {t('remote.unverified_warning')}
+      </Text>
+    </View>
+  );
+}
+
+function TabButton({ label, active, onPress }: { active: boolean; label: string; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="tab"
+      accessibilityState={{ selected: active }}
+      onPress={onPress}
+      className="flex-1"
+    >
+      <MotiView
+        animate={{ opacity: active ? 1 : 0 }}
+        transition={{ type: 'timing', duration: 160 }}
+        className="absolute inset-0 rounded-xl bg-card"
+        style={{
+          shadowColor: '#000',
+          shadowOpacity: 0.08,
+          shadowRadius: 4,
+          shadowOffset: { width: 0, height: 1 },
+          elevation: 2,
+        }}
+      />
+      <View className="items-center justify-center py-2.5">
+        <Text className={`text-[13px] font-bold ${active ? 'text-foreground' : 'text-muted-foreground'}`}>
+          {label}
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
+
+/**
+ * Confirmation that floats over the pad instead of trailing beneath it.
+ *
+ * The pad is taller than the screen, so a line at the bottom told the user
+ * nothing about the power key they had just pressed at the top.
+ */
+function Toast({ feedback, onDone }: { feedback: Feedback | null; onDone: () => void }) {
+  React.useEffect(() => {
+    if (feedback === null)
+      return;
+    const timer = setTimeout(onDone, feedback.kind === 'error' ? 3200 : 1600);
+    return () => clearTimeout(timer);
+  }, [feedback, onDone]);
+
+  return (
+    <View pointerEvents="none" className="absolute inset-x-0 top-0 items-center">
+      <AnimatePresence>
+        {feedback
+          ? (
+              <MotiView
+                key={feedback.id}
+                from={{ opacity: 0, translateY: -14, scale: 0.94 }}
+                animate={{ opacity: 1, translateY: 0, scale: 1 }}
+                exit={{ opacity: 0, translateY: -10, scale: 0.96 }}
+                transition={{ type: 'spring', damping: 17, stiffness: 260, mass: 0.5 }}
+                className="flex-row items-center gap-2 rounded-full px-4 py-2.5"
+                style={{
+                  backgroundColor: feedback.kind === 'error' ? colors.danger[600] : PAD.bodyTop,
+                  shadowColor: '#000',
+                  shadowOpacity: 0.22,
+                  shadowRadius: 14,
+                  shadowOffset: { width: 0, height: 5 },
+                  elevation: 8,
+                }}
+              >
+                <HugeiconsIcon
+                  icon={feedback.kind === 'error' ? Alert02Icon : CheckmarkCircle02Icon}
+                  size={15}
+                  color="#FFFFFF"
+                  strokeWidth={2.4}
+                />
+                <Text
+                  accessibilityLiveRegion="polite"
+                  selectable
+                  className="text-[13px] font-semibold text-white"
+                >
+                  {feedback.text}
+                </Text>
+              </MotiView>
+            )
+          : null}
+      </AnimatePresence>
+    </View>
+  );
+}
+
+function ErrorCard({ onRetry }: { onRetry: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <View className="items-center gap-2 rounded-3xl border border-border bg-card p-8">
+      <Text className="text-center text-sm text-muted-foreground">{t('remote.load_failed')}</Text>
+      <Button label={t('remote.retry')} variant="outline" size="sm" onPress={onRetry} />
+    </View>
+  );
 }
 
 function RemoteList({ deviceType, onDeviceType, query, onSelect }: {
@@ -287,19 +397,11 @@ function RemoteList({ deviceType, onDeviceType, query, onSelect }: {
   query: { data: RemoteSummary[] | undefined; isPending: boolean; isError: boolean; refetch: () => unknown };
   onSelect: (remote: RemoteSummary) => void;
 }) {
-  const { t } = useTranslation();
-
   if (query.isPending)
-    return <ActivityIndicator className="py-8" color={colors.primary[600]} />;
+    return <ActivityIndicator className="py-10" color={colors.primary[600]} />;
 
-  if (query.isError) {
-    return (
-      <View className="items-center gap-2 rounded-2xl border border-border bg-card p-6">
-        <Text className="text-center text-muted-foreground">{t('remote.load_failed')}</Text>
-        <Button label={t('remote.retry')} variant="outline" size="sm" onPress={() => void query.refetch()} />
-      </View>
-    );
-  }
+  if (query.isError)
+    return <ErrorCard onRetry={() => void query.refetch()} />;
 
   return (
     <RemotePicker
@@ -308,95 +410,5 @@ function RemoteList({ deviceType, onDeviceType, query, onSelect }: {
       remotes={query.data ?? []}
       onSelect={onSelect}
     />
-  );
-}
-
-function RemotePad({ remote, disabled, sending, onPress }: {
-  remote: RemoteDetail;
-  disabled: boolean;
-  sending: string | null;
-  onPress: (button: RemoteButton) => void;
-}) {
-  const { t } = useTranslation();
-
-  const byKey = React.useMemo(
-    () => new Map(remote.buttons.map(button => [button.key, button])),
-    [remote.buttons],
-  );
-
-  // Rows the handset has nothing for are dropped, so a set-top box without
-  // colour keys does not draw a blank strip where they would be.
-  const rows = LAYOUT.filter(row => row.some(key => !isGap(key) && byKey.has(key)));
-  const extras = remote.buttons.filter(button => !LAID_OUT.has(button.key));
-
-  return (
-    <View className="gap-2 rounded-2xl border border-border bg-card p-4">
-      {rows.map(row => (
-        <View key={row.join(':')} className="flex-row gap-2">
-          {row.map((key) => {
-            const button = isGap(key) ? undefined : byKey.get(key);
-            if (!button)
-              return <View key={key} className="h-12 flex-1" />;
-
-            return (
-              <RemoteKey
-                key={key}
-                label={labelFor(t, button)}
-                disabled={disabled || sending !== null}
-                pending={sending === key}
-                power={key === 'power'}
-                onPress={() => onPress(button)}
-              />
-            );
-          })}
-        </View>
-      ))}
-
-      {extras.length > 0
-        ? (
-            <View className="mt-2 gap-2 border-t border-border pt-3">
-              <Text className="text-xs font-bold tracking-widest text-muted-foreground uppercase">{t('remote.more_keys')}</Text>
-              <View className="flex-row flex-wrap gap-2">
-                {extras.map(button => (
-                  <View key={button.key} className="min-w-[30%] grow basis-0">
-                    <RemoteKey
-                      label={labelFor(t, button)}
-                      disabled={disabled || sending !== null}
-                      pending={sending === button.key}
-                      power={false}
-                      onPress={() => onPress(button)}
-                    />
-                  </View>
-                ))}
-              </View>
-            </View>
-          )
-        : null}
-    </View>
-  );
-}
-
-function RemoteKey({ label, disabled, pending, power, onPress }: {
-  label: string;
-  disabled: boolean;
-  pending: boolean;
-  power: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ disabled }}
-      disabled={disabled}
-      onPress={onPress}
-      className={`h-12 flex-1 items-center justify-center rounded-xl border ${power ? 'border-red-200 bg-red-50' : 'border-border bg-surface'} active:bg-primary-50 disabled:opacity-50`}
-    >
-      {pending
-        ? <ActivityIndicator size="small" color={colors.primary[600]} />
-        : power
-          ? <HugeiconsIcon icon={CirclePowerIcon} size={21} color="#DC2626" strokeWidth={2.2} />
-          : <Text className="text-center text-xs font-bold text-foreground">{label}</Text>}
-    </Pressable>
   );
 }

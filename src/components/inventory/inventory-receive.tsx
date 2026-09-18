@@ -163,7 +163,7 @@ export function InventoryReceiveScreen({ basePath }: { basePath: '/admin/invento
                           <Text className="text-xs text-muted-foreground">{item.code ?? 'SKU'}</Text>
                         </View>
                         <Text className="text-xs font-bold text-primary-600 capitalize">
-                          {item.trackingType}
+                          {item.isBundle ? 'Kit' : 'Unit'}
                         </Text>
                       </Pressable>
                     ))

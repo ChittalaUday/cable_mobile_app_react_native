@@ -85,6 +85,19 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
   },
   plugins: [
+    [
+      'expo-location',
+      {
+        // Shown in the OS permission dialog, so it says what the location is
+        // for rather than what the app would like. Foreground only: a receipt
+        // records where the collector stood at the moment they wrote it, and
+        // nothing here needs to follow anybody around between visits.
+        locationAlwaysAndWhenInUsePermission: false,
+        locationWhenInUsePermission: 'Satya Cable records where a payment was collected, so a receipt can be matched to the address it was written at.',
+        isAndroidBackgroundLocationEnabled: false,
+        isIosBackgroundLocationEnabled: false,
+      },
+    ],
     ['@react-native-firebase/app', { ios: { disableSPM: true } }],
     '@react-native-firebase/crashlytics',
     './plugins/with-firebase-modular-headers',

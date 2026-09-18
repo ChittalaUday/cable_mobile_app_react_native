@@ -1,16 +1,13 @@
 /** Mirrors `src/shared/constants/inventory.ts` in cable-backend. */
 
 /** Whether a catalogue item is tracked unit by unit or counted in bulk. */
-export const TRACKING_TYPES = ['serialized', 'quantity'] as const;
-export type TrackingType = (typeof TRACKING_TYPES)[number];
-
 export const EQUIPMENT_OWNERSHIPS = ['tenant_provided', 'customer_owned', 'rental', 'deposit'] as const;
 export type EquipmentOwnership = (typeof EQUIPMENT_OWNERSHIPS)[number];
 
 /** Where a unit physically is, in stock terms. */
 export const INVENTORY_STATUSES = [
   'available',
-  'staff_van',
+  'with_staff',
   'allocated',
   'faulty',
   'under_repair',
@@ -30,6 +27,23 @@ export const CUSTOMER_EQUIPMENT_STATUSES = [
   'written_off',
 ] as const;
 export type CustomerEquipmentStatus = (typeof CUSTOMER_EQUIPMENT_STATUSES)[number];
+
+export const EQUIPMENT_RETURN_CONDITIONS = [
+  'working',
+  'damaged',
+  'missing_accessories',
+  'faulty',
+] as const;
+export type EquipmentReturnCondition = (typeof EQUIPMENT_RETURN_CONDITIONS)[number];
+
+export const DEPOSIT_REFUND_STATUSES = [
+  'not_applicable',
+  'pending',
+  'refunded',
+  'forfeited',
+  'adjusted_against_dues',
+] as const;
+export type DepositRefundStatus = (typeof DEPOSIT_REFUND_STATUSES)[number];
 
 export const STOCK_MOVEMENT_TYPES = [
   'inward',

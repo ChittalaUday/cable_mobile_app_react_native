@@ -68,8 +68,8 @@ jest.mock('@/lib/hooks/api/use-inventory', () => ({
   }),
   useInventoryStock: () => ({
     data: [
-      { id: 'cat-1', name: 'Dual Band Router', code: 'RTR-DB', trackingType: 'serialized', availableStock: 10 },
-      { id: 'cat-2', name: 'Fiber Patch Cord', code: 'FPC-1M', trackingType: 'batch', availableStock: 150 },
+      { id: 'cat-1', name: 'Dual Band Router', code: 'RTR-DB', availableStock: 10 },
+      { id: 'cat-2', name: 'Fiber Patch Cord', code: 'FPC-1M', availableStock: 150 },
     ],
     isLoading: false,
   }),

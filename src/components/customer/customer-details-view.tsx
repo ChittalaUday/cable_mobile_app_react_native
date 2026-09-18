@@ -57,6 +57,7 @@ const DEFAULT_CUSTOMER_DETAIL: CustomerDetail = {
       endDate: null,
       billingCycle: 'monthly',
       price: '350.00',
+      outstandingBalance: '0.00',
       installationAddress: '12-3-45, Main Road, Mandapeta',
       service: { id: 'srv-1', name: 'Standard Cable HD Pack', slug: 'standard-cable-hd', icon: 'tv' },
       provider: { id: 'prov-1', name: 'Satya Cable', slug: 'satya-cable' },
@@ -119,6 +120,7 @@ function normalizeCustomerDetail(c: CustomerDetail | CustomerDetailsData | undef
             endDate: null,
             billingCycle: 'monthly',
             price: '350.00',
+            outstandingBalance: '0.00',
             installationAddress: data.address || null,
             service: { id: 'srv-legacy', name: data.packageName, slug: 'cable', icon: 'tv' },
             provider: { id: 'prov-legacy', name: 'Satya Cable', slug: 'satya' },
@@ -636,7 +638,17 @@ export function CustomerDetailsView({
                 </Text>
                 <View className="divide-y divide-border/60">
                   {[
-                    { id: 'add-payment', title: 'Add Payment', icon: CreditCardIcon, onPress: () => {} },
+                    // Collecting is a staff act. A subscriber reading their own
+                    // record has no round to record against, and there is no
+                    // `/customer/collect` route for the button to point at.
+                    ...(role === 'customer'
+                      ? []
+                      : [{
+                          id: 'add-payment',
+                          title: 'Collect Payment',
+                          icon: CreditCardIcon,
+                          onPress: () => router.push(`/${role}/collect/${customer.id}`),
+                        }]),
                     { id: 'view-details', title: 'View Customer Details', icon: File01Icon, onPress: () => {} },
                     { id: 'edit-customer', title: 'Edit Customer', icon: PencilEdit02Icon, onPress: () => {} },
                   ].map(item => (

@@ -22,6 +22,31 @@ function refreshInbox() {
 }
 
 /**
+ * What a silent `sync` push invalidates.
+ *
+ * These messages carry no notification payload and are never shown: they exist
+ * so a receipt somebody else recorded reaches this screen in seconds instead of
+ * whenever the next pull-to-refresh happens. Adding a key here is how a new
+ * screen joins in.
+ */
+const SYNC_KEYS: Record<string, readonly string[]> = {
+  payments: ['payments', 'payment', 'customers', 'customer', 'staff-dashboard', 'admin-dashboard'],
+};
+
+/** True when the message was a sync nudge and has been handled — nothing to show. */
+function handledAsSync(data: Record<string, unknown> | undefined): boolean {
+  const sync = data?.sync;
+
+  if (typeof sync !== 'string')
+    return false;
+
+  for (const key of SYNC_KEYS[sync] ?? [])
+    queryClient.invalidateQueries({ queryKey: [key] }).catch(() => {});
+
+  return true;
+}
+
+/**
  * The one place an in-app message is presented, so a foreground push and a
  * pulled in-app message look the same and neither can quietly lose its image.
  */
@@ -88,6 +113,11 @@ export function useNotificationSync(): void {
 
   React.useEffect(() => {
     return onForegroundMessage((message) => {
+      // A sync nudge is not news. It has no title or body, so presenting it
+      // would draw an empty banner over whatever the person is doing.
+      if (handledAsSync(message.data))
+        return;
+
       const category = message.data?.category;
       const delivery = message.data?.delivery;
 
