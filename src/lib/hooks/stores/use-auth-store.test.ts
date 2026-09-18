@@ -93,17 +93,29 @@ describe('useAuthStore OTP authentication', () => {
 describe('requesting an OTP', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('hands the screen the cooldown the server asked for, not a guess', async () => {
+  it('hands the screen the cooldown the server asked for, and the channel it used', async () => {
     jest.mocked(client.post).mockResolvedValueOnce({
-      data: { status: 'accepted', channel: 'whatsapp', expiresInSeconds: 300, nextCooldownSeconds: 120 },
+      data: { status: 'accepted', channel: 'sms', expiresInSeconds: 300, nextCooldownSeconds: 120 },
     } as never);
 
-    // The ladder is the server's to decide: a second unverified resend costs 120s,
-    // and the screen counts down whatever it is told rather than a fixed 60.
-    await expect(useAuthStore.getState().requestOtp('9876543210'))
+    // The ladder is the server's to decide: a second unverified resend costs
+    // 120s. The channel comes back too, because WhatsApp may have been down and
+    // the code gone by SMS — the person has to be told where to look.
+    await expect(useAuthStore.getState().requestOtp('9876543210', 'whatsapp'))
       .resolves
-      .toEqual({ expiresInSeconds: 300, nextCooldownSeconds: 120 });
+      .toEqual({ expiresInSeconds: 300, nextCooldownSeconds: 120, channel: 'sms' });
 
+    expect(client.post).toHaveBeenCalledWith('/auth/otp/request', { phone: '9876543210', channel: 'whatsapp' });
+  });
+
+  it('leaves the channel out when the caller has no preference', async () => {
+    jest.mocked(client.post).mockResolvedValueOnce({
+      data: { status: 'accepted', channel: 'whatsapp', expiresInSeconds: 300, nextCooldownSeconds: 60 },
+    } as never);
+
+    await useAuthStore.getState().requestOtp('9876543210');
+
+    // Sending `channel: undefined` would override the server's own default.
     expect(client.post).toHaveBeenCalledWith('/auth/otp/request', { phone: '9876543210' });
   });
 
@@ -116,7 +128,78 @@ describe('requesting an OTP', () => {
 
     await expect(useAuthStore.getState().requestOtp('9876543210'))
       .resolves
-      .toEqual({ expiresInSeconds: 300, nextCooldownSeconds: 60 });
+      .toEqual({ expiresInSeconds: 300, nextCooldownSeconds: 60, channel: 'whatsapp' });
+  });
+});
+
+describe('a password that needs an emailed code as well', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('hands back the challenge and stores no tokens', async () => {
+    jest.mocked(client.post).mockResolvedValueOnce({
+      data: {
+        status: 'otp_required',
+        challengeToken: 'challenge-1',
+        channel: 'email',
+        expiresInSeconds: 300,
+        nextCooldownSeconds: 60,
+      },
+    } as never);
+
+    const challenge = await useAuthStore.getState().signIn('operator@satya.test', 'pw');
+
+    expect(challenge).toMatchObject({ status: 'otp_required', challengeToken: 'challenge-1' });
+
+    // Half a sign-in is not a sign-in: no token is persisted, so nothing the
+    // api client reads will start authenticating requests.
+    expect(setToken).not.toHaveBeenCalled();
+  });
+
+  it('signs in once the emailed code is verified against the challenge', async () => {
+    jest.mocked(client.post).mockResolvedValueOnce({
+      data: {
+        accessToken: 'access-token',
+        expiresIn: 900,
+        refreshToken: 'refresh-token',
+        tokenType: 'Bearer',
+        memberships: [{ tenantId: 'tenant-id', tenantName: 'Alpha Cable', roleId: 'admin' }],
+        user: { id: 'user-id', email: 'operator@satya.test', phone: null, name: 'Op', photoUrl: null, isSuperAdmin: false },
+      },
+    } as never);
+
+    await useAuthStore.getState().verifyEmailCode('challenge-1', '135791');
+
+    expect(client.post).toHaveBeenCalledWith('/auth/otp/verify', { challengeToken: 'challenge-1', code: '135791' });
+    expect(setToken).toHaveBeenCalledWith({ access: 'access-token', refresh: 'refresh-token' });
+    expect(useAuthStore.getState().status).toBe('signIn');
+  });
+
+  it('resends against the challenge, not a phone number', async () => {
+    jest.mocked(client.post).mockResolvedValueOnce({
+      data: { status: 'accepted', channel: 'email', expiresInSeconds: 300, nextCooldownSeconds: 120 },
+    } as never);
+
+    await expect(useAuthStore.getState().resendEmailCode('challenge-1'))
+      .resolves
+      .toEqual({ expiresInSeconds: 300, nextCooldownSeconds: 120, channel: 'email' });
+
+    expect(client.post).toHaveBeenCalledWith('/auth/otp/request', { challengeToken: 'challenge-1' });
+  });
+
+  it('returns null from a sign-in that needed no code', async () => {
+    jest.mocked(client.post).mockResolvedValueOnce({
+      data: {
+        accessToken: 'access-token',
+        expiresIn: 900,
+        refreshToken: 'refresh-token',
+        tokenType: 'Bearer',
+        memberships: [{ tenantId: 'tenant-id', tenantName: 'Alpha Cable', roleId: 'admin' }],
+        user: { id: 'user-id', email: 'operator@satya.test', phone: null, name: 'Op', photoUrl: null, isSuperAdmin: false },
+      },
+    } as never);
+
+    await expect(useAuthStore.getState().signIn('operator@satya.test', 'pw')).resolves.toBeNull();
+    expect(useAuthStore.getState().status).toBe('signIn');
   });
 });
 

@@ -87,6 +87,30 @@ export type OtpRequest = {
   channel?: OtpChannel;
 };
 
+/** What GET /auth/config says this deployment allows. */
+export type LoginConfig = {
+  password: boolean;
+  /** A password sign-in is finished with a code emailed to the account. */
+  passwordNeedsEmailOtp: boolean;
+  phoneOtp: boolean;
+  /**
+   * The phone channels answering right now, best first — live state, not
+   * configuration. A provider that is failing drops out until it recovers.
+   */
+  phoneOtpChannels: OtpChannel[];
+  defaultPhoneOtpChannel: OtpChannel | null;
+  google: boolean;
+};
+
+/** A password was accepted, but an emailed code has to finish the sign-in. */
+export type OtpChallengeResponse = {
+  status: 'otp_required';
+  challengeToken: string;
+  channel: string;
+  expiresInSeconds: number;
+  nextCooldownSeconds: number;
+};
+
 export type OtpRequestResponse = {
   status: 'accepted';
   channel: string;

@@ -1,4 +1,4 @@
-import type { ApiUser, AuthResponse, Membership, MeResponse, OtpRequestResponse } from '@/lib/api/types';
+import type { ApiUser, AuthResponse, Membership, MeResponse, OtpChallengeResponse, OtpChannel, OtpRequestResponse } from '@/lib/api/types';
 import type { UserRole } from '@/lib/utils/user-role';
 import { create } from 'zustand';
 import { USER_ROLES } from '@/constants';
@@ -28,9 +28,16 @@ type AuthState = {
   status: 'idle' | 'signOut' | 'signIn';
   user: AuthUser | null;
   hydrate: () => () => void;
-  signIn: (identifier: string, password: string) => Promise<void>;
-  requestOtp: (phone: string) => Promise<{ expiresInSeconds: number; nextCooldownSeconds: number }>;
+  /**
+   * Resolves to null once signed in, or to a challenge when the server wants an
+   * emailed code as well. The password alone is not always the whole sign-in.
+   */
+  signIn: (identifier: string, password: string) => Promise<OtpChallengeResponse | null>;
+  requestOtp: (phone: string, channel?: OtpChannel) => Promise<SentCode>;
   verifyOtp: (phone: string, code: string) => Promise<void>;
+  /** Resend the emailed code for a sign-in already part-way through. */
+  resendEmailCode: (challengeToken: string) => Promise<SentCode>;
+  verifyEmailCode: (challengeToken: string, code: string) => Promise<void>;
   switchTenant: (tenantId: string, persist?: boolean) => void;
   /** Drop back to the picker without signing out. */
   clearTenant: () => void;
@@ -87,6 +94,14 @@ function roleFor(isSuperAdmin: boolean, membership?: Membership): UserRole | nul
 
 /** The backend's base resend cooldown, used only when it does not send its own. */
 const OTP_BASE_COOLDOWN_SECONDS = 60;
+
+/** A code was sent: how long it lives, how long until another, and where it went. */
+export type SentCode = {
+  expiresInSeconds: number;
+  nextCooldownSeconds: number;
+  /** The channel it actually left on, which is not always the one asked for. */
+  channel: string;
+};
 
 const signedOut = {
   error: null,
@@ -198,6 +213,16 @@ function restoreSession(set: (partial: Partial<AuthState>) => void) {
   };
 }
 
+function sentCode(response: { data: OtpRequestResponse }): SentCode {
+  return {
+    expiresInSeconds: response.data.expiresInSeconds,
+    // A server older than the escalating ladder sends no rung. Falling back to
+    // its base cooldown beats counting the resend button down from NaN.
+    nextCooldownSeconds: response.data.nextCooldownSeconds ?? OTP_BASE_COOLDOWN_SECONDS,
+    channel: response.data.channel,
+  };
+}
+
 const _useAuthStore = create<AuthState>((set, get) => ({
   ...signedOut,
   status: 'idle',
@@ -207,8 +232,18 @@ const _useAuthStore = create<AuthState>((set, get) => ({
   signIn: async (identifier, password) => {
     set({ error: null });
     try {
-      const response = await client.post<AuthResponse>('/auth/login', { identifier: identifier.trim(), password });
+      const response = await client.post<AuthResponse | OtpChallengeResponse>(
+        '/auth/login',
+        { identifier: identifier.trim(), password },
+      );
+
+      // The password was right but the sign-in is not finished, so no tokens
+      // are stored and the caller is handed the challenge to carry on with.
+      if ('status' in response.data)
+        return response.data;
+
       set(authenticatedState(response.data));
+      return null;
     }
     catch (error) {
       removeToken();
@@ -217,15 +252,26 @@ const _useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  requestOtp: async (phone) => {
+  requestOtp: async (phone, channel) => {
     set({ error: null });
-    const response = await client.post<OtpRequestResponse>('/auth/otp/request', { phone });
-    return {
-      expiresInSeconds: response.data.expiresInSeconds,
-      // A server older than the escalating ladder sends no rung. Falling back to
-      // its base cooldown beats counting the resend button down from NaN.
-      nextCooldownSeconds: response.data.nextCooldownSeconds ?? OTP_BASE_COOLDOWN_SECONDS,
-    };
+    return sentCode(await client.post<OtpRequestResponse>('/auth/otp/request', { phone, ...(channel ? { channel } : {}) }));
+  },
+
+  resendEmailCode: async (challengeToken) => {
+    set({ error: null });
+    return sentCode(await client.post<OtpRequestResponse>('/auth/otp/request', { challengeToken }));
+  },
+
+  verifyEmailCode: async (challengeToken, code) => {
+    set({ error: null });
+    try {
+      const response = await client.post<AuthResponse>('/auth/otp/verify', { challengeToken, code });
+      set(authenticatedState(response.data));
+    }
+    catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Code verification failed.' });
+      throw error;
+    }
   },
 
   verifyOtp: async (phone, code) => {

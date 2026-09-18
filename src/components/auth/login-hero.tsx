@@ -3,15 +3,33 @@ import { HugeiconsIcon } from '@hugeicons/react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MotiView } from 'moti';
 import * as React from 'react';
+import { useWindowDimensions } from 'react-native';
 
 import { LanguageToggle } from '@/components/common/language-toggle';
 import { colors, Image, SafeAreaView, Text, View } from '@/components/ui';
 import { IMAGES } from '@/constants';
 import { translate } from '@/lib/i18n';
 
+/** A third of the screen, and a third of the *screen* specifically. */
+const HERO_SCREEN_FRACTION = 0.32;
+const HERO_MIN_HEIGHT = 200;
+
 export function LoginHero() {
+  /*
+   * A percentage height here would resolve against the scrolling content box,
+   * not the screen — and that box grows by the height of the keyboard when one
+   * opens. The hero grew with it and shoved the card it sits above down behind
+   * the keyboard, which is the opposite of what the caller wanted. Measuring
+   * the window instead keeps the hero the same size whatever the keyboard does.
+   */
+  const { height } = useWindowDimensions();
+
   return (
-    <View className="h-[32%] min-h-[200px] overflow-hidden bg-neutral-100">
+    <View
+      testID="login-hero"
+      style={{ height: Math.max(height * HERO_SCREEN_FRACTION, HERO_MIN_HEIGHT) }}
+      className="overflow-hidden bg-neutral-100"
+    >
       <Image
         source={IMAGES.loginHero}
         className="absolute inset-0 size-full"

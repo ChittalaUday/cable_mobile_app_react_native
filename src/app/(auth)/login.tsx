@@ -1,10 +1,13 @@
+import type { OtpChannel } from '@/lib/api/types';
+import type { CodeSent } from '@/lib/hooks/common/use-login-actions';
+
 import * as React from 'react';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
-
 import { CredentialsCard } from '@/components/auth/credentials-card';
 import { LoginFooter } from '@/components/auth/login-footer';
 import { LoginHero } from '@/components/auth/login-hero';
 import { FocusAwareStatusBar, View } from '@/components/ui';
+import { OFFLINE_LOGIN_CONFIG, useLoginConfig } from '@/lib/hooks/api/use-login-config';
 import { useLoginActions } from '@/lib/hooks/common/use-login-actions';
 import { getItem, removeItem, setItem } from '@/lib/storage';
 
@@ -20,6 +23,17 @@ export function LoginScreen() {
   const [otpRequested, setOtpRequested] = React.useState(false);
   const [resendIn, setResendIn] = React.useState(0);
   const [remember, setRemember] = React.useState(remembered !== null);
+  const [challengeToken, setChallengeToken] = React.useState<string | null>(null);
+  const [emailedTo, setEmailedTo] = React.useState<string | null>(null);
+  const [channel, setChannel] = React.useState<OtpChannel | null>(null);
+
+  /*
+   * What this deployment allows, read from the server rather than assumed. Until
+   * it answers — or if it cannot — the app offers the two methods that have
+   * always worked, so nobody is left on a screen with no way in.
+   */
+  const { data: config = OFFLINE_LOGIN_CONFIG } = useLoginConfig();
+  const chosenChannel = channel ?? config.defaultPhoneOtpChannel ?? 'whatsapp';
 
   React.useEffect(() => {
     if (remember)
@@ -35,18 +49,51 @@ export function LoginScreen() {
     return () => clearTimeout(timeout);
   }, [resendIn]);
 
-  const onOtpRequested = (nextCooldownSeconds: number) => {
-    setOtpRequested(true);
+  const onCodeSent = ({ nextCooldownSeconds, emailedTo: sentToEmail, challengeToken: token }: CodeSent) => {
     setResendIn(nextCooldownSeconds);
+
+    if (sentToEmail === undefined) {
+      setOtpRequested(true);
+      return;
+    }
+
+    setEmailedTo(sentToEmail);
+
+    // A resend answers with a fresh cooldown but no new token, so the one from
+    // the sign-in has to survive it.
+    if (token !== undefined)
+      setChallengeToken(token);
   };
 
-  const { loading, resendOtp, submit } = useLoginActions({ email, password, phone, code, mode, otpRequested, onOtpRequested });
+  const { loading, resendOtp, submit } = useLoginActions({
+    email,
+    password,
+    phone,
+    code,
+    mode,
+    channel: chosenChannel,
+    otpRequested,
+    challengeToken,
+    onCodeSent,
+  });
+
+  /** Back to a blank form: nothing half-entered survives a change of method. */
+  const reset = () => {
+    setOtpRequested(false);
+    setChallengeToken(null);
+    setEmailedTo(null);
+    setResendIn(0);
+    setCode('');
+  };
 
   const changeMode = (nextMode: 'password' | 'otp') => {
     setMode(nextMode);
-    setOtpRequested(false);
-    setResendIn(0);
-    setCode('');
+    reset();
+  };
+
+  const startOver = () => {
+    reset();
+    setPassword('');
   };
 
   return (
@@ -57,9 +104,14 @@ export function LoginScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         bounces={false}
+        // Without this the focused field is scrolled to exactly the keyboard's
+        // top edge, which reads as touching it. A field also has a label or a
+        // resend link under it that has to stay visible.
+        bottomOffset={24}
       >
         <LoginHero />
         <CredentialsCard
+          config={config}
           email={email}
           setEmail={setEmail}
           password={password}
@@ -70,13 +122,17 @@ export function LoginScreen() {
           setCode={text => setCode(text.replace(/\D/g, '').slice(0, 8))}
           mode={mode}
           setMode={changeMode}
-          otpRequested={otpRequested}
+          channel={chosenChannel}
+          setChannel={setChannel}
+          awaitingCode={otpRequested}
+          emailedTo={emailedTo}
           resendIn={resendIn}
           remember={remember}
           setRemember={setRemember}
           loading={loading}
           onSubmit={submit}
           onResendOtp={resendOtp}
+          onStartOver={startOver}
         />
         <LoginFooter />
       </KeyboardAwareScrollView>
