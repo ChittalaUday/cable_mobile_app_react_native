@@ -1,8 +1,10 @@
 import type { OtpChannel } from '@/lib/api/types';
+import type { LoginMode } from '@/lib/auth/login-methods';
 import type { TxKeyPath } from '@/lib/i18n';
 import * as React from 'react';
 import { showMessage } from 'react-native-flash-message';
 
+import { googleIdToken } from '@/lib/auth/google';
 import { useAuthStore } from '@/lib/hooks/stores/use-auth-store';
 import { translate } from '@/lib/i18n';
 import { authErrorMessage } from '@/lib/utils/auth-error';
@@ -22,7 +24,7 @@ export type LoginCredentials = {
   password: string;
   phone: string;
   code: string;
-  mode: 'password' | 'otp';
+  mode: LoginMode;
   channel: OtpChannel;
   /** A phone code is out and we are waiting on it. */
   otpRequested: boolean;
@@ -44,6 +46,7 @@ export function useLoginActions(credentials: LoginCredentials) {
   const verifyOtp = useAuthStore.use.verifyOtp();
   const resendEmailCode = useAuthStore.use.resendEmailCode();
   const verifyEmailCode = useAuthStore.use.verifyEmailCode();
+  const signInWithGoogle = useAuthStore.use.signInWithGoogle();
   const [loading, setLoading] = React.useState(false);
 
   /** One place to announce a code, whichever channel carried it. */
@@ -72,6 +75,26 @@ export function useLoginActions(credentials: LoginCredentials) {
     }
     catch (error) {
       showMessage({ message: translate('login.otp_failed'), description: authErrorMessage(error), type: 'danger' });
+    }
+    finally {
+      setLoading(false);
+    }
+  }
+
+  async function continueWithGoogle() {
+    setLoading(true);
+    try {
+      const idToken = await googleIdToken();
+
+      // Backing out of the Google sheet is a decision, not a failure — telling
+      // them it went wrong would be telling them off for changing their mind.
+      if (idToken === null)
+        return;
+
+      await signInWithGoogle(idToken);
+    }
+    catch (error) {
+      showMessage({ message: translate('login.auth_failed'), description: authErrorMessage(error), type: 'danger' });
     }
     finally {
       setLoading(false);
@@ -151,5 +174,5 @@ export function useLoginActions(credentials: LoginCredentials) {
     }
   }
 
-  return { loading, resendOtp, submit };
+  return { continueWithGoogle, loading, resendOtp, submit };
 }

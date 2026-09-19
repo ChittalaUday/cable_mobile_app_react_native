@@ -35,6 +35,8 @@ type AuthState = {
   signIn: (identifier: string, password: string) => Promise<OtpChallengeResponse | null>;
   requestOtp: (phone: string, channel?: OtpChannel) => Promise<SentCode>;
   verifyOtp: (phone: string, code: string) => Promise<void>;
+  /** Exchange a Google ID token from the native sign-in for a session. */
+  signInWithGoogle: (idToken: string) => Promise<void>;
   /** Resend the emailed code for a sign-in already part-way through. */
   resendEmailCode: (challengeToken: string) => Promise<SentCode>;
   verifyEmailCode: (challengeToken: string, code: string) => Promise<void>;
@@ -282,6 +284,18 @@ const _useAuthStore = create<AuthState>((set, get) => ({
     }
     catch (error) {
       set({ error: error instanceof Error ? error.message : 'Code verification failed.' });
+      throw error;
+    }
+  },
+
+  signInWithGoogle: async (idToken) => {
+    set({ error: null });
+    try {
+      const response = await client.post<AuthResponse>('/auth/google', { idToken });
+      set(authenticatedState(response.data));
+    }
+    catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Sign in failed.' });
       throw error;
     }
   },

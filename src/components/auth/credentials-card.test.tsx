@@ -29,6 +29,7 @@ function renderCard(overrides: Partial<React.ComponentProps<typeof CredentialsCa
       onSubmit={jest.fn()}
       onResendOtp={jest.fn()}
       onStartOver={jest.fn()}
+      onContinueWithGoogle={jest.fn()}
       {...overrides}
     />,
   );
@@ -84,5 +85,32 @@ describe('credentials card', () => {
     // Half-way through, switching method is not the move — backing out is.
     expect(screen.queryByTestId('phone-otp-option')).toBeNull();
     expect(screen.getByTestId('start-over')).toBeOnTheScreen();
+  });
+});
+
+describe('only what the server offers is on screen', () => {
+  it('never draws a password form a deployment has switched off', () => {
+    // The dead form was the real bug: it invites a sign-in nothing can answer,
+    // and the failure reads as the person's own credentials being wrong.
+    renderCard({ mode: 'otp' }, { password: false });
+
+    expect(screen.queryByTestId('password-option')).toBeNull();
+    expect(screen.getByTestId('phone-input')).toBeOnTheScreen();
+  });
+
+  it('offers Google only when the server says it is configured', () => {
+    renderCard();
+    expect(screen.queryByTestId('google-option')).toBeNull();
+
+    screen.unmount();
+    renderCard({}, { google: true });
+    expect(screen.getByTestId('google-option')).toBeOnTheScreen();
+  });
+
+  it('says so, rather than showing a form, when every method is off', () => {
+    renderCard({}, { password: false, phoneOtp: false, google: false });
+
+    expect(screen.getByTestId('no-methods')).toBeOnTheScreen();
+    expect(screen.queryByTestId('login-button')).toBeNull();
   });
 });

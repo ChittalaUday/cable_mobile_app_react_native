@@ -1,4 +1,5 @@
 import type { OtpChannel } from '@/lib/api/types';
+import type { LoginMode } from '@/lib/auth/login-methods';
 import type { CodeSent } from '@/lib/hooks/common/use-login-actions';
 
 import * as React from 'react';
@@ -7,6 +8,7 @@ import { CredentialsCard } from '@/components/auth/credentials-card';
 import { LoginFooter } from '@/components/auth/login-footer';
 import { LoginHero } from '@/components/auth/login-hero';
 import { FocusAwareStatusBar, View } from '@/components/ui';
+import { offersMode, openingMode } from '@/lib/auth/login-methods';
 import { OFFLINE_LOGIN_CONFIG, useLoginConfig } from '@/lib/hooks/api/use-login-config';
 import { useLoginActions } from '@/lib/hooks/common/use-login-actions';
 import { getItem, removeItem, setItem } from '@/lib/storage';
@@ -19,7 +21,8 @@ export function LoginScreen() {
   const [password, setPassword] = React.useState('');
   const [phone, setPhone] = React.useState('');
   const [code, setCode] = React.useState('');
-  const [mode, setMode] = React.useState<'password' | 'otp'>('password');
+  // Null until the person picks one — the server decides the opening method.
+  const [chosenMode, setChosenMode] = React.useState<LoginMode | null>(null);
   const [otpRequested, setOtpRequested] = React.useState(false);
   const [resendIn, setResendIn] = React.useState(0);
   const [remember, setRemember] = React.useState(remembered !== null);
@@ -33,7 +36,18 @@ export function LoginScreen() {
    * always worked, so nobody is left on a screen with no way in.
    */
   const { data: config = OFFLINE_LOGIN_CONFIG } = useLoginConfig();
+
   const chosenChannel = channel ?? config.defaultPhoneOtpChannel ?? 'whatsapp';
+
+  /*
+   * Derived, not stored: config arrives a render late, so a stored opening mode
+   * would have to be corrected afterwards — and a password-less deployment
+   * would flash a password form first. The person's own choice wins while the
+   * server still offers it.
+   */
+  const mode: LoginMode = chosenMode !== null && offersMode(config, chosenMode)
+    ? chosenMode
+    : openingMode(config) ?? 'password';
 
   React.useEffect(() => {
     if (remember)
@@ -65,7 +79,7 @@ export function LoginScreen() {
       setChallengeToken(token);
   };
 
-  const { loading, resendOtp, submit } = useLoginActions({
+  const { continueWithGoogle, loading, resendOtp, submit } = useLoginActions({
     email,
     password,
     phone,
@@ -86,8 +100,8 @@ export function LoginScreen() {
     setCode('');
   };
 
-  const changeMode = (nextMode: 'password' | 'otp') => {
-    setMode(nextMode);
+  const changeMode = (nextMode: LoginMode) => {
+    setChosenMode(nextMode);
     reset();
   };
 
@@ -132,6 +146,7 @@ export function LoginScreen() {
           loading={loading}
           onSubmit={submit}
           onResendOtp={resendOtp}
+          onContinueWithGoogle={continueWithGoogle}
           onStartOver={startOver}
         />
         <LoginFooter />

@@ -1,4 +1,5 @@
 import type { LoginConfig, OtpChannel } from '@/lib/api/types';
+import type { LoginMode } from '@/lib/auth/login-methods';
 import type { TxKeyPath } from '@/lib/i18n';
 import { ArrowRight02Icon, LockPasswordIcon, User03Icon, ViewIcon, ViewOffSlashIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
@@ -7,6 +8,7 @@ import * as React from 'react';
 import { showMessage } from 'react-native-flash-message';
 
 import { Button, Checkbox, colors, Pressable, Text, View } from '@/components/ui';
+import { offersMode, openingMode } from '@/lib/auth/login-methods';
 import { translate } from '@/lib/i18n';
 import { LoginField } from './login-field';
 
@@ -20,8 +22,8 @@ type CredentialsCardProps = {
   setPhone: (val: string) => void;
   code: string;
   setCode: (val: string) => void;
-  mode: 'password' | 'otp';
-  setMode: (mode: 'password' | 'otp') => void;
+  mode: LoginMode;
+  setMode: (mode: LoginMode) => void;
   channel: OtpChannel;
   setChannel: (channel: OtpChannel) => void;
   /** A code is out and the form is waiting for it, in either mode. */
@@ -35,6 +37,7 @@ type CredentialsCardProps = {
   onSubmit: () => void;
   onResendOtp: () => void;
   onStartOver: () => void;
+  onContinueWithGoogle: () => void;
 };
 
 const CHANNEL_LABELS: Record<OtpChannel, TxKeyPath> = {
@@ -107,65 +110,97 @@ function CodeStep({ code, setCode, resendIn, loading, onResendOtp }: {
 }
 
 export function CredentialsCard(props: CredentialsCardProps) {
-  const { config, email, setEmail, password, setPassword, phone, setPhone, code, setCode, mode, setMode, channel, setChannel, awaitingCode, emailedTo, resendIn, remember, setRemember, loading, onSubmit, onResendOtp, onStartOver } = props;
+  const { config, email, setEmail, password, setPassword, phone, setPhone, code, setCode, mode, setMode, channel, setChannel, awaitingCode, emailedTo, resendIn, remember, setRemember, loading, onSubmit, onResendOtp, onStartOver, onContinueWithGoogle } = props;
   const [showPassword, setShowPassword] = React.useState(false);
 
-  const onEmailCodeStep = emailedTo !== null;
+  /** Waiting on an emailed code blocks the form, so it gates every branch below. */
+  const waiting = emailedTo !== null;
 
-  const submitLabel = onEmailCodeStep || (mode === 'otp' && awaitingCode)
+  const submitLabel = waiting || (mode === 'otp' && awaitingCode)
     ? 'login.verify_code'
     : mode === 'password' ? 'login.sign_in' : 'login.send_otp';
+
+  /**
+   * The other ways in that this deployment actually offers.
+   *
+   * Derived rather than hand-wired per pair, so a method switched off server
+   * side can never hide the only way back out of the one on screen.
+   */
+  const alternatives = ([
+    { mode: 'password', label: 'login.use_password', testID: 'password-option' },
+    { mode: 'otp', label: 'login.use_otp', testID: 'phone-otp-option' },
+  ] as const).filter(item => item.mode !== mode && offersMode(config, item.mode));
+
+  /** One branch per step, flat: the chain reads as the screen's state machine. */
+  function fields() {
+    if (waiting)
+      return <CodeStep code={code} setCode={setCode} resendIn={resendIn} loading={loading} onResendOtp={onResendOtp} />;
+
+    if (mode === 'otp') {
+      return (
+        <>
+          {!awaitingCode && (
+            <ChannelPicker channels={config.phoneOtpChannels} value={channel} onChange={setChannel} disabled={loading} />
+          )}
+          <LoginField icon={User03Icon} placeholder={translate('login.phone_placeholder')} value={phone} onChangeText={setPhone} keyboardType="phone-pad" editable={!awaitingCode} testID="phone-input" />
+          {awaitingCode && <CodeStep code={code} setCode={setCode} resendIn={resendIn} loading={loading} onResendOtp={onResendOtp} />}
+        </>
+      );
+    }
+
+    return (
+      <>
+        <LoginField icon={User03Icon} placeholder={translate('login.email_placeholder')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoComplete="email" testID="email-input" />
+        {mode === 'password' && (
+          <LoginField
+            icon={LockPasswordIcon}
+            placeholder={translate('login.password_placeholder')}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+            testID="password-input"
+            right={(
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={translate(showPassword ? 'login.hide_password' : 'login.show_password')}
+                hitSlop={12}
+                onPress={() => setShowPassword(!showPassword)}
+              >
+                <HugeiconsIcon icon={showPassword ? ViewIcon : ViewOffSlashIcon} size={20} color={colors.neutral[500]} strokeWidth={1.8} />
+              </Pressable>
+            )}
+          />
+        )}
+      </>
+    );
+  }
+
+  // Every method switched off is a message, not a form. Drawing the fields here
+  // would invite a sign-in nothing can answer, and the failure would look like
+  // the person's own credentials being wrong.
+  if (!waiting && openingMode(config) === null) {
+    return (
+      <MotiView className="rounded-sm px-5 py-6" from={{ opacity: 0, translateY: 16 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', duration: 350 }}>
+        <Text className="text-2xl font-extrabold text-foreground">{translate('login.welcome_back')}</Text>
+        <Text testID="no-methods" className="mt-2 text-sm text-muted-foreground">{translate('login.no_methods')}</Text>
+      </MotiView>
+    );
+  }
 
   return (
     <MotiView className="rounded-sm px-5 py-6" from={{ opacity: 0, translateY: 16 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', duration: 350 }}>
       <Text className="text-2xl font-extrabold text-foreground">
-        {translate(onEmailCodeStep ? 'login.email_code_title' : 'login.welcome_back')}
+        {translate(waiting ? 'login.email_code_title' : 'login.welcome_back')}
       </Text>
       <Text className="mt-1 text-xs text-muted-foreground">
-        {onEmailCodeStep
+        {waiting
           ? translate('login.email_code_prompt', { email: emailedTo })
           : translate('login.sign_in_prompt')}
       </Text>
 
-      <View className="mt-6 gap-3">
-        {onEmailCodeStep
-          ? <CodeStep code={code} setCode={setCode} resendIn={resendIn} loading={loading} onResendOtp={onResendOtp} />
-          : mode === 'password'
-            ? (
-                <>
-                  <LoginField icon={User03Icon} placeholder={translate('login.email_placeholder')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoComplete="email" testID="email-input" />
-                  <LoginField
-                    icon={LockPasswordIcon}
-                    placeholder={translate('login.password_placeholder')}
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry={!showPassword}
-                    testID="password-input"
-                    right={(
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={translate(showPassword ? 'login.hide_password' : 'login.show_password')}
-                        hitSlop={12}
-                        onPress={() => setShowPassword(!showPassword)}
-                      >
-                        <HugeiconsIcon icon={showPassword ? ViewIcon : ViewOffSlashIcon} size={20} color={colors.neutral[500]} strokeWidth={1.8} />
-                      </Pressable>
-                    )}
-                  />
-                </>
-              )
-            : (
-                <>
-                  {!awaitingCode && (
-                    <ChannelPicker channels={config.phoneOtpChannels} value={channel} onChange={setChannel} disabled={loading} />
-                  )}
-                  <LoginField icon={User03Icon} placeholder={translate('login.phone_placeholder')} value={phone} onChangeText={setPhone} keyboardType="phone-pad" editable={!awaitingCode} testID="phone-input" />
-                  {awaitingCode && <CodeStep code={code} setCode={setCode} resendIn={resendIn} loading={loading} onResendOtp={onResendOtp} />}
-                </>
-              )}
-      </View>
+      <View className="mt-6 gap-3">{fields()}</View>
 
-      {mode === 'password' && !onEmailCodeStep && (
+      {mode === 'password' && !waiting && (
         <View className="mt-4 flex-row items-center justify-between">
           <Checkbox.Root checked={remember} onChange={setRemember} accessibilityLabel={translate('login.remember_me')} testID="remember-me">
             <Checkbox.Icon checked={remember} />
@@ -188,34 +223,48 @@ export function CredentialsCard(props: CredentialsCardProps) {
         </View>
       </Button>
 
-      {/* Half-way through an emailed code, the only other move is to back out. */}
-      {onEmailCodeStep && (
+      {/* Half-way through a code, the only other move is to back out. */}
+      {waiting && (
         <Button testID="start-over" variant="outline" disabled={loading} onPress={onStartOver} className="mt-5 h-12 rounded-2xl border-neutral-200">
           <Text className="text-sm font-bold text-foreground">{translate('login.start_over')}</Text>
         </Button>
       )}
 
-      {/* Only offer the other method when the server says it works. */}
-      {!onEmailCodeStep && config.phoneOtp && config.password && (
+      {/* Only offer what the server says works — never a dead form. */}
+      {!waiting && alternatives.length > 0 && (
         <>
-          {mode === 'password' && (
-            <View className="my-5 flex-row items-center gap-3">
-              <View className="h-px flex-1 bg-neutral-200" />
-              <Text className="text-xs font-semibold text-neutral-400">{translate('login.or')}</Text>
-              <View className="h-px flex-1 bg-neutral-200" />
-            </View>
-          )}
+          <View className="my-5 flex-row items-center gap-3">
+            <View className="h-px flex-1 bg-neutral-200" />
+            <Text className="text-xs font-semibold text-neutral-400">{translate('login.or')}</Text>
+            <View className="h-px flex-1 bg-neutral-200" />
+          </View>
 
-          <Button
-            testID={mode === 'password' ? 'phone-otp-option' : 'password-option'}
-            variant="outline"
-            disabled={loading}
-            onPress={() => setMode(mode === 'password' ? 'otp' : 'password')}
-            className={mode === 'otp' ? 'mt-5 h-12 rounded-2xl border-neutral-200' : 'h-12 rounded-2xl border-neutral-200'}
-          >
-            <Text className="text-sm font-bold text-foreground">{translate(mode === 'password' ? 'login.use_otp' : 'login.use_password')}</Text>
-          </Button>
+          {alternatives.map(item => (
+            <Button
+              key={item.mode}
+              testID={item.testID}
+              variant="outline"
+              disabled={loading}
+              onPress={() => setMode(item.mode)}
+              className="mb-3 h-12 rounded-2xl border-neutral-200"
+            >
+              <Text className="text-sm font-bold text-foreground">{translate(item.label)}</Text>
+            </Button>
+          ))}
         </>
+      )}
+
+      {/* One tap, not a mode: there is no form for it to swap in. */}
+      {!waiting && config.google && (
+        <Button
+          testID="google-option"
+          variant="outline"
+          disabled={loading}
+          onPress={onContinueWithGoogle}
+          className={alternatives.length > 0 ? 'h-12 rounded-2xl border-neutral-200' : 'mt-5 h-12 rounded-2xl border-neutral-200'}
+        >
+          <Text className="text-sm font-bold text-foreground">{translate('login.continue_with_google')}</Text>
+        </Button>
       )}
     </MotiView>
   );

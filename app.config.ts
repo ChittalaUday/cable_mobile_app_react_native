@@ -99,6 +99,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     ['@react-native-firebase/app', { ios: { disableSPM: true } }],
+    // Reads the reversed client id out of GoogleService-Info.plist and registers
+    // the URL scheme iOS needs to come back from the Google sheet.
+    '@react-native-google-signin/google-signin',
     '@react-native-firebase/crashlytics',
     './plugins/with-firebase-modular-headers',
     './plugins/with-notifee-maven',

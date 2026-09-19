@@ -376,3 +376,26 @@ describe('tenant selection persistence and sign out', () => {
     expect(removeTenantId).not.toHaveBeenCalled();
   });
 });
+
+describe('exchanging a google id token', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('posts the token to the google endpoint and keeps our session', async () => {
+    jest.mocked(client.post).mockResolvedValueOnce({
+      data: {
+        accessToken: 'access-token',
+        expiresIn: 900,
+        refreshToken: 'refresh-token',
+        tokenType: 'Bearer',
+        memberships: [{ tenantId: 'tenant-id', tenantName: 'Alpha Cable', roleId: 'admin' }],
+        user: { id: 'user-id', email: 'op@satya.test', phone: null, name: 'Op', photoUrl: null, isSuperAdmin: false },
+      },
+    } as never);
+
+    await useAuthStore.getState().signInWithGoogle('google-id-token');
+
+    expect(client.post).toHaveBeenCalledWith('/auth/google', { idToken: 'google-id-token' });
+    expect(setToken).toHaveBeenCalledWith({ access: 'access-token', refresh: 'refresh-token' });
+    expect(useAuthStore.getState().status).toBe('signIn');
+  });
+});

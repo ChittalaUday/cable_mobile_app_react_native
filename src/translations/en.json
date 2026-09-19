@@ -150,6 +150,7 @@
     "email_code_title": "One more step",
     "email_placeholder": "Email Address",
     "enter_both": "Please enter your email and password.",
+    "enter_email": "Enter your email address.",
     "enter_otp": "Enter the verification code.",
     "enter_phone": "Enter a valid 10-digit mobile number.",
     "errors": {
