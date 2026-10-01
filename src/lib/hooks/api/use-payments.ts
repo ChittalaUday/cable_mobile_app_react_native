@@ -1,8 +1,8 @@
-import type { CollectionOutcome, PaymentMethod } from '@/lib/api/types';
+import type { CollectionOutcome, PaymentEntryMethod, PaymentMethod } from '@/lib/api/types';
 import * as Crypto from 'expo-crypto';
 import { createInfiniteQuery, createMutation, createQuery } from 'react-query-kit';
-import { queryClient } from '@/lib/api';
 import { client } from '@/lib/api/client';
+import { queryClient } from '@/lib/api/query-client';
 
 const PAGE_SIZE = 30;
 
@@ -20,6 +20,14 @@ export type Collection = {
   customerName: string | null;
   customerCode: string | null;
   subscriptionId: string | null;
+  customerEquipmentId: string | null;
+  equipment: {
+    itemName: string;
+    itemCode: string | null;
+    serialNumber: string | null;
+    brand: string | null;
+    model: string | null;
+  } | null;
   serviceAccountNumber: string | null;
   locationId: string | null;
   locationPath: string | null;
@@ -72,7 +80,7 @@ export type RecordCollectionPayload = {
   subscriptionId?: string;
   /** Dues taken, as a decimal string. `"0"` records a visit that collected nothing. */
   amount: string;
-  method?: PaymentMethod;
+  method?: PaymentEntryMethod;
   accessories?: { catalogId: string; quantity: number; unitPrice: string }[];
   reason?: string;
   notes?: string;
@@ -82,6 +90,35 @@ export type RecordCollectionPayload = {
   latitude?: number;
   longitude?: number;
   /** Metres of horizontal error the handset reported. */
+  gpsAccuracyM?: number;
+};
+
+/**
+ * A charge for hardware rather than dues: a set-top box sold, a deposit taken,
+ * a router issued on the spot.
+ *
+ * Deliberately not part of `RecordCollectionPayload`. The server posts this as
+ * a deposit and leaves the subscription balance alone, so folding the two into
+ * one payload would invite a screen to show a recharge taking money off a
+ * balance it never touches.
+ */
+export type RecordEquipmentPaymentPayload = {
+  customerId: string;
+  /** What was charged for the hardware, as a decimal string. */
+  amount: string;
+  method?: PaymentEntryMethod;
+  reason?: string;
+  notes?: string;
+  reference: string;
+  /** Charging against a unit the customer already holds. */
+  customerEquipmentId?: string;
+  /** Issuing a unit from the catalogue instead. One or the other, never both. */
+  catalogId?: string;
+  /** The serial of the unit handed over, when the collector has it to hand. */
+  serialNumber?: string;
+  collectedAt?: string;
+  latitude?: number;
+  longitude?: number;
   gpsAccuracyM?: number;
 };
 
@@ -147,8 +184,26 @@ async function refreshAfterCollection(): Promise<void> {
 }
 
 export const useRecordCollection = createMutation<Collection, { payload: RecordCollectionPayload }, Error>({
-  mutationFn: async ({ payload }) => (await client.post<Collection>('/payments', payload)).data,
+  mutationFn: async ({ payload }) => (await client.post<Collection>('/payments/subscription', payload)).data,
   onSuccess: refreshAfterCollection,
+});
+
+/**
+ * Money taken for hardware. Issuing a unit moves it out of stock and onto the
+ * customer, so the inventory views are refreshed on top of the usual set.
+ */
+export const useRecordEquipmentPayment = createMutation<
+  Collection,
+  { payload: RecordEquipmentPaymentPayload },
+  Error
+>({
+  mutationFn: async ({ payload }) => (await client.post<Collection>('/payments/equipment', payload)).data,
+  onSuccess: async () => {
+    await Promise.all([
+      refreshAfterCollection(),
+      queryClient.invalidateQueries({ queryKey: ['inventory'] }),
+    ]);
+  },
 });
 
 /**

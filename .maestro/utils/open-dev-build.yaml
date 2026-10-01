@@ -1,10 +1,4 @@
 appId: ${APP_ID}
-env:
-  # Metro server the dev client should load. Android emulator reaches the host
-  # via 10.0.2.2; use localhost for an iOS simulator:
-  #   maestro test ... -e DEV_SERVER=http://localhost:8081
-  DEV_SERVER: http://10.0.2.2:8081
-  DEV_SCHEME: satyaCable.development
 tags:
   - util
 ---
@@ -30,6 +24,13 @@ tags:
 - runFlow:
     when:
       visible: Performance monitor
+    commands:
+      - back
+
+- runFlow: dismiss-system-dialogs.yaml
+- runFlow:
+    when:
+      visible: 'Connected to:'
     commands:
       - back
 

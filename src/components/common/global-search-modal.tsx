@@ -1,23 +1,14 @@
 import type { Href } from 'expo-router';
 import type { AppRegistryItem } from '@/types/access';
 import {
-  Add01Icon,
-  AlertCircleIcon,
-  Analytics01Icon,
   Cancel01Icon,
-  CreditCardIcon,
-  Delete02Icon,
-  PackageIcon,
-  PencilEdit02Icon,
   Search01Icon,
-  Settings02Icon,
-  UserAdd01Icon,
-  UserGroupIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { InteractionManager, Modal, ScrollView, TextInput, TouchableOpacity } from 'react-native';
+import { ICON_MAP } from '@/components/common/registry-icons';
 import { colors, Text, View } from '@/components/ui';
 
 import { useAppSearch } from '@/lib/hooks/common/use-app-search';
@@ -26,21 +17,6 @@ import { useDismissKeyboardOnExit } from '@/lib/hooks/common/use-dismiss-keyboar
 export type GlobalSearchModalProps = {
   visible: boolean;
   onClose: () => void;
-};
-
-const ICON_MAP: Record<string, typeof Search01Icon> = {
-  'users': UserGroupIcon,
-  'user-plus': UserAdd01Icon,
-  'alert-circle': AlertCircleIcon,
-  'plus-circle': Add01Icon,
-  'credit-card': CreditCardIcon,
-  'dollar-sign': CreditCardIcon,
-  'bar-chart': Analytics01Icon,
-  'settings': Settings02Icon,
-  'package': PackageIcon,
-  'package-add': PackageIcon,
-  'package-edit': PencilEdit02Icon,
-  'package-delete': Delete02Icon,
 };
 
 export function GlobalSearchModal({ visible, onClose }: GlobalSearchModalProps) {

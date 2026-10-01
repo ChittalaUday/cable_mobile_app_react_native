@@ -4,11 +4,12 @@ import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as React from 'react';
-import { Alert, TextInput } from 'react-native';
+import { TextInput } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
-
 import { AreaGrants } from '@/components/admin/area-grants';
+
 import { StepBar } from '@/components/admin/step-bar';
+import { dialogs } from '@/components/common/dialogs';
 import { SaveBar } from '@/components/common/save-bar';
 import { Card, Loading, ScreenHeader } from '@/components/common/shell';
 import {
@@ -238,31 +239,29 @@ export function AddEditStaffScreen() {
       router.back();
     }
     catch (error) {
-      Alert.alert('Could not save', apiErrorMessage(error, 'Try again.'));
+      void dialogs.notify('Could not save', apiErrorMessage(error, 'Try again.'));
     }
   };
 
-  const confirmDelete = () => Alert.alert(
-    'Remove from this operator',
-    `${name || 'This person'} loses their job here and every area granted to them. Their sign-in account is not deleted — they may be a subscriber elsewhere.`,
-    [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await deleteStaff.mutateAsync({ id: id! });
-            await refresh();
-            router.back();
-          }
-          catch (error) {
-            Alert.alert('Could not remove', apiErrorMessage(error, 'Try again.'));
-          }
-        },
-      },
-    ],
-  );
+  const confirmDelete = async () => {
+    const agreed = await dialogs.confirm({
+      title: 'Remove from this operator',
+      message: `${name || 'This person'} loses their job here and every area granted to them. Their sign-in account is not deleted — they may be a subscriber elsewhere.`,
+      confirmLabel: 'Remove',
+    });
+
+    if (!agreed)
+      return;
+
+    try {
+      await deleteStaff.mutateAsync({ id: id! });
+      await refresh();
+      router.back();
+    }
+    catch (error) {
+      void dialogs.notify('Could not remove', apiErrorMessage(error, 'Try again.'));
+    }
+  };
 
   if (isEdit && loadingMember)
     return <Loading />;

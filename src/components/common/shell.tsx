@@ -4,13 +4,12 @@ import {
   ArrowRight01Icon,
   CreditCardIcon,
   Home01Icon,
-  Message01Icon,
   MoreIcon,
+  RemoteControlIcon,
   UserMultipleIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as React from 'react';
-import { showMessage } from 'react-native-flash-message';
 
 import { ActivityIndicator, Button, colors, Pressable, Text, View } from '@/components/ui';
 
@@ -77,10 +76,6 @@ export function StatusPill({ status }: { status: CustomerStatus }) {
   );
 }
 
-export function comingSoon(label: string) {
-  showMessage({ message: `${label} is not wired up yet.`, type: 'info' });
-}
-
 export function Loading() {
   return (
     <View className="flex-1 items-center justify-center gap-3">
@@ -104,11 +99,12 @@ export function Divider({ className = '' }: { className?: string }) {
   return <View className={`h-px bg-border ${className}`} />;
 }
 
+/** The same five tabs the tab bar itself has — screens pushed over it reuse this. */
 const TABS = [
   { key: 'home', icon: Home01Icon, label: 'Home' },
   { key: 'customers', icon: UserMultipleIcon, label: 'Customers' },
   { key: 'payments', icon: CreditCardIcon, label: 'Payments' },
-  { key: 'tickets', icon: Message01Icon, label: 'Tickets' },
+  { key: 'remote', icon: RemoteControlIcon, label: 'Remote' },
   { key: 'more', icon: MoreIcon, label: 'More' },
 ] as const;
 

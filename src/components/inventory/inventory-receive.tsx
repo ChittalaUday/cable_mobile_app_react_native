@@ -7,7 +7,8 @@ import {
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
-import { Alert } from 'react-native';
+
+import { dialogs } from '@/components/common/dialogs';
 import { Card, ScreenHeader } from '@/components/common/shell';
 import { LocationPickerSheet } from '@/components/locations/location-picker-sheet';
 import {
@@ -50,7 +51,7 @@ export function InventoryReceiveScreen({ basePath }: { basePath: '/admin/invento
     if (!s)
       return;
     if (serials.includes(s)) {
-      Alert.alert('Duplicate', 'This serial number is already added to the list.');
+      void dialogs.notify('Duplicate', 'This serial number is already added to the list.');
       return;
     }
     setSerials(prev => [...prev, s]);
@@ -63,13 +64,13 @@ export function InventoryReceiveScreen({ basePath }: { basePath: '/admin/invento
 
   const handleSubmit = () => {
     if (!selectedCatalogId) {
-      Alert.alert('Validation Error', 'Please select an item to receive.');
+      void dialogs.notify('Validation Error', 'Please select an item to receive.');
       return;
     }
 
     const qty = serials.length > 0 ? serials.length : Number.parseInt(quantity, 10);
     if (Number.isNaN(qty) || qty <= 0) {
-      Alert.alert('Validation Error', 'Please specify a valid quantity greater than zero.');
+      void dialogs.notify('Validation Error', 'Please specify a valid quantity greater than zero.');
       return;
     }
 
@@ -87,19 +88,12 @@ export function InventoryReceiveScreen({ basePath }: { basePath: '/admin/invento
       },
       {
         onSuccess: (res) => {
-          Alert.alert(
-            'Stock Received',
-            `Successfully received ${res.quantity} unit(s) of ${selectedItem?.name ?? 'item'}.`,
-            [
-              {
-                text: 'View Stock',
-                onPress: () => router.replace(`${basePath}/stock`),
-              },
-            ],
-          );
+          void dialogs
+            .notify('Stock Received', `Successfully received ${res.quantity} unit(s) of ${selectedItem?.name ?? 'item'}.`)
+            .then(() => router.replace(`${basePath}/stock`));
         },
         onError: (err) => {
-          Alert.alert('Inward Failed', err?.message ?? 'Could not inward stock');
+          void dialogs.notify('Inward Failed', err?.message ?? 'Could not inward stock');
         },
       },
     );

@@ -7,9 +7,12 @@ import {
   UserIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
-import { Alert } from 'react-native';
+import { Modal } from 'react-native';
+
+import { dialogs } from '@/components/common/dialogs';
 import { Card, ScreenHeader } from '@/components/common/shell';
 import {
   ActivityIndicator,
@@ -36,6 +39,7 @@ export function IssueConfirmScreen({
   itemName,
   itemCode,
   serialNumber: initialSerial,
+  equipmentId,
   customerId,
   customerName,
   customerCode,
@@ -45,6 +49,7 @@ export function IssueConfirmScreen({
   itemName: string;
   itemCode: string;
   serialNumber?: string;
+  equipmentId?: string;
   customerId: string;
   customerName: string;
   customerCode: string;
@@ -52,6 +57,17 @@ export function IssueConfirmScreen({
 }) {
   const router = useRouter();
   const [serialNumber, setSerialNumber] = React.useState(initialSerial || '');
+  const [scanning, setScanning] = React.useState(false);
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+
+  // The serial is read in place: leaving for the scan screen would drop the
+  // item, customer and ownership already chosen on this one.
+  const openScanner = async () => {
+    if (cameraPermission?.granted || (await requestCameraPermission()).granted)
+      setScanning(true);
+    else
+      void dialogs.notify('Camera access needed', 'Allow camera access in Settings to scan serial codes.');
+  };
   const [ownershipIndex, setOwnershipIndex] = React.useState(0);
   const [selectedSubIndex, setSelectedSubIndex] = React.useState<number>(0);
 
@@ -69,6 +85,7 @@ export function IssueConfirmScreen({
       {
         payload: {
           catalogId,
+          equipmentId,
           customerId,
           subscriptionId: selectedSubscription?.id,
           serialNumber: serialNumber.trim() || undefined,
@@ -90,7 +107,7 @@ export function IssueConfirmScreen({
           });
         },
         onError: (err) => {
-          Alert.alert('Issue Failed', err?.message ?? 'Could not issue equipment');
+          void dialogs.notify('Issue Failed', err?.message ?? 'Could not issue equipment');
         },
       },
     );
@@ -132,8 +149,9 @@ export function IssueConfirmScreen({
             />
             <Pressable
               accessibilityRole="button"
-              onPress={() => router.push(`${basePath}/issue/scan`)}
-              className="p-1"
+              accessibilityLabel="Scan serial code"
+              onPress={() => void openScanner()}
+              className="p-2.5"
             >
               <HugeiconsIcon icon={QrCodeIcon} size={20} color={colors.primary[600]} strokeWidth={2} />
             </Pressable>
@@ -217,6 +235,31 @@ export function IssueConfirmScreen({
           />
         </View>
       </ScrollView>
+
+      <Modal visible={scanning} animationType="slide" onRequestClose={() => setScanning(false)}>
+        <View className="flex-1 bg-black">
+          <CameraView
+            style={{ flex: 1 }}
+            facing="back"
+            barcodeScannerSettings={{ barcodeTypes: ['qr', 'ean13', 'code128', 'code39', 'upc_a', 'upc_e'] }}
+            onBarcodeScanned={scanning
+              ? ({ data }) => {
+                  if (!data)
+                    return;
+                  setSerialNumber(data.trim());
+                  setScanning(false);
+                }
+              : undefined}
+          />
+          <View className="pointer-events-none absolute inset-0 items-center justify-center">
+            <View className="size-52 rounded-2xl border-2 border-primary-500" />
+            <Text className="mt-3 text-xs font-medium text-white/90">Align the serial code inside the frame</Text>
+          </View>
+          <View className="absolute inset-x-4 bottom-12">
+            <Button label="Cancel" variant="outline" onPress={() => setScanning(false)} />
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

@@ -1,7 +1,7 @@
 import type { LocationRef } from '@/lib/api/types';
 import { sameAreas, teamCoverageLabel } from './use-staff';
 
-const area = (id: string): LocationRef => ({ id, name: id, path: `Mandapeta / ${id}` });
+const area = (id: string): LocationRef => ({ id, name: id, path: `Mandapeta / ${id}`, pathIds: ['m', id] });
 
 /**
  * This guard is what stands between "the admin pressed Save without touching
@@ -31,8 +31,8 @@ describe('sameAreas', () => {
 
   it('compares by id, not by the name or path rendered beside it', () => {
     expect(sameAreas(
-      [{ id: 'a', name: 'Sai Nagar', path: 'Mandapeta / Sai Nagar' }],
-      [{ id: 'a', name: 'Sai Nagar (renamed)', path: 'Mandapeta / Sai Nagar (renamed)' }],
+      [{ id: 'a', name: 'Sai Nagar', path: 'Mandapeta / Sai Nagar', pathIds: ['m', 'a'] }],
+      [{ id: 'a', name: 'Sai Nagar (renamed)', path: 'Mandapeta / Sai Nagar (renamed)', pathIds: ['m', 'a'] }],
     )).toBe(true);
   });
 });

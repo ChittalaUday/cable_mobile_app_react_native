@@ -4,10 +4,11 @@ import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
-import { Alert, Switch, TextInput } from 'react-native';
+import { Switch, TextInput } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
-
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
+
+import { dialogs } from '@/components/common/dialogs';
 import { SaveBar } from '@/components/common/save-bar';
 import { Card, ScreenHeader } from '@/components/common/shell';
 import {
@@ -205,7 +206,7 @@ export function AddEditPackageScreen() {
     }
     catch (err) {
       setConfirmSave(false);
-      Alert.alert('Could not save package', (err as Error).message || 'Please try again.');
+      void dialogs.notify('Could not save package', (err as Error).message || 'Please try again.');
     }
   };
 

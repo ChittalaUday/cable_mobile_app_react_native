@@ -7,25 +7,26 @@ tags:
 - runFlow:
     file: ../utils/fresh-login.yaml
     env:
-      EMAIL: admin@satyacable.dev
-      PASSWORD: Passw0rd!
+      EMAIL: admin@sscn.com
+      PASSWORD: Admin@123456
 
-- assertVisible: Satya Cable
+- assertVisible: Sri Satya Cable Network
 - assertVisible: Operator Panel
 - assertVisible: "Here's what's happening with your network today."
 
 # KPI grid - all four tiles are admin-visible.
 - assertVisible: Total Customers
 - assertVisible: Active Connections
-- assertVisible: Inactive / Disconnected
-- assertVisible: Revenue (This Month)
+- assertVisible: Collected Today
+- assertVisible: Outstanding Dues
+- takeScreenshot: .maestro/screenshots/admin-home
 
 # Quick actions
 - assertVisible: Quick Actions
 - assertVisible: Add Customer
-- assertVisible: New Connection
-- assertVisible: Record Payment
-- assertVisible: Raise Ticket
+- assertVisible: Collect Payment
+- assertVisible: Receipts
+- assertVisible: Complaints
 
 - scroll
 - assertVisible: Recent Activity
@@ -34,11 +35,14 @@ tags:
 - tapOn: Customers
 - assertVisible: 'Customers & Lines'
 - tapOn: Payments
-- tapOn: Tickets
+- assertVisible: 'Payments & Collections'
+- tapOn: Remote
+- tapOn: More
 - tapOn: Home
 - assertVisible: Quick Actions
 
 # Quick action deep-links into the customers tab with the wizard open.
 - tapOn: Add Customer
 - assertVisible: Add New Customer
-- tapOn: Cancel
+- tapOn:
+    id: add-customer-close

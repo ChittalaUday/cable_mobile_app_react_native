@@ -1,12 +1,10 @@
 appId: ${APP_ID}
-env:
-  EMAIL: admin@satyacable.dev
-  PASSWORD: Passw0rd!
 tags:
   - util
 ---
 # Wipes app state and signs in as ${EMAIL}.
-# Credentials come from `pnpm seed:users` (override with SEED_PASSWORD).
+# Callers must pass EMAIL and PASSWORD (backend database seed). No defaults here:
+# a subflow's own env block overrides the caller's, so defaults would force admin.
 - clearState
 - runFlow: open-dev-build.yaml
 - assertVisible: Welcome Back
@@ -16,9 +14,10 @@ tags:
 - tapOn:
     id: password-input
 - inputText: ${PASSWORD}
+- runFlow: hide-keyboard.yaml
 - tapOn:
     id: login-button
-# Firebase Auth round trip, then the role-based dashboard mounts.
+# REST authentication round trip, then the role-based dashboard mounts.
 - extendedWaitUntil:
     notVisible: Welcome Back
     timeout: 60000

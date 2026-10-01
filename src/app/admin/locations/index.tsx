@@ -10,9 +10,10 @@ import { HugeiconsIcon } from '@hugeicons/react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
-import { Alert, RefreshControl, TextInput } from 'react-native';
-
+import { RefreshControl, TextInput } from 'react-native';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
+
+import { dialogs } from '@/components/common/dialogs';
 import { ScreenHeader } from '@/components/common/screen-header';
 import { Card, Loading } from '@/components/common/shell';
 import { LocationActionsSheet } from '@/components/locations/location-actions-sheet';
@@ -145,7 +146,7 @@ export function LocationsScreen() {
       setScrollTo(location.id);
     }
     catch (err) {
-      Alert.alert('Could not open that location', (err as Error).message);
+      void dialogs.notify('Could not open that location', (err as Error).message);
     }
     finally {
       setRevealing(null);
@@ -209,7 +210,7 @@ export function LocationsScreen() {
           await tree.refresh();
         }
         catch (err) {
-          Alert.alert('Could not update location', (err as Error).message);
+          void dialogs.notify('Could not update location', (err as Error).message);
         }
     }
   };
@@ -225,7 +226,7 @@ export function LocationsScreen() {
     }
     catch (err) {
       setPendingDelete(null);
-      Alert.alert('Could not delete location', (err as Error).message);
+      void dialogs.notify('Could not delete location', (err as Error).message);
     }
   };
 

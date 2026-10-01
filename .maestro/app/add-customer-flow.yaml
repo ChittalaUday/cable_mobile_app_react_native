@@ -11,8 +11,8 @@ tags:
 - runFlow:
     file: ../utils/fresh-login.yaml
     env:
-      EMAIL: admin@satyacable.dev
-      PASSWORD: Passw0rd!
+      EMAIL: admin@sscn.com
+      PASSWORD: Admin@123456
 - assertVisible: Operator Panel
 
 - tapOn: Customers

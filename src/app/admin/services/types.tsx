@@ -4,15 +4,17 @@ import {
   Add01Icon,
   Delete02Icon,
   Location01Icon,
+  PencilEdit02Icon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
-import { Alert, RefreshControl } from 'react-native';
-
+import { RefreshControl } from 'react-native';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
+
+import { dialogs } from '@/components/common/dialogs';
 import { Card, Loading, ScreenHeader } from '@/components/common/shell';
 import { ServiceFormSheet } from '@/components/services/service-form-sheet';
 import {
@@ -40,10 +42,12 @@ import { serviceIcon } from '@/lib/service-icons';
 function ServiceRow({
   service,
   onCoverage,
+  onEdit,
   onDelete,
 }: {
   service: Service;
   onCoverage: () => void;
+  onEdit: () => void;
   onDelete: () => void;
 }) {
   const providers = service.providerCount;
@@ -85,6 +89,16 @@ function ServiceRow({
           </View>
           <Pressable
             accessibilityRole="button"
+            accessibilityLabel={`Edit ${service.name}`}
+            onPress={onEdit}
+            hitSlop={8}
+            testID={`edit-service-${service.id}`}
+            className="size-8 items-center justify-center rounded-lg border border-border bg-surface"
+          >
+            <HugeiconsIcon icon={PencilEdit02Icon} size={16} color={colors.primary[600]} strokeWidth={2.2} />
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
             accessibilityLabel={`Delete ${service.name}`}
             onPress={onDelete}
             hitSlop={8}
@@ -107,6 +121,14 @@ export function ServiceTypesScreen() {
   const deleteService = useDeleteService();
 
   const [pendingDelete, setPendingDelete] = React.useState<Service | null>(null);
+  // Null is the add case, so the one sheet covers both and the header button
+  // and a row's pencil open the same thing.
+  const [editing, setEditing] = React.useState<Service | null>(null);
+
+  const openSheet = (service: Service | null) => {
+    setEditing(service);
+    sheet.current?.present();
+  };
 
   const confirmDelete = async () => {
     if (!pendingDelete)
@@ -121,7 +143,7 @@ export function ServiceTypesScreen() {
       // A service with providers on it is a 409 from the API, which is the
       // only place that can know — so the message it sends is the one to show.
       setPendingDelete(null);
-      Alert.alert('Could not delete service', (err as Error).message || 'Please try again.');
+      void dialogs.notify('Could not delete service', (err as Error).message || 'Please try again.');
     }
   };
 
@@ -137,7 +159,7 @@ export function ServiceTypesScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Add service"
-            onPress={() => sheet.current?.present()}
+            onPress={() => openSheet(null)}
             className="size-9 items-center justify-center rounded-lg bg-primary-600 active:bg-primary-700"
           >
             <HugeiconsIcon icon={Add01Icon} size={18} color="#ffffff" strokeWidth={2.4} />
@@ -154,6 +176,7 @@ export function ServiceTypesScreen() {
             onCoverage={() => router.push(
               `/coverage?scope=service&id=${item.id}&name=${encodeURIComponent(item.name)}`,
             )}
+            onEdit={() => openSheet(item)}
             onDelete={() => setPendingDelete(item)}
           />
         )}
@@ -183,7 +206,8 @@ export function ServiceTypesScreen() {
 
       <ServiceFormSheet
         ref={sheet}
-        onCreated={() => sheet.current?.dismiss()}
+        service={editing}
+        onSaved={() => sheet.current?.dismiss()}
       />
 
       <ConfirmDialog

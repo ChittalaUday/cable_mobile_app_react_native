@@ -8,7 +8,8 @@ import {
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
-import { Alert } from 'react-native';
+
+import { dialogs } from '@/components/common/dialogs';
 import { Card, ScreenHeader } from '@/components/common/shell';
 import {
   ActivityIndicator,
@@ -58,7 +59,7 @@ export function InventoryCatalogScreen({ basePath }: { basePath: '/admin/invento
 
   const handleSubmit = () => {
     if (!name.trim()) {
-      Alert.alert('Required', 'Item name is required.');
+      void dialogs.notify('Required', 'Item name is required.');
       return;
     }
 
@@ -79,17 +80,17 @@ export function InventoryCatalogScreen({ basePath }: { basePath: '/admin/invento
             itemModal.dismiss();
             resetForm();
             refetch();
-            Alert.alert('Success', 'Item created in catalog successfully.');
+            void dialogs.notify('Success', 'Item created in catalog successfully.');
           },
           onError: (err) => {
-            Alert.alert('Error', err.message ?? 'Failed to create item');
+            void dialogs.notify('Error', err.message ?? 'Failed to create item');
           },
         },
       );
     }
     else {
       if (!reason.trim()) {
-        Alert.alert('Required', 'Please provide a reason for requesting this item.');
+        void dialogs.notify('Required', 'Please provide a reason for requesting this item.');
         return;
       }
       requestApproval(
@@ -110,13 +111,10 @@ export function InventoryCatalogScreen({ basePath }: { basePath: '/admin/invento
           onSuccess: () => {
             itemModal.dismiss();
             resetForm();
-            Alert.alert(
-              'Request Submitted',
-              'Your request to add this item has been sent to the administrator for approval.',
-            );
+            void dialogs.notify('Request Submitted', 'Your request to add this item has been sent to the administrator for approval.');
           },
           onError: (err) => {
-            Alert.alert('Error', err.message ?? 'Failed to submit approval request');
+            void dialogs.notify('Error', err.message ?? 'Failed to submit approval request');
           },
         },
       );

@@ -73,7 +73,7 @@ describe('customerConnectionCard', () => {
     expect(screen.getByText('9876543210')).toBeTruthy();
     expect(screen.getByText('Cable TV')).toBeTruthy();
     expect(screen.getByText('STB10001')).toBeTruthy();
-    expect(screen.getByText('₹650/mo')).toBeTruthy();
+    expect(screen.getByText('₹650')).toBeTruthy();
   });
 
   it('renders multi-connection customer with connection count badge', () => {
@@ -94,9 +94,9 @@ describe('customerConnectionCard', () => {
     // Press 'Home Fiber' pill
     fireEvent.press(screen.getAllByText('Home Fiber')[0]);
 
-    // Should now show connection 1 details (100 Mbps, ₹799/mo)
+    // Should now show connection 1 details (100 Mbps, ₹799)
     expect(screen.getByText(/100 Mbps/)).toBeTruthy();
-    expect(screen.getByText('₹799/mo')).toBeTruthy();
+    expect(screen.getByText('₹799')).toBeTruthy();
   });
 
   it('invokes onRecharge callback with active connection when Recharge button is pressed', () => {

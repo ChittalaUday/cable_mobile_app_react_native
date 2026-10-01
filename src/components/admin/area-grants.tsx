@@ -5,6 +5,7 @@ import * as React from 'react';
 
 import { Card } from '@/components/common/shell';
 import { LocationPickerSheet } from '@/components/locations/location-picker-sheet';
+import { toggleArea } from '@/components/locations/toggle-area';
 import { colors, Pressable, Text, useModal, View } from '@/components/ui';
 
 /**
@@ -34,11 +35,7 @@ export function AreaGrants({
 }) {
   const picker = useModal();
 
-  const toggle = (node: LocationRef) => onChange(
-    value.some(area => area.id === node.id)
-      ? value.filter(area => area.id !== node.id)
-      : [...value, { id: node.id, name: node.name, path: node.path }],
-  );
+  const toggle = (node: LocationRef) => onChange(toggleArea(value, node));
 
   const remove = (id: string) => onChange(value.filter(area => area.id !== id));
 

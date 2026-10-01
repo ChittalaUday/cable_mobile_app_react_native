@@ -31,11 +31,11 @@ import { CustomerFilterModal } from './customer-filter-modal';
 type FilterType = 'all' | 'active' | 'inactive' | 'multi' | 'pending';
 
 export type CustomersViewProps = {
+  /** Which role's routes a row opens — the same list serves the office and the round. */
+  basePath: '/admin' | '/staff';
   onRecharge?: (connection: ConnectionAccount) => void;
   onRaiseTicket?: (cust: ConsolidatedCustomer, conn: ConnectionAccount) => void;
   refreshControl?: React.ReactElement<RefreshControlProps>;
-  initialAddModalOpen?: boolean;
-  onCloseAddModal?: () => void;
 };
 
 function CustomerSearchBar({
@@ -225,11 +225,10 @@ function useCustomerResults(query: string, filter: FilterType, modalFilters: Cus
 }
 
 export function CustomersView({
+  basePath,
   onRecharge,
   onRaiseTicket,
   refreshControl,
-  initialAddModalOpen = false,
-  onCloseAddModal,
 }: CustomersViewProps) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -262,13 +261,6 @@ export function CustomersView({
 
   const activeLocationDisplay = activeLocation?.path || activeLocation?.name;
 
-  const addModalVisible = initialAddModalOpen || isAddModalOpen;
-
-  const handleCloseModal = () => {
-    setIsAddModalOpen(false);
-    onCloseAddModal?.();
-  };
-
   const handleEndReached = () => {
     if (
       results.list.hasNextPage
@@ -283,8 +275,8 @@ export function CustomersView({
   return (
     <View className="flex-1 bg-surface">
       <AddCustomerModal
-        visible={addModalVisible}
-        onClose={handleCloseModal}
+        visible={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
         onSuccess={() => results.refetch()}
       />
 
@@ -311,7 +303,7 @@ export function CustomersView({
           </View>
           <Pressable
             accessibilityRole="button"
-            onPress={() => router.push('/admin/customers/add')}
+            onPress={() => setIsAddModalOpen(true)}
             className="shrink-0 flex-row items-center gap-1 rounded-lg bg-primary-500 px-2.5 py-1.5 active:bg-primary-600"
           >
             <HugeiconsIcon icon={UserAdd01Icon} size={14} color="#ffffff" />
@@ -427,6 +419,7 @@ export function CustomersView({
             customer={item}
             onRecharge={onRecharge}
             onRaiseTicket={onRaiseTicket}
+            onViewDetails={cust => router.push(`${basePath}/customers/${cust.id}`)}
           />
         )}
         ItemSeparatorComponent={() => <View className="h-2.5" />}

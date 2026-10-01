@@ -4,38 +4,51 @@ import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import * as React from 'react';
+import { Keyboard } from 'react-native';
 
-import { Alert, Keyboard } from 'react-native';
+import { dialogs } from '@/components/common/dialogs';
 import { colors, Modal, Pressable, Text, View } from '@/components/ui';
 import BottomSheetKeyboardAwareScrollView from '@/components/ui/modal-keyboard-aware-scroll-view';
-import { useCreateService } from '@/lib/hooks/api/use-services';
+import { useCreateService, useUpdateService } from '@/lib/hooks/api/use-services';
 import { SERVICE_ICONS } from '@/lib/service-icons';
 
 /** Stable identity: `Modal` memoises on this, so a literal re-lays out the sheet. */
 const SNAP_POINTS = ['72%', '100%'];
 
 /**
- * Creates a service — what a subscriber buys, not who supplies it.
+ * Adds a service, or edits one — what a subscriber buys, not who supplies it.
  *
  * The distinction is the one the whole catalogue rests on: "Cable TV" is a
  * service and "Tata Play" is a provider of it, so a second supplier is a
  * provider row rather than a second service. The copy here says so, because
  * naming a service after a brand is the easy mistake to make.
+ *
+ * Editing shares this sheet rather than getting its own: the fields are the
+ * same three, and without it the only way to fix a typo is to delete a service
+ * that providers and packages already point at.
  */
 
 export function ServiceFormSheet({
   ref,
-  onCreated,
+  service,
+  onSaved,
 }: {
   ref: React.RefObject<BottomSheetModal | null>;
-  onCreated?: (service: Service) => void;
+  /** The service being edited. Absent or null is the add case. */
+  service?: Service | null;
+  onSaved?: (service: Service) => void;
 }) {
   const queryClient = useQueryClient();
   const createService = useCreateService();
+  const updateService = useUpdateService();
 
-  const [name, setName] = React.useState('');
-  const [icon, setIcon] = React.useState<string>('tv');
-  const [description, setDescription] = React.useState('');
+  const editing = service ?? null;
+
+  // Seeded from the service so a sheet mounted already holding one is filled,
+  // not just one that is handed a different service later.
+  const [name, setName] = React.useState(editing?.name ?? '');
+  const [icon, setIcon] = React.useState<string>(editing?.icon ?? 'tv');
+  const [description, setDescription] = React.useState(editing?.description ?? '');
   const [error, setError] = React.useState<string | null>(null);
 
   const reset = () => {
@@ -45,6 +58,22 @@ export function ServiceFormSheet({
     setError(null);
   };
 
+  // The sheet is mounted for the life of the screen and only presented, so
+  // nothing remounts it with fresh defaults. Filling the fields during render
+  // rather than in an effect is React's own answer to "reset state when a prop
+  // changes": an effect would paint the previous service's name for a frame.
+  const [filledFrom, setFilledFrom] = React.useState<Service | null>(editing);
+
+  if (editing !== filledFrom) {
+    setFilledFrom(editing);
+    setName(editing?.name ?? '');
+    setIcon(editing?.icon ?? 'tv');
+    setDescription(editing?.description ?? '');
+    setError(null);
+  }
+
+  const isSaving = createService.isPending || updateService.isPending;
+
   const handleSave = async () => {
     if (!name.trim()) {
       setError('Give the service a name');
@@ -52,29 +81,43 @@ export function ServiceFormSheet({
     }
 
     try {
-      // No slug: the API derives one from the name.
-      const created = await createService.mutateAsync({
-        payload: {
-          name: name.trim(),
-          icon,
-          description: description.trim() || undefined,
-        },
-      });
+      const saved = editing === null
+        // No slug: the API derives one from the name.
+        ? await createService.mutateAsync({
+            payload: {
+              name: name.trim(),
+              icon,
+              description: description.trim() || undefined,
+            },
+          })
+        : await updateService.mutateAsync({
+            id: editing.id,
+            patch: {
+              name: name.trim(),
+              icon,
+              // Null, not undefined: an emptied box means "clear the
+              // description", and undefined would leave the old one standing.
+              description: description.trim() || null,
+            },
+          });
 
       await queryClient.invalidateQueries({ queryKey: ['services'] });
       reset();
       // The sheet closes without unmounting, so nothing else takes the focus
       // away — the keyboard would stay up over whatever it closed onto.
       Keyboard.dismiss();
-      onCreated?.(created);
+      onSaved?.(saved);
     }
     catch (err) {
-      Alert.alert('Could not add service', (err as Error).message || 'Please try again.');
+      void dialogs.notify(
+        editing === null ? 'Could not add service' : 'Could not save service',
+        (err as Error).message || 'Please try again.',
+      );
     }
   };
 
   return (
-    <Modal ref={ref} snapPoints={SNAP_POINTS} title="Add service">
+    <Modal ref={ref} snapPoints={SNAP_POINTS} title={editing === null ? 'Add service' : 'Edit service'}>
       <BottomSheetKeyboardAwareScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
@@ -96,6 +139,7 @@ export function ServiceFormSheet({
             setError(null);
           }}
           placeholder="e.g. Cable TV"
+          testID="service-name"
           placeholderTextColor={colors.neutral[400]}
           style={{ color: colors.charcoal[900] }}
           className="rounded-2xl border border-border bg-card px-4 py-3 text-sm"
@@ -144,6 +188,7 @@ export function ServiceFormSheet({
           value={description}
           onChangeText={setDescription}
           placeholder="Optional"
+          testID="service-description"
           placeholderTextColor={colors.neutral[400]}
           style={{ color: colors.charcoal[900] }}
           className="rounded-2xl border border-border bg-card px-4 py-3 text-sm"
@@ -151,17 +196,25 @@ export function ServiceFormSheet({
 
         <Pressable
           accessibilityRole="button"
-          disabled={createService.isPending}
+          disabled={isSaving}
           onPress={handleSave}
+          testID="service-save"
           className={`mt-5 items-center justify-center rounded-2xl bg-primary-600 px-4 py-3.5 active:bg-primary-700 ${
-            createService.isPending ? 'opacity-60' : ''
+            isSaving ? 'opacity-60' : ''
           }`}
         >
           <Text className="text-base font-bold text-white">
-            {createService.isPending ? 'Adding Service…' : 'Add Service'}
+            {saveLabel(editing !== null, isSaving)}
           </Text>
         </Pressable>
       </BottomSheetKeyboardAwareScrollView>
     </Modal>
   );
+}
+
+function saveLabel(isEdit: boolean, isSaving: boolean): string {
+  if (isEdit)
+    return isSaving ? 'Saving…' : 'Save Changes';
+
+  return isSaving ? 'Adding Service…' : 'Add Service';
 }

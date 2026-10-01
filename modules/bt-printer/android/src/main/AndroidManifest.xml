@@ -1,0 +1,18 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!--
+    Android 12+ splits Bluetooth into runtime permissions. `neverForLocation`
+    is declared because a receipt printer is not a beacon: without it the OS
+    asks the collector for location as well, which is both untrue and a prompt
+    people refuse.
+  -->
+  <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+  <uses-permission
+      android:name="android.permission.BLUETOOTH_SCAN"
+      android:usesPermissionFlags="neverForLocation" />
+
+  <!-- Android 11 and below had no runtime Bluetooth permissions. -->
+  <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+  <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+
+  <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
+</manifest>

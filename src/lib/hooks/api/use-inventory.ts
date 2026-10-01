@@ -16,6 +16,11 @@ import type {
 } from '@/lib/api/types';
 import { createMutation, createQuery } from 'react-query-kit';
 import { client } from '@/lib/api/client';
+import { handleRealtimeSync } from '@/lib/api/query-client';
+
+function refreshInventory() {
+  handleRealtimeSync({ sync: 'inventory' });
+}
 
 export type StockListParams = {
   locationId?: string;
@@ -67,6 +72,7 @@ export const useIssueEquipment = createMutation<
     const response = await client.post<IssueEquipmentResponse>('/inventory/issue', payload);
     return response.data;
   },
+  onSuccess: refreshInventory,
 });
 
 export const useCreateCatalogItem = createMutation<StockItem, { payload: CatalogItemPayload }, Error>({
@@ -74,6 +80,7 @@ export const useCreateCatalogItem = createMutation<StockItem, { payload: Catalog
     const response = await client.post<StockItem>('/inventory/catalog', payload);
     return response.data;
   },
+  onSuccess: refreshInventory,
 });
 
 export const useCreateApprovalRequest = createMutation<
@@ -85,6 +92,7 @@ export const useCreateApprovalRequest = createMutation<
     const response = await client.post<ApprovalRequest>('/inventory/approval-requests', payload);
     return response.data;
   },
+  onSuccess: refreshInventory,
 });
 
 export const useApprovalRequests = createQuery<ApprovalRequest[], void, Error>({
@@ -105,6 +113,7 @@ export const useReviewApprovalRequest = createMutation<
     const response = await client.patch<ApprovalRequest>(`/inventory/approval-requests/${id}`, patch);
     return response.data;
   },
+  onSuccess: refreshInventory,
 });
 
 export const useInventoryMovements = createQuery<StockMovement[], void, Error>({
@@ -168,6 +177,7 @@ export const useInwardStock = createMutation<
     const response = await client.post<{ success: boolean; quantity: number; movementId?: string }>('/inventory/inward', payload);
     return response.data;
   },
+  onSuccess: refreshInventory,
 });
 
 export const useTransferStock = createMutation<
@@ -179,4 +189,5 @@ export const useTransferStock = createMutation<
     const response = await client.post<{ success: boolean; equipmentId: string; movementId: string }>('/inventory/transfer', payload);
     return response.data;
   },
+  onSuccess: refreshInventory,
 });

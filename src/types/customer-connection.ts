@@ -4,6 +4,12 @@
 export type ConnectionAccount = {
   id: string;
   customerId: string;
+  /**
+   * The subscription this connection bills against. Absent when the row was
+   * synthesised from a service name because the customer has no service account
+   * yet — `id` is a display key and is not always one of these.
+   */
+  subscriptionId?: string;
   serviceType: string;
   serviceTypeName: string;
   provider: string;

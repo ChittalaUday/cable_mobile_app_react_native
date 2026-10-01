@@ -2,33 +2,40 @@ import type { IconSvgElement } from '@hugeicons/react-native';
 import type { Href } from 'expo-router';
 import {
   ArrowRight01Icon,
-  HeadsetIcon,
   Logout01Icon,
   Notification03Icon,
-  TranslateIcon,
-  UserIcon,
+  Settings02Icon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
-import { Alert } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
 
-import { Card, comingSoon, Divider, IconTile, ScreenHeader, TINT } from '@/components/common/shell';
+import { dialogs } from '@/components/common/dialogs';
+
+import { Card, Divider, IconTile, ScreenHeader, TINT } from '@/components/common/shell';
 import { colors, FocusAwareStatusBar, Image, Pressable, ScrollView, Text, View } from '@/components/ui';
 import { useAuthStore } from '@/lib/hooks/stores/use-auth-store';
 import { translate } from '@/lib/i18n';
 import { initials } from '@/lib/utils/admin-format';
 import { authErrorMessage } from '@/lib/utils/auth-error';
 
-const ROWS: { key: string; icon: IconSvgElement; tint: keyof typeof TINT; label: string; route?: Href }[] = [
-  { key: 'account', icon: UserIcon, tint: 'blue', label: 'Account details' },
-  { key: 'notifications', icon: Notification03Icon, tint: 'orange', label: 'Notifications', route: '/notifications' },
-  { key: 'language', icon: TranslateIcon, tint: 'purple', label: 'Language' },
-  { key: 'support', icon: HeadsetIcon, tint: 'green', label: 'Help & support' },
-];
+/**
+ * Only rows that land on a screen.
+ *
+ * Account details, Language and Help & support used to sit here as labels that
+ * answered a tap with "not wired up yet" — a cost of one tap to learn nothing,
+ * every time. Settings is where the language picker actually lives, and it had
+ * no entry point of its own until this row.
+ */
+function rowsFor(basePath: '/admin' | '/staff'): { key: string; icon: IconSvgElement; tint: keyof typeof TINT; label: string; route: Href }[] {
+  return [
+    { key: 'notifications', icon: Notification03Icon, tint: 'orange', label: 'Notifications', route: '/notifications' },
+    { key: 'settings', icon: Settings02Icon, tint: 'purple', label: 'Settings', route: `${basePath}/settings` as Href },
+  ];
+}
 
-export function ProfileScreen() {
+export function ProfileScreen({ basePath = '/admin' }: { basePath?: '/admin' | '/staff' }) {
   const router = useRouter();
   const user = useAuthStore.use.user();
   const role = useAuthStore.use.role();
@@ -51,14 +58,17 @@ export function ProfileScreen() {
     }
   };
 
-  const confirmSignOutEverywhere = () => Alert.alert(
-    translate('profile.sign_out_all'),
-    translate('profile.sign_out_all_confirmation'),
-    [
-      { text: translate('profile.cancel'), style: 'cancel' },
-      { text: translate('profile.confirm'), style: 'destructive', onPress: () => runSignOut(true) },
-    ],
-  );
+  const confirmSignOutEverywhere = async () => {
+    const agreed = await dialogs.confirm({
+      title: translate('profile.sign_out_all'),
+      message: translate('profile.sign_out_all_confirmation'),
+      confirmLabel: translate('profile.confirm'),
+      cancelLabel: translate('profile.cancel'),
+    });
+
+    if (agreed)
+      runSignOut(true);
+  };
 
   return (
     <View className="flex-1 bg-surface">
@@ -91,12 +101,12 @@ export function ProfileScreen() {
         </Card>
 
         <Card className="px-3.5">
-          {ROWS.map((row, index) => (
+          {rowsFor(basePath).map((row, index) => (
             <View key={row.key}>
               {index > 0 && <Divider />}
               <Pressable
                 accessibilityRole="button"
-                onPress={() => (row.route === undefined ? comingSoon(row.label) : router.push(row.route))}
+                onPress={() => router.push(row.route)}
                 className="flex-row items-center gap-3 py-3.5"
               >
                 <IconTile icon={row.icon} tint={row.tint} size={32} iconSize={17} />

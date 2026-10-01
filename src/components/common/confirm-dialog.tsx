@@ -1,12 +1,20 @@
 import type { IconSvgElement } from '@hugeicons/react-native';
+import type { TextInputProps } from 'react-native';
 import { AlertCircleIcon, Delete02Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as React from 'react';
-import { ActivityIndicator, Modal } from 'react-native';
+import { ActivityIndicator, Modal, TextInput } from 'react-native';
 
 import { colors, Pressable, Text, View } from '@/components/ui';
 
 type Tone = 'danger' | 'default';
+
+export type DialogPrompt = {
+  placeholder?: string;
+  initialValue?: string;
+  keyboardType?: TextInputProps['keyboardType'];
+  autoCapitalize?: TextInputProps['autoCapitalize'];
+};
 
 export type ConfirmDialogProps = {
   visible: boolean;
@@ -14,12 +22,15 @@ export type ConfirmDialogProps = {
   message: string;
   /** Defaults to "Delete" for the danger tone, "Confirm" otherwise. */
   confirmLabel?: string;
-  cancelLabel?: string;
+  /** `null` drops the cancel button, which is how a plain notice is shown. */
+  cancelLabel?: string | null;
   tone?: Tone;
   icon?: IconSvgElement;
   /** Keeps the dialog up with a spinner while the mutation runs. */
   busy?: boolean;
-  onConfirm: () => void;
+  /** Turns it into a prompt; the typed text is handed to `onConfirm`. */
+  prompt?: DialogPrompt;
+  onConfirm: (value: string) => void;
   onCancel: () => void;
 };
 
@@ -39,11 +50,16 @@ export function ConfirmDialog({
   tone = 'danger',
   icon,
   busy = false,
+  prompt,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
   const isDanger = tone === 'danger';
   const label = confirmLabel ?? (isDanger ? 'Delete' : 'Confirm');
+  // Seeded once. A host that reuses one dialog for a second question gives it a
+  // fresh `key` to reset the field, which is cheaper and less surprising than an
+  // effect racing the user's typing.
+  const [typed, setTyped] = React.useState(prompt?.initialValue ?? '');
 
   return (
     <Modal
@@ -79,19 +95,36 @@ export function ConfirmDialog({
           <Text className="mt-3.5 text-lg font-bold text-foreground">{title}</Text>
           <Text className="mt-1.5 text-sm/5 text-muted-foreground">{message}</Text>
 
+          {prompt != null && (
+            <TextInput
+              value={typed}
+              onChangeText={setTyped}
+              editable={!busy}
+              autoFocus
+              placeholder={prompt.placeholder}
+              placeholderTextColor={colors.neutral[400]}
+              keyboardType={prompt.keyboardType}
+              autoCapitalize={prompt.autoCapitalize}
+              testID="dialog-input"
+              className="mt-3.5 rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground"
+            />
+          )}
+
           <View className="mt-5 flex-row gap-2.5">
+            {cancelLabel !== null && (
+              <Pressable
+                accessibilityRole="button"
+                disabled={busy}
+                onPress={onCancel}
+                className="flex-1 items-center justify-center rounded-xl border border-border bg-surface py-3 active:bg-muted/40"
+              >
+                <Text className="text-sm font-bold text-foreground">{cancelLabel}</Text>
+              </Pressable>
+            )}
             <Pressable
               accessibilityRole="button"
               disabled={busy}
-              onPress={onCancel}
-              className="flex-1 items-center justify-center rounded-xl border border-border bg-surface py-3 active:bg-muted/40"
-            >
-              <Text className="text-sm font-bold text-foreground">{cancelLabel}</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              disabled={busy}
-              onPress={onConfirm}
+              onPress={() => onConfirm(typed)}
               className={`flex-1 flex-row items-center justify-center gap-2 rounded-xl py-3 ${
                 isDanger ? 'bg-danger-500 active:bg-danger-600' : 'bg-primary-600 active:bg-primary-700'
               } ${busy ? 'opacity-70' : ''}`}

@@ -1,26 +1,22 @@
 # Headful (device) E2E flows
 
 Maestro drives the real app on a simulator/emulator. Unlike the Jest suite these
-flows hit **live Firebase Auth and Firestore**, so they need a seeded dev project.
+flows hit the **live REST API and PostgreSQL database**, so they need a seeded local backend.
 
 ## Prerequisites
 
 ```bash
 pnpm install-maestro                 # once
-pnpm seed:users                      # admin/staff/customer logins
-node scripts/seed-permissions.js     # permissionRegistry (incl. packages.*)
-node scripts/seed-roles.js           # role -> permission+scope grants
-node scripts/seed-app-registry.js    # global search entries (incl. packages)
+cd ../cable-backend && pnpm db:seed  # admin/staff logins and role grants
 pnpm ios   # or: pnpm android — a dev build must be installed and running
 ```
 
-Seeded accounts (password from `SEED_PASSWORD`, default `Passw0rd!`):
+Seeded operator accounts:
 
 | Account                 | Role     | Lands on          |
 | ----------------------- | -------- | ----------------- |
-| `admin@satyacable.dev`  | admin    | Operator panel    |
-| `staff@satyacable.dev`  | staff    | Staff collections |
-| `user@satyacable.dev`   | customer | My subscriptions  |
+| `admin@sscn.com`        | admin    | Operator panel    |
+| `suresh.staff@sscn.com` | staff    | Staff dashboard   |
 
 ## Running
 
@@ -29,6 +25,9 @@ pnpm e2e-test                                  # whole suite, in config order
 maestro test .maestro/app/packages-crud.yaml -e APP_ID=<bundle id>   # one flow
 maestro test .maestro/ --include-tags=packages -e APP_ID=<bundle id> # by tag
 ```
+
+For a non-default Metro port or build variant, also pass `DEV_SERVER` and
+`DEV_SCHEME` (for example `http://10.0.2.2:8083` and `satyaCable.preview`).
 
 Tags: `auth`, `admin`, `customer`, `staff`, `search`, `packages`, `customers`,
 `rbac`. `util` is excluded from suite runs — those files are `runFlow` helpers.

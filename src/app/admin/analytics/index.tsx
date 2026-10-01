@@ -9,15 +9,30 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnalyticsTopBar } from '@/components/admin/analytics-top-bar';
 import { CollectionsSummary } from '@/components/admin/collections-summary';
 import { DonutCard } from '@/components/admin/donut-card';
-import { PromoBanner } from '@/components/admin/promo-banner';
 import { RecentCustomers } from '@/components/admin/recent-customers';
 import { RevenueOverview } from '@/components/admin/revenue-overview';
 import { StaffActivity } from '@/components/admin/staff-activity';
 import { TopAreas } from '@/components/admin/top-areas';
-import { BottomNav, comingSoon, LoadError, Loading } from '@/components/common/shell';
+import { BottomNav, LoadError, Loading } from '@/components/common/shell';
 import { colors, FocusAwareStatusBar, SafeAreaView, ScrollView, View } from '@/components/ui';
 import { useAdminDashboard } from '@/lib/hooks/api/use-admin-dashboard';
 import { monthYear } from '@/lib/utils/admin-format';
+
+/** Where each bottom-tab lands, since this screen sits on top of the tab bar. */
+const TAB_ROUTES = {
+  home: '/admin',
+  customers: '/admin/(tabs)/customers',
+  payments: '/admin/(tabs)/payments',
+  remote: '/admin/(tabs)/remote',
+  more: '/admin/(tabs)/more',
+} as const satisfies Record<TabKey, string>;
+
+const RANGES: RevenueRange[] = ['daily', 'weekly', 'monthly'];
+
+/** The period control cycles rather than opening a picker: three ranges, one tap. */
+function next(range: RevenueRange): RevenueRange {
+  return RANGES[(RANGES.indexOf(range) + 1) % RANGES.length]!;
+}
 
 export function AdminAnalyticsScreen() {
   const router = useRouter();
@@ -30,12 +45,11 @@ export function AdminAnalyticsScreen() {
   const totalAccounts = data ? data.connectionStatus.reduce((sum, slice) => sum + slice.count, 0) : 0;
   const totalServices = data ? data.services.reduce((sum, slice) => sum + slice.count, 0) : 0;
 
+  // The analytics screen is pushed over the tabs rather than being one of them,
+  // so every tab here means "go back to the tab bar, on that tab".
   const onTab = (key: TabKey) => {
     setTab(key);
-    if (key === 'home')
-      router.back();
-    else
-      comingSoon(key.charAt(0).toUpperCase() + key.slice(1));
+    router.dismissTo(TAB_ROUTES[key]);
   };
 
   return (
@@ -43,7 +57,7 @@ export function AdminAnalyticsScreen() {
       <FocusAwareStatusBar />
       <SafeAreaView edges={['top']} className="bg-surface">
         <View className="px-3 pt-1 pb-2">
-          <AnalyticsTopBar period={period} onBack={() => router.back()} onPeriod={() => comingSoon('Period picker')} />
+          <AnalyticsTopBar period={period} onBack={() => router.back()} onPeriod={() => setRange(next(range))} />
         </View>
       </SafeAreaView>
 
@@ -67,7 +81,7 @@ export function AdminAnalyticsScreen() {
                     slices={data.connectionStatus}
                     total={totalAccounts}
                     caption="Total Connections"
-                    onDetails={() => comingSoon('Connection status')}
+                    onDetails={() => router.push('/admin/(tabs)/customers')}
                   />
                   <DonutCard
                     variant="service"
@@ -75,16 +89,15 @@ export function AdminAnalyticsScreen() {
                     slices={data.services}
                     total={totalServices}
                     caption="Connections"
-                    onDetails={() => comingSoon('Service distribution')}
+                    onDetails={() => router.push('/admin/services')}
                   />
-                  <TopAreas areas={data.areas} onPress={area => comingSoon(area.name)} />
-                  <StaffActivity rows={data.staff} onViewAll={() => comingSoon('Staff roster')} />
+                  <TopAreas areas={data.areas} onPress={() => router.push('/admin/locations')} />
+                  <StaffActivity rows={data.staff} onViewAll={() => router.push('/admin/staff')} />
                   <RecentCustomers
                     rows={data.recentCustomers}
-                    onViewAll={() => comingSoon('Customers')}
-                    onPress={row => comingSoon(row.name)}
+                    onViewAll={() => router.push('/admin/(tabs)/customers')}
+                    onPress={row => router.push({ pathname: '/admin/customers/[id]', params: { id: row.id } })}
                   />
-                  <PromoBanner />
                 </MotiView>
               </ScrollView>
             )}

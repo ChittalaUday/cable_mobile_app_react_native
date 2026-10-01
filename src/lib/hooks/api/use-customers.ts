@@ -2,9 +2,11 @@ import type {
   CustomerDetail,
   CustomerListItem,
   CustomerPage,
+  CustomerSubscription,
 } from '@/lib/api/types';
-import { createInfiniteQuery, createQuery } from 'react-query-kit';
+import { createInfiniteQuery, createMutation, createQuery } from 'react-query-kit';
 import { client } from '@/lib/api/client';
+import { queryClient } from '@/lib/api/query-client';
 
 const PAGE_SIZE = 30;
 
@@ -61,6 +63,102 @@ export const useCustomer = createQuery<CustomerDetail, { id: string }, Error>({
   staleTime: 60 * 1000,
 });
 
+export type ChangePlanPayload = {
+  packageId: string;
+  /** What this customer actually pays, when it is not the package list price. */
+  price?: string;
+};
+
+export type AddSubscriptionPayload = {
+  packageId: string;
+  /** The line the new one sits beside; it inherits the provider and the address. */
+  basedOn: string;
+  price?: string;
+};
+
+/** Everything a written subscription changes, in one place so no caller forgets one. */
+async function refreshAfterSubscriptionWrite(): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: ['customer'] }),
+    queryClient.invalidateQueries({ queryKey: ['customers'] }),
+    queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] }),
+    queryClient.invalidateQueries({ queryKey: ['staff-dashboard'] }),
+  ]);
+}
+
+/** What `POST /customers` takes. The subscriber code is minted by the server. */
+export type CreateCustomerPayload = {
+  name: string;
+  /** Ten digits, no country code — the server rejects anything else. */
+  phone: string;
+  alternatePhone?: string;
+  whatsappNumber?: string;
+  status?: 'active' | 'inactive' | 'pending';
+  address?: string;
+  notes?: string;
+  /**
+   * The first connection, fitted with the subscriber in one transaction. An
+   * area-scoped collector must send it: without a line there is no location,
+   * and without a location the customer they just registered is one they can
+   * no longer open.
+   */
+  connection?: {
+    packageId: string;
+    locationId: string;
+    installationAddress?: string;
+    price?: string;
+  };
+};
+
+/**
+ * Register a subscriber, and their first connection with them.
+ *
+ * Returns the same shape `GET /customers/:id` does, so the screen that called
+ * it can draw the new customer without a follow-up fetch.
+ */
+export const useCreateCustomer = createMutation<
+  CustomerDetail,
+  { payload: CreateCustomerPayload },
+  Error
+>({
+  mutationFn: async ({ payload }) => (await client.post<CustomerDetail>('/customers', payload)).data,
+  onSuccess: refreshAfterSubscriptionWrite,
+});
+
+/**
+ * Move a connection onto a different package.
+ *
+ * Takes no money and settles nothing: the balance is left exactly where it was,
+ * because the server prorates nothing — there is no cycle job accruing a fee to
+ * split. The new price is what the next charge will use.
+ */
+export const useChangePlan = createMutation<
+  CustomerSubscription,
+  { customerId: string; subscriptionId: string; payload: ChangePlanPayload },
+  Error
+>({
+  mutationFn: async ({ customerId, subscriptionId, payload }) => (
+    await client.patch<CustomerSubscription>(`/customers/${customerId}/subscriptions/${subscriptionId}`, payload)
+  ).data,
+  onSuccess: refreshAfterSubscriptionWrite,
+});
+
+/**
+ * Put another package on the customer as a line of its own — an addon, or a
+ * second connection. It starts at a zero balance; money is taken against it
+ * through the ordinary subscription payment afterwards.
+ */
+export const useAddSubscription = createMutation<
+  CustomerSubscription,
+  { customerId: string; payload: AddSubscriptionPayload },
+  Error
+>({
+  mutationFn: async ({ customerId, payload }) => (
+    await client.post<CustomerSubscription>(`/customers/${customerId}/subscriptions`, payload)
+  ).data,
+  onSuccess: refreshAfterSubscriptionWrite,
+});
+
 /**
  * Maps a wire `CustomerListItem` to a `ConsolidatedCustomer` for display in list cards.
  */
@@ -81,6 +179,7 @@ export function customerItemToConsolidated(item: CustomerListItem) {
           return boxes.map((box, idx) => ({
             id: `${account.subscriptionId}-box-${box.id || idx}`,
             customerId: item.id,
+            subscriptionId: account.subscriptionId,
             serviceType,
             serviceTypeName: serviceName,
             provider: '',
@@ -97,6 +196,7 @@ export function customerItemToConsolidated(item: CustomerListItem) {
         return [{
           id: account.subscriptionId,
           customerId: item.id,
+          subscriptionId: account.subscriptionId,
           serviceType,
           serviceTypeName: serviceName,
           provider: '',

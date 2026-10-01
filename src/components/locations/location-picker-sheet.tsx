@@ -193,7 +193,7 @@ export function LocationPickerSheet(props: SingleProps | MultiProps) {
       fullById.current.set(item.id, item);
 
     return items.map(item => ({
-      node: { id: item.id, name: item.name, path: item.path },
+      node: { id: item.id, name: item.name, path: item.path, pathIds: item.pathIds },
       canOpen: item.childCount > 0,
     }));
   }, [atBoundedTop, roots, data]);

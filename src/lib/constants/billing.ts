@@ -9,5 +9,20 @@ export const COLLECTION_OUTCOMES = ['full', 'partial', 'none', 'refund', 'others
 export type CollectionOutcome = (typeof COLLECTION_OUTCOMES)[number];
 
 /** How the money changed hands. Absent on a visit that collected nothing. */
-export const PAYMENT_METHODS = ['cash', 'upi', 'card', 'bank_transfer', 'cheque'] as const;
-export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+/** Methods offered and accepted for a new collection. */
+export const PAYMENT_METHODS = ['cash', 'upi'] as const;
+export type PaymentEntryMethod = (typeof PAYMENT_METHODS)[number];
+
+/** Legacy values remain renderable on immutable historical receipts. */
+export const STORED_PAYMENT_METHODS = ['cash', 'upi', 'card', 'bank_transfer', 'cheque'] as const;
+export type PaymentMethod = (typeof STORED_PAYMENT_METHODS)[number];
+
+/**
+ * How each method is labelled on a button. Kept beside the vocabulary so the
+ * collect and recharge screens cannot drift into calling the same method two
+ * different things. Not an array, so the parity check leaves it alone.
+ */
+export const PAYMENT_METHOD_LABELS: Record<PaymentEntryMethod, string> = {
+  cash: 'Cash',
+  upi: 'UPI',
+};

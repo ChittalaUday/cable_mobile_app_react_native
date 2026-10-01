@@ -9,9 +9,10 @@ import { HugeiconsIcon } from '@hugeicons/react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as React from 'react';
-import { ActivityIndicator, Alert, RefreshControl, TextInput } from 'react-native';
-
+import { ActivityIndicator, RefreshControl, TextInput } from 'react-native';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
+
+import { dialogs } from '@/components/common/dialogs';
 import { ScreenHeader } from '@/components/common/screen-header';
 import { Card, LoadError, StatusPill } from '@/components/common/shell';
 import {
@@ -238,7 +239,7 @@ export function PackagesScreen() {
     }
     catch (err) {
       setPendingDelete(null);
-      Alert.alert('Could not delete', (err as Error).message);
+      void dialogs.notify('Could not delete', (err as Error).message);
     }
   };
 

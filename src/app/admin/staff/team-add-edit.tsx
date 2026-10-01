@@ -4,10 +4,11 @@ import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as React from 'react';
-import { Alert, TextInput } from 'react-native';
+import { TextInput } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
-
 import { AreaGrants } from '@/components/admin/area-grants';
+
+import { dialogs } from '@/components/common/dialogs';
 import { SaveBar } from '@/components/common/save-bar';
 import { Card, Loading, ScreenHeader } from '@/components/common/shell';
 import {
@@ -111,33 +112,31 @@ export function AddEditTeamScreen() {
       router.back();
     }
     catch (saveError) {
-      Alert.alert('Could not save', apiErrorMessage(saveError, 'Try again.'));
+      void dialogs.notify('Could not save', apiErrorMessage(saveError, 'Try again.'));
     }
   };
 
-  const confirmDelete = () => Alert.alert(
-    'Disband this team',
-    team && team.memberCount > 0
-      ? `${team.memberCount} ${team.memberCount === 1 ? 'person is' : 'people are'} still on it. Move them off first — disbanding would take away every area they reach through it.`
-      : 'The team and its area grants are removed.',
-    [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Disband',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await deleteTeam.mutateAsync({ id: id! });
-            await refresh();
-            router.back();
-          }
-          catch (deleteError) {
-            Alert.alert('Could not disband', apiErrorMessage(deleteError, 'Try again.'));
-          }
-        },
-      },
-    ],
-  );
+  const confirmDelete = async () => {
+    const agreed = await dialogs.confirm({
+      title: 'Disband this team',
+      message: team && team.memberCount > 0
+        ? `${team.memberCount} ${team.memberCount === 1 ? 'person is' : 'people are'} still on it. Move them off first — disbanding would take away every area they reach through it.`
+        : 'The team and its area grants are removed.',
+      confirmLabel: 'Disband',
+    });
+
+    if (!agreed)
+      return;
+
+    try {
+      await deleteTeam.mutateAsync({ id: id! });
+      await refresh();
+      router.back();
+    }
+    catch (deleteError) {
+      void dialogs.notify('Could not disband', apiErrorMessage(deleteError, 'Try again.'));
+    }
+  };
 
   if (isEdit && loadingTeam)
     return <Loading />;

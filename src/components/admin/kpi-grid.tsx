@@ -1,4 +1,5 @@
 import type { IconSvgElement } from '@hugeicons/react-native';
+import type { TFunction } from 'i18next';
 import type { AdminDashboard } from '@/lib/utils/admin-stats';
 import {
   ArrowDownRight01Icon,
@@ -18,14 +19,14 @@ import { colors, Text, View } from '@/components/ui';
 import { PERMISSIONS } from '@/constants/permissions';
 import { grouped, percent, rupees } from '@/lib/utils/admin-format';
 
-type KpiSpec = { key: string; icon: IconSvgElement; tint: keyof typeof TINT; label: string; value: string; delta: number | null; series: number[]; tone: 'good' | 'bad'; requiredPermission: string };
+type KpiSpec = { key: string; icon: IconSvgElement; tint: keyof typeof TINT; label: string; value: string; delta?: number | null; detail?: string; series: number[]; tone: 'good' | 'bad'; requiredPermission: string };
 
-function kpiSpecs(data: AdminDashboard, t: (key: string) => string): KpiSpec[] {
+function kpiSpecs(data: AdminDashboard, t: TFunction): KpiSpec[] {
   return [
     { key: 'customers', icon: UserMultiple02Icon, tint: 'orange', label: t('admin_dashboard.total_customers'), value: grouped(data.totalCustomers), delta: data.totalCustomersDelta, series: data.totalCustomersSeries, tone: 'good', requiredPermission: PERMISSIONS.CUSTOMERS_VIEW },
     { key: 'active', icon: Wifi01Icon, tint: 'blue', label: t('admin_dashboard.active_connections'), value: grouped(data.activeConnections), delta: data.activeDelta, series: data.activeSeries, tone: 'good', requiredPermission: PERMISSIONS.CUSTOMERS_VIEW },
-    { key: 'inactive', icon: WifiDisconnected01Icon, tint: 'red', label: t('admin_dashboard.inactive_connections'), value: grouped(data.inactiveConnections), delta: data.inactiveDelta, series: data.inactiveSeries, tone: 'bad', requiredPermission: PERMISSIONS.CUSTOMERS_VIEW },
-    { key: 'collections', icon: IndianRupeeIcon, tint: 'green', label: t('admin_dashboard.collections_month'), value: rupees(data.revenueThisMonth), delta: data.revenueDelta, series: data.revenueSeries, tone: 'good', requiredPermission: PERMISSIONS.REPORTS_VIEW },
+    { key: 'today', icon: IndianRupeeIcon, tint: 'green', label: t('admin_dashboard.collected_today'), value: rupees(data.collectedToday), detail: t('admin_dashboard.receipts_today', { count: data.receiptsToday }), series: data.revenue.daily.map(point => point.value), tone: 'good', requiredPermission: PERMISSIONS.REPORTS_VIEW },
+    { key: 'outstanding', icon: WifiDisconnected01Icon, tint: 'red', label: t('admin_dashboard.outstanding_dues'), value: rupees(data.outstandingDues), detail: t('admin_dashboard.accounts_due', { count: data.dueAccounts }), series: [], tone: 'bad', requiredPermission: PERMISSIONS.CUSTOMERS_VIEW },
   ];
 }
 
@@ -44,9 +45,11 @@ export function KpiGrid({ data }: { data: AdminDashboard }) {
                   <Text className="text-[11px] text-muted-foreground">{kpi.label}</Text>
                 </View>
               </View>
-              <KpiDelta delta={kpi.delta} tone={kpi.tone} noPriorMonth={t('admin_dashboard.no_prior_month')} />
+              {kpi.detail === undefined
+                ? <KpiDelta delta={kpi.delta ?? null} tone={kpi.tone} noPriorMonth={t('admin_dashboard.no_prior_month')} />
+                : <Text className="mt-2 text-[11px] text-muted-foreground">{kpi.detail}</Text>}
             </View>
-            <Sparkline series={kpi.series} color={TINT[kpi.tint].fg} />
+            {kpi.series.length > 1 && <Sparkline series={kpi.series} color={TINT[kpi.tint].fg} />}
           </Card>
         </PermissionGuard>
       ))}

@@ -1,6 +1,8 @@
 import Env from 'env';
+import { useRouter } from 'expo-router';
 import { useUniwind } from 'uniwind';
 
+import { PermissionGuard } from '@/components/common/permission-guard';
 import {
   LanguageItem,
   SettingsContainer,
@@ -15,10 +17,12 @@ import {
   View,
 } from '@/components/ui';
 import { Github, Rate, Share, Support, Website } from '@/components/ui/icons';
+import { PERMISSIONS } from '@/constants/permissions';
 import { useAuthStore } from '@/lib/hooks/stores/use-auth-store';
 import { translate } from '@/lib/i18n';
 
 export function SettingsScreen() {
+  const router = useRouter();
   const signOut = useAuthStore.use.signOut();
   const { theme } = useUniwind();
   const iconColor
@@ -36,6 +40,16 @@ export function SettingsScreen() {
             <LanguageItem />
             <ThemeItem />
           </SettingsContainer>
+
+          {/* Staff reuse this screen; collecting accounts is an office setting. */}
+          <PermissionGuard permission={PERMISSIONS.SETTINGS_UPDATE}>
+            <SettingsContainer title="settings.payments">
+              <SettingsItem
+                text="settings.upi_accounts"
+                onPress={() => router.push('/admin/settings/upi')}
+              />
+            </SettingsContainer>
+          </PermissionGuard>
 
           <SettingsContainer title="settings.about">
             <SettingsItem

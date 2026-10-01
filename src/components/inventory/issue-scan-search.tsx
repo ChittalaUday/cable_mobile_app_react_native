@@ -25,7 +25,15 @@ import { lookupInventory, useInventoryStock } from '@/lib/hooks/api/use-inventor
 
 type Tab = 'scan' | 'search';
 
-export function IssueScanSearchScreen({ basePath }: { basePath: '/admin/inventory' | '/staff/inventory' }) {
+export function IssueScanSearchScreen({ basePath, customer }: {
+  basePath: '/admin/inventory' | '/staff/inventory';
+  /**
+   * Set when the flow started from a customer's page, in which case step 2 is
+   * already answered and picking the item is the whole job — an engineer who
+   * opened a subscriber to fit their box should not have to find them again.
+   */
+  customer?: { id: string; name: string; code: string };
+}) {
   const router = useRouter();
   const [tab, setTab] = React.useState<Tab>('scan');
   const [search, setSearch] = React.useState('');
@@ -38,9 +46,10 @@ export function IssueScanSearchScreen({ basePath }: { basePath: '/admin/inventor
   const { data: stockItems, isLoading } = useInventoryStock();
 
   const filteredItems = stockItems?.filter(
-    item =>
+    item => item.availableStock > 0 && (
       item.name.toLowerCase().includes(search.toLowerCase())
-      || (item.code && item.code.toLowerCase().includes(search.toLowerCase())),
+      || (item.code && item.code.toLowerCase().includes(search.toLowerCase()))
+    ),
   );
 
   const handleSelectItem = (
@@ -48,16 +57,20 @@ export function IssueScanSearchScreen({ basePath }: { basePath: '/admin/inventor
     serial?: string,
     equipmentId?: string,
   ) => {
-    router.push({
-      pathname: `${basePath}/issue/customer`,
-      params: {
-        catalogId: item.id,
-        equipmentId: equipmentId ?? '',
-        itemName: item.name,
-        itemCode: item.code ?? '',
-        serialNumber: serial ?? '',
-      },
-    });
+    const params = {
+      catalogId: item.id,
+      equipmentId: equipmentId ?? '',
+      itemName: item.name,
+      itemCode: item.code ?? '',
+      serialNumber: serial ?? '',
+    };
+
+    router.push(customer === undefined
+      ? { pathname: `${basePath}/issue/customer`, params }
+      : {
+          pathname: `${basePath}/issue/confirm`,
+          params: { ...params, customerId: customer.id, customerName: customer.name, customerCode: customer.code },
+        });
   };
 
   const processLookup = async (queryStr: string) => {
@@ -72,6 +85,16 @@ export function IssueScanSearchScreen({ basePath }: { basePath: '/admin/inventor
       const results = await lookupInventory(q);
       if (results && results.length > 0) {
         const match = results[0]!;
+
+        if (match.availableStock < 1 || (match.type === 'equipment' && match.inventoryStatus !== 'available')) {
+          setScanMessage(
+            match.type === 'equipment' && match.inventoryStatus === 'allocated'
+              ? `${match.serialNumber ?? q} is already assigned to a customer.`
+              : `${match.itemName} is not available in stock.`,
+          );
+          return;
+        }
+
         handleSelectItem(
           {
             id: match.catalogId,
@@ -103,8 +126,8 @@ export function IssueScanSearchScreen({ basePath }: { basePath: '/admin/inventor
   return (
     <View className="flex-1 bg-surface">
       <ScreenHeader
-        title="Issue to Customer"
-        subtitle="Step 1: Scan serial code or select item"
+        title={customer === undefined ? 'Issue to Customer' : `Issue to ${customer.name}`}
+        subtitle="Scan serial code or select item"
         showBack
         withSafeArea
       />

@@ -23,3 +23,25 @@ export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number];
 /** Whether a customer's resolved location came off their record or a subscription. */
 export const CUSTOMER_LOCATION_SOURCES = ['customer', 'subscription'] as const;
 export type CustomerLocationSource = (typeof CUSTOMER_LOCATION_SOURCES)[number];
+
+/** What a complaint is about. */
+export const TICKET_CATEGORIES = [
+  'no_signal',
+  'poor_quality',
+  'billing',
+  'installation',
+  'relocation',
+  'disconnection',
+  'other',
+] as const;
+export type TicketCategory = (typeof TICKET_CATEGORIES)[number];
+
+export const TICKET_PRIORITIES = ['low', 'normal', 'high', 'urgent'] as const;
+export type TicketPriority = (typeof TICKET_PRIORITIES)[number];
+
+export const TICKET_STATUSES = ['open', 'in_progress', 'resolved', 'closed', 'cancelled'] as const;
+export type TicketStatus = (typeof TICKET_STATUSES)[number];
+
+/** Statuses a ticket is no longer worked on in. */
+export const TICKET_CLOSED_STATUSES = ['resolved', 'closed', 'cancelled'] as const;
+export type TicketClosedStatus = (typeof TICKET_CLOSED_STATUSES)[number];

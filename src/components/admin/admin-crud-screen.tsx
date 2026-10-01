@@ -5,8 +5,9 @@ import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, RefreshControl, TextInput } from 'react-native';
+import { RefreshControl, TextInput } from 'react-native';
 import { AdminRecordForm } from '@/components/admin/admin-record-form';
+import { dialogs } from '@/components/common/dialogs';
 
 import { Card, LoadError, Loading } from '@/components/common/shell';
 import { colors, FocusAwareStatusBar, Pressable, SafeAreaView, ScrollView, Text, View } from '@/components/ui';
@@ -79,22 +80,25 @@ export function AdminCrudScreen<T extends AdminRecord>({
     }
   };
 
-  const remove = (item: T) => Alert.alert(t('admin.delete'), t('admin.delete_confirmation', { name: itemTitle(item) }), [
-    { text: t('admin.cancel'), style: 'cancel' },
-    {
-      text: t('admin.delete'),
-      style: 'destructive',
-      onPress: async () => {
-        try {
-          await onDelete(item);
-          onRefresh();
-        }
-        catch (deleteError) {
-          Alert.alert(t('admin.delete_failed'), apiErrorMessage(deleteError, t('admin.try_again')));
-        }
-      },
-    },
-  ]);
+  const remove = async (item: T) => {
+    const agreed = await dialogs.confirm({
+      title: t('admin.delete'),
+      message: t('admin.delete_confirmation', { name: itemTitle(item) }),
+      confirmLabel: t('admin.delete'),
+      cancelLabel: t('admin.cancel'),
+    });
+
+    if (!agreed)
+      return;
+
+    try {
+      await onDelete(item);
+      onRefresh();
+    }
+    catch (deleteError) {
+      void dialogs.notify(t('admin.delete_failed'), apiErrorMessage(deleteError, t('admin.try_again')));
+    }
+  };
 
   return (
     <View className="flex-1 bg-surface">

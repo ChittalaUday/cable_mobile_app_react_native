@@ -1,7 +1,7 @@
 appId: ${APP_ID}
 env:
-  EMAIL: admin@satyacable.dev
-  PASSWORD: Passw0rd!
+  EMAIL: admin@sscn.com
+  PASSWORD: Admin@123456
 tags:
   - e2e
   - auth
@@ -16,7 +16,7 @@ tags:
     id: login-button
 - assertVisible: Please enter your email and password.
 
-# Wrong password is rejected by Firebase Auth.
+# Wrong password is rejected by the REST API.
 - tapOn:
     id: email-input
 - inputText: ${EMAIL}

@@ -8,13 +8,13 @@ export type ActivityKind = 'customer' | 'connection' | 'payment' | 'ticket';
 export type ActivityRow = { id: string; kind: ActivityKind; title: string; subtitle: string; ago: string };
 export type RevenueRange = 'daily' | 'weekly' | 'monthly';
 export type AreaRow = { id: string; name: string; count: number; share: number };
+/** One collector's month, as the dashboard ranks them. */
 export type StaffRow = {
   id: string;
   name: string;
   collected: number;
   bills: number;
-  ticketsClosed: number;
-  lastAction: string;
+  /** When they last took money; null when the server sent no timestamp. */
   ago: string | null;
 };
 
@@ -37,6 +37,7 @@ export type AdminDashboard = {
   recentCustomers: CustomerRow[];
   activity: ActivityRow[];
   collectedToday: number;
+  receiptsToday: number;
   collectedWeek: number;
   outstandingDues: number;
   dueAccounts: number;
@@ -372,62 +373,4 @@ export function topAreas(customers: CustomerDoc[], take = 5): AreaRow[] {
     .sort((a, b) => b[1] - a[1])
     .slice(0, take)
     .map(([name, count]) => ({ id: name, name, count, share: share(count, customers.length) }));
-}
-
-const CLOSED_TICKET = /resolv|clos|complet|done|fixed/i;
-
-export function summariseStaff({ staff, payments, tickets, nameById, now }: {
-  staff: StaffDoc[];
-  payments: PaymentDoc[];
-  tickets: TicketDoc[];
-  nameById: Map<string, string>;
-  now: Date;
-}): StaffRow[] {
-  const rows = staff.map((member) => {
-    const id = member.id ?? '';
-    let collected = 0;
-    let bills = 0;
-    let ticketsClosed = 0;
-    let latest: { at: Date; action: string } | null = null;
-
-    const remember = (at: Date | null, action: string) => {
-      if (at && (!latest || at.getTime() > latest.at.getTime()))
-        latest = { at, action };
-    };
-
-    for (const payment of payments) {
-      if (payment.collectorId !== id)
-        continue;
-      const amount = Number(payment.amount) || 0;
-      if (!amount)
-        continue;
-      collected += amount;
-      bills += 1;
-      const who = payment.subscriberName ?? (payment.subscriberId ? nameById.get(payment.subscriberId) : undefined) ?? 'a subscriber';
-      remember(parseDate(payment.paidAt), `Collected ₹${Math.round(amount)} from ${who}`);
-    }
-
-    for (const ticket of tickets) {
-      if (ticket.assignedTo !== id || !CLOSED_TICKET.test(ticket.status ?? ''))
-        continue;
-      ticketsClosed += 1;
-      remember(parseDate(ticket.resolvedAt ?? ticket.updatedAt), `Closed ticket · ${ticket.subject ?? 'no subject'}`);
-    }
-
-    const last = latest as { at: Date; action: string } | null;
-    return {
-      id: id || (member.name ?? 'staff'),
-      name: member.name ?? member.email?.split('@')[0] ?? 'Staff member',
-      collected,
-      bills,
-      ticketsClosed,
-      lastAction: last?.action ?? 'No recorded activity yet',
-      ago: last ? relativeTime(last.at, now) : null,
-      at: last?.at.getTime() ?? 0,
-    };
-  });
-
-  return rows
-    .sort((a, b) => b.at - a.at || b.collected - a.collected)
-    .map(({ at: _at, ...row }) => row);
 }

@@ -4,10 +4,11 @@ import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as React from 'react';
-import { Alert, TextInput } from 'react-native';
+import { TextInput } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
-
 import { StepBar } from '@/components/admin/step-bar';
+
+import { dialogs } from '@/components/common/dialogs';
 import { SaveBar } from '@/components/common/save-bar';
 import { Card, IconTile, ScreenHeader } from '@/components/common/shell';
 import {
@@ -76,7 +77,7 @@ export function AssignTeamScreen() {
       setSelected(team.id);
     }
     catch (error) {
-      Alert.alert('Could not create the team', apiErrorMessage(error, 'Try again.'));
+      void dialogs.notify('Could not create the team', apiErrorMessage(error, 'Try again.'));
     }
   };
 
@@ -91,7 +92,7 @@ export function AssignTeamScreen() {
       await done();
     }
     catch (error) {
-      Alert.alert('Could not assign', apiErrorMessage(error, 'Try again.'));
+      void dialogs.notify('Could not assign', apiErrorMessage(error, 'Try again.'));
     }
   };
 

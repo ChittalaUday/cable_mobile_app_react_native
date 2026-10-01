@@ -8,6 +8,7 @@ export default function AdminIssueCustomerScreen() {
     itemName: string;
     itemCode: string;
     serialNumber?: string;
+    equipmentId?: string;
   }>();
   return (
     <IssueSelectCustomerScreen
@@ -15,6 +16,7 @@ export default function AdminIssueCustomerScreen() {
       itemName={params.itemName}
       itemCode={params.itemCode}
       serialNumber={params.serialNumber}
+      equipmentId={params.equipmentId}
       basePath="/admin/inventory"
     />
   );

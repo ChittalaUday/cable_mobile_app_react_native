@@ -15,6 +15,7 @@ import {
 } from '@react-native-firebase/messaging';
 import { Platform } from 'react-native';
 import { client } from '@/lib/api/client';
+import { handleRealtimeSync } from '@/lib/api/query-client';
 
 export type { NotificationCategory } from '@/lib/constants/notify';
 
@@ -57,9 +58,8 @@ export function showsInApp(delivery: string | undefined): boolean {
  * displaying one here as well is what would produce a duplicate.
  */
 export function registerBackgroundHandler(): void {
-  setBackgroundMessageHandler(getMessaging(), async () => {
-    // The inbox is refetched when the app is next focused, so there is nothing
-    // to do here but acknowledge the message.
+  setBackgroundMessageHandler(getMessaging(), async (message) => {
+    handleRealtimeSync(message.data);
   });
 }
 

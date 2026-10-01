@@ -23,12 +23,14 @@ export function IssueSelectCustomerScreen({
   itemName,
   itemCode,
   serialNumber,
+  equipmentId,
   basePath,
 }: {
   catalogId: string;
   itemName: string;
   itemCode: string;
   serialNumber?: string;
+  equipmentId?: string;
   basePath: '/admin/inventory' | '/staff/inventory';
 }) {
   const router = useRouter();
@@ -57,6 +59,7 @@ export function IssueSelectCustomerScreen({
         itemName,
         itemCode,
         serialNumber: serialNumber ?? '',
+        equipmentId: equipmentId ?? '',
         customerId: cust.id,
         customerName: cust.name ?? 'Customer',
         customerCode: cust.customerCode ?? '',

@@ -1,6 +1,6 @@
-import type { AccountDoc, CustomerDoc, PaymentDoc, StaffDoc, TicketDoc } from './admin-stats';
+import type { AccountDoc, CustomerDoc, PaymentDoc } from './admin-stats';
 import { niceTicks } from './admin-format';
-import { areaOf, buildActivity, formatPhone, recentCustomers, relativeTime, summariseAccounts, summarisePayments, summariseStaff, topAreas } from './admin-stats';
+import { areaOf, buildActivity, formatPhone, recentCustomers, relativeTime, summariseAccounts, summarisePayments, topAreas } from './admin-stats';
 
 const NOW = new Date(2026, 8, 9, 12); // Wed 9 Sep 2026, noon local
 
@@ -30,18 +30,6 @@ const PAYMENTS: PaymentDoc[] = [
   { id: 'p5', amount: 200, paidAt: '05-04-2026' },
   { id: 'p6', amount: 0, paidAt: '01-09-2026' },
   { id: 'p7', amount: 50 },
-];
-
-const STAFF: StaffDoc[] = [
-  { id: 'S1', name: 'Ravi Kumar' },
-  { id: 'S2', name: 'Latha Rao' },
-  { id: 'S3', email: 'idle@satyacable.dev' },
-];
-
-const TICKETS: TicketDoc[] = [
-  { id: 't1', assignedTo: 'S1', status: 'resolved', subject: 'No signal', resolvedAt: '2026-09-09T10:00:00' },
-  { id: 't2', assignedTo: 'S2', status: 'Closed', subject: 'Bill dispute', resolvedAt: '2026-09-07T10:00:00' },
-  { id: 't3', assignedTo: 'S1', status: 'open', subject: 'Slow speed' },
 ];
 
 const accountStats = summariseAccounts(ACCOUNTS, NOW);
@@ -178,34 +166,5 @@ describe('topAreas', () => {
     [undefined, 'Unassigned'],
   ])('maps address %p to %p', (address, expected) => {
     expect(areaOf(address)).toBe(expected);
-  });
-});
-
-describe('summariseStaff', () => {
-  const nameById = new Map(CUSTOMERS.map(customer => [customer.id, customer.name ?? ''])) as Map<string, string>;
-  const rows = summariseStaff({ staff: STAFF, payments: PAYMENTS, tickets: TICKETS, nameById, now: NOW });
-
-  it('joins collections and closed tickets per staff member, busiest-recent first', () => {
-    expect(rows.map(row => [row.name, row.collected, row.bills, row.ticketsClosed])).toEqual([
-      ['Ravi Kumar', 1600, 2, 1],
-      ['Latha Rao', 400, 1, 1],
-      ['idle', 0, 0, 0],
-    ]);
-  });
-
-  it('shows the most recent action, whichever kind it was', () => {
-    expect(rows[0].lastAction).toBe('Closed ticket · No signal');
-    expect(rows[0].ago).toBe('2 hrs ago');
-    expect(rows[1].lastAction).toBe('Collected ₹400 from a subscriber');
-  });
-
-  it('still lists staff with nothing recorded instead of hiding them', () => {
-    expect(rows[2].lastAction).toBe('No recorded activity yet');
-    expect(rows[2].ago).toBeNull();
-  });
-
-  it('ignores tickets that are not closed', () => {
-    const openOnly = summariseStaff({ staff: [STAFF[0]], payments: [], tickets: [TICKETS[2]], nameById, now: NOW });
-    expect(openOnly[0].ticketsClosed).toBe(0);
   });
 });

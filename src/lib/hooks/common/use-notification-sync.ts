@@ -4,6 +4,7 @@ import { AppState } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
 import { Image } from '@/components/ui';
 import { queryClient } from '@/lib/api';
+import { handleRealtimeSync } from '@/lib/api/query-client';
 import { useMarkRead, usePendingInApp } from '@/lib/hooks/api/use-notifications';
 import { useAuthStore } from '@/lib/hooks/stores/use-auth-store';
 import {
@@ -19,31 +20,6 @@ import {
 
 function refreshInbox() {
   queryClient.invalidateQueries({ queryKey: ['notifications'] }).catch(() => {});
-}
-
-/**
- * What a silent `sync` push invalidates.
- *
- * These messages carry no notification payload and are never shown: they exist
- * so a receipt somebody else recorded reaches this screen in seconds instead of
- * whenever the next pull-to-refresh happens. Adding a key here is how a new
- * screen joins in.
- */
-const SYNC_KEYS: Record<string, readonly string[]> = {
-  payments: ['payments', 'payment', 'customers', 'customer', 'staff-dashboard', 'admin-dashboard'],
-};
-
-/** True when the message was a sync nudge and has been handled — nothing to show. */
-function handledAsSync(data: Record<string, unknown> | undefined): boolean {
-  const sync = data?.sync;
-
-  if (typeof sync !== 'string')
-    return false;
-
-  for (const key of SYNC_KEYS[sync] ?? [])
-    queryClient.invalidateQueries({ queryKey: [key] }).catch(() => {});
-
-  return true;
 }
 
 /**
@@ -115,7 +91,7 @@ export function useNotificationSync(): void {
     return onForegroundMessage((message) => {
       // A sync nudge is not news. It has no title or body, so presenting it
       // would draw an empty banner over whatever the person is doing.
-      if (handledAsSync(message.data))
+      if (handleRealtimeSync(message.data))
         return;
 
       const category = message.data?.category;

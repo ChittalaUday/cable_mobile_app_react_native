@@ -7,7 +7,8 @@ import {
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
-import { Alert } from 'react-native';
+
+import { dialogs } from '@/components/common/dialogs';
 import { Card, ScreenHeader } from '@/components/common/shell';
 import {
   ActivityIndicator,
@@ -46,7 +47,7 @@ export function InventoryItemDetailsScreen({
 
   const handleOpenEdit = () => {
     if (isAdmin) {
-      Alert.alert('Edit Item', 'Admin direct editing is available in the item catalog.');
+      void dialogs.notify('Edit Item', 'Admin direct editing is available in the item catalog.');
     }
     else {
       setProposedName(item?.name ?? '');
@@ -56,7 +57,7 @@ export function InventoryItemDetailsScreen({
 
   const handleRequestSubmit = () => {
     if (!requestReason.trim()) {
-      Alert.alert('Required', 'Please enter a reason for this modification request.');
+      void dialogs.notify('Required', 'Please enter a reason for this modification request.');
       return;
     }
 
@@ -73,13 +74,10 @@ export function InventoryItemDetailsScreen({
         onSuccess: () => {
           approvalModal.dismiss();
           setRequestReason('');
-          Alert.alert(
-            'Request Submitted',
-            'Your change request has been sent to the administrator for review and approval.',
-          );
+          void dialogs.notify('Request Submitted', 'Your change request has been sent to the administrator for review and approval.');
         },
         onError: (err) => {
-          Alert.alert('Error', err.message ?? 'Failed to submit request');
+          void dialogs.notify('Error', err.message ?? 'Failed to submit request');
         },
       },
     );

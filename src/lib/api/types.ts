@@ -1,3 +1,4 @@
+import type { PermissionScope } from '@/constants/permissions';
 import type { OtpChannel, StaffRole } from '@/lib/constants/auth';
 import type {
   BillingCycle,
@@ -70,6 +71,11 @@ export type Membership = {
   /** What the tenant picker shows — the id on its own is an unreadable UUID. */
   tenantName: string;
   roleId: string;
+  membershipId?: string;
+  permissionVersion?: number;
+  permissions?: { key: string; scope: PermissionScope }[];
+  status?: string;
+  teamId?: string | null;
 };
 
 export type AuthResponse = AuthTokens & {
@@ -552,6 +558,8 @@ export type LocationRef = {
   name: string;
   /** Root-first breadcrumb, e.g. "Mandapeta / Sai Nagar". */
   path: string;
+  /** Root-first ids, ending with this node. */
+  pathIds: string[];
 };
 
 /**
@@ -941,7 +949,7 @@ export type { OtpChannel, StaffRole } from '@/lib/constants/auth';
  * and types now come from `@/lib/constants/*` so the runtime array and the type
  * cannot disagree. See `src/lib/constants/README.md`.
  */
-export type { CollectionOutcome, PaymentMethod } from '@/lib/constants/billing';
+export type { CollectionOutcome, PaymentEntryMethod, PaymentMethod } from '@/lib/constants/billing';
 export type {
   BillingCycle,
   ChannelResolution,

@@ -3,7 +3,8 @@ import {
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as React from 'react';
-import { Alert } from 'react-native';
+
+import { dialogs } from '@/components/common/dialogs';
 import { Card, ScreenHeader } from '@/components/common/shell';
 import {
   ActivityIndicator,
@@ -26,31 +27,28 @@ export function InventoryApprovalsScreen({ basePath: _basePath }: { basePath: '/
   const { data: requests, isLoading, refetch } = useApprovalRequests();
   const { mutate: reviewRequest, isPending: isReviewing } = useReviewApprovalRequest();
 
-  const handleReview = (id: string, decision: 'approved' | 'rejected') => {
-    Alert.alert(
-      decision === 'approved' ? 'Approve Request' : 'Reject Request',
-      `Are you sure you want to ${decision} this item modification request?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: decision === 'approved' ? 'Approve' : 'Reject',
-          style: decision === 'approved' ? 'default' : 'destructive',
-          onPress: () => {
-            reviewRequest(
-              { id, patch: { status: decision, reviewNotes: `Decision by ${role}` } },
-              {
-                onSuccess: () => {
-                  refetch();
-                  Alert.alert('Done', `Request marked as ${decision}.`);
-                },
-                onError: (err) => {
-                  Alert.alert('Error', err.message ?? 'Review failed');
-                },
-              },
-            );
-          },
+  const handleReview = async (id: string, decision: 'approved' | 'rejected') => {
+    const agreed = await dialogs.confirm({
+      title: decision === 'approved' ? 'Approve Request' : 'Reject Request',
+      message: `Are you sure you want to ${decision} this item modification request?`,
+      confirmLabel: decision === 'approved' ? 'Approve' : 'Reject',
+      tone: decision === 'approved' ? 'default' : 'danger',
+    });
+
+    if (!agreed)
+      return;
+
+    reviewRequest(
+      { id, patch: { status: decision, reviewNotes: `Decision by ${role}` } },
+      {
+        onSuccess: () => {
+          refetch();
+          void dialogs.notify('Done', `Request marked as ${decision}.`);
         },
-      ],
+        onError: (err) => {
+          void dialogs.notify('Error', err.message ?? 'Review failed');
+        },
+      },
     );
   };
 

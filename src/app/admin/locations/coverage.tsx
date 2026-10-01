@@ -1,11 +1,12 @@
 import type { CoverageScope, Mark } from '@/components/locations/coverage-marks';
 import type { Coverage } from '@/lib/api/types';
 import type { CoverageEntryInput } from '@/lib/hooks/api/use-locations';
-
 import { useQueryClient } from '@tanstack/react-query';
+
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as React from 'react';
-import { Alert } from 'react-native';
+
+import { dialogs } from '@/components/common/dialogs';
 
 import { SaveBar } from '@/components/common/save-bar';
 import { Loading, ScreenHeader } from '@/components/common/shell';
@@ -102,7 +103,7 @@ export function CoverageScreen() {
       router.back();
     }
     catch (err) {
-      Alert.alert('Could not save coverage', (err as Error).message || 'Please try again.');
+      void dialogs.notify('Could not save coverage', (err as Error).message || 'Please try again.');
     }
   };
 

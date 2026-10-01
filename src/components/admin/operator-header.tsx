@@ -7,15 +7,16 @@ import { NotificationBell } from '@/components/notifications/notification-bell';
 import { TenantSwitcher } from '@/components/tenant/tenant-picker';
 import { colors, Pressable, Text, View } from '@/components/ui';
 
-export function OperatorHeader({ onSearch }: {
+export function OperatorHeader({ onSearch, subtitle = 'Operator Panel' }: {
   onSearch?: () => void;
+  subtitle?: string;
 }) {
   return (
     <View className="flex-row items-center gap-1.5">
       <View className="size-11 items-center justify-center rounded-2xl bg-primary-600">
         <HugeiconsIcon icon={Tv01Icon} size={24} color="#fff" strokeWidth={2} />
       </View>
-      <TenantSwitcher subtitle="Operator Panel" />
+      <TenantSwitcher subtitle={subtitle} />
       {onSearch
         ? (
             <Pressable accessibilityRole="button" accessibilityLabel="Global Search" onPress={onSearch} className="size-10 items-center justify-center rounded-full bg-card">

@@ -7,7 +7,7 @@ import type * as InventoryTransferModule from './inventory-transfer';
 import type * as IssueScanSearchModule from './issue-scan-search';
 import type * as IssueSelectCustomerModule from './issue-select-customer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 import * as React from 'react';
 import { InventoryMenu } from './inventory-menu';
 import { IssueSuccessScreen } from './issue-success';
@@ -18,6 +18,9 @@ const queryClient = new QueryClient({
     mutations: { retry: false },
   },
 });
+
+const mockPush = jest.fn();
+const mockLookupInventory = jest.fn();
 
 function renderWithQueryClient(ui: React.ReactElement) {
   return render(
@@ -39,7 +42,7 @@ jest.mock('expo-camera', () => {
 // Mock expo-router
 jest.mock('expo-router', () => ({
   useRouter: () => ({
-    push: jest.fn(),
+    push: mockPush,
     replace: jest.fn(),
     back: jest.fn(),
   }),
@@ -73,6 +76,7 @@ jest.mock('@/lib/hooks/api/use-inventory', () => ({
     ],
     isLoading: false,
   }),
+  lookupInventory: mockLookupInventory,
   useCustomerEquipment: () => ({
     data: [
       {
@@ -103,6 +107,8 @@ jest.mock('@/lib/hooks/api/use-inventory', () => ({
 }));
 
 // Mock useStaff
+jest.mock('@/lib/hooks/common/use-permissions', () => ({ usePermissions: () => ({ can: () => true }) }));
+
 jest.mock('@/lib/hooks/api/use-staff', () => ({
   useStaff: () => ({
     data: {
@@ -197,6 +203,10 @@ jest.mock('@/lib/hooks/api/use-locations', () => ({
 }));
 
 describe('inventory Screens', () => {
+  beforeEach(() => {
+    mockPush.mockClear();
+    mockLookupInventory.mockReset();
+  });
   it('renders InventoryMenu with all primary actions', () => {
     renderWithQueryClient(<InventoryMenu basePath="/admin/inventory" />);
 
@@ -257,6 +267,35 @@ describe('inventory Screens', () => {
     expect(screen.getByText('Scan Serial Code')).toBeTruthy();
     expect(screen.getByText('Search Catalog')).toBeTruthy();
     expect(screen.getByText('Manual Serial Code Lookup')).toBeTruthy();
+  });
+
+  it('does not let an assigned unit continue through the issue flow', async () => {
+    mockLookupInventory.mockResolvedValue([{
+      type: 'equipment',
+      id: 'unit-1',
+      catalogId: 'cat-1',
+      itemName: 'Set Top Box',
+      itemCode: 'STB',
+      serialNumber: 'STB-ASSIGNED',
+      barcode: null,
+      vcNumber: null,
+      macAddress: null,
+      inventoryStatus: 'allocated',
+      locationId: 'loc-1',
+      locationName: 'Customer home',
+      defaultSalePrice: '0.00',
+      defaultDepositAmount: '0.00',
+      availableStock: 0,
+    }]);
+
+    const { IssueScanSearchScreen } = require<typeof IssueScanSearchModule>('./issue-scan-search');
+    renderWithQueryClient(<IssueScanSearchScreen basePath="/admin/inventory" />);
+
+    fireEvent.changeText(screen.getByPlaceholderText('Enter serial code (or barcode)...'), 'STB-ASSIGNED');
+    fireEvent.press(screen.getByText('Lookup Serial'));
+
+    expect(await screen.findByText(/already assigned/i)).toBeTruthy();
+    expect(mockPush).not.toHaveBeenCalled();
   });
 
   it('renders IssueSelectCustomerScreen and shows customer list or empty state', () => {

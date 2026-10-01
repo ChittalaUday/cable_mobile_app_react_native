@@ -2,13 +2,32 @@ import type { PermissionKey, PermissionScope } from '@/constants/permissions';
 import type { ResourceMeta } from '@/lib/utils/access-compiler';
 import * as React from 'react';
 import { SCOPE_HIERARCHY } from '@/constants/permissions';
-import { useAccessStore } from '@/lib/hooks/stores/use-access-store';
+import { useAuthStore } from '@/lib/hooks/stores/use-auth-store';
 import { evaluateScopeAccess } from '@/lib/utils/access-compiler';
 
 export function usePermissions() {
-  const userAccess = useAccessStore.use.userAccess();
-  const permissions = useAccessStore.use.permissions();
-  const isLoading = useAccessStore.use.isLoading();
+  const user = useAuthStore.use.user();
+  const tenantId = useAuthStore.use.tenantId();
+  const memberships = useAuthStore.use.memberships();
+  const status = useAuthStore.use.status();
+  const membership = memberships.find(item => item.tenantId === tenantId);
+  const permissions = React.useMemo(
+    () => Object.fromEntries(membership?.permissions?.map(item => [item.key, item.scope]) ?? []),
+    [membership],
+  );
+  const userAccess = React.useMemo(() => user && membership
+    ? {
+        uid: user.uid,
+        permissions,
+        locationIds: {},
+        areaIds: {},
+        tenantId: membership.tenantId,
+        tenantIds: memberships.map(item => item.tenantId),
+        teamId: membership.teamId ?? null,
+        version: membership.permissionVersion ?? 0,
+      }
+    : null, [membership, memberships, permissions, user]);
+  const isLoading = status === 'idle';
 
   /**
    * Checks if the user has a granted permission.

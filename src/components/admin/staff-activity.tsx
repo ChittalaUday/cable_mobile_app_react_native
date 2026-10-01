@@ -8,12 +8,19 @@ import { grouped, initials, rupees } from '@/lib/utils/admin-format';
 
 const AVATAR_TINTS = [TINT.orange, TINT.blue, TINT.purple, TINT.green] as const;
 
+/**
+ * Who has taken money this month, biggest first.
+ *
+ * Collectors only — somebody who has recorded nothing simply is not on it. A
+ * roster of every name with a row of zeroes belongs on the staff screen, which
+ * is where "View All" goes.
+ */
 export function StaffActivity({ rows, onViewAll }: { rows: StaffRow[]; onViewAll: () => void }) {
   return (
     <Card className="p-3.5">
       <SectionHeader icon={UserGroup03Icon} tint="purple" title="Staff Activity" action="View All" onAction={onViewAll} />
       {rows.length === 0
-        ? <Text className="mt-4 text-xs text-muted-foreground">No staff accounts have been provisioned yet.</Text>
+        ? <Text className="mt-4 text-xs text-muted-foreground">Nobody has collected anything this month yet.</Text>
         : rows.map((row, index) => {
             const tint = AVATAR_TINTS[index % AVATAR_TINTS.length];
             return (
@@ -28,11 +35,9 @@ export function StaffActivity({ rows, onViewAll }: { rows: StaffRow[]; onViewAll
                       <Text className="flex-1 text-[13px] font-semibold text-foreground" numberOfLines={1}>{row.name}</Text>
                       <Text className="text-[11px] text-muted-foreground">{row.ago ?? 'idle'}</Text>
                     </View>
-                    <Text className="text-xs text-charcoal-600" numberOfLines={1}>{row.lastAction}</Text>
                     <View className="mt-1 flex-row gap-3">
                       <Metric label="collected" value={rupees(row.collected)} />
-                      <Metric label={row.bills === 1 ? 'bill' : 'bills'} value={grouped(row.bills)} />
-                      <Metric label="tickets closed" value={grouped(row.ticketsClosed)} />
+                      <Metric label={row.bills === 1 ? 'receipt' : 'receipts'} value={grouped(row.bills)} />
                     </View>
                   </View>
                 </View>

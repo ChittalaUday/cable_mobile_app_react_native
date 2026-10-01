@@ -43,7 +43,7 @@
     "test:ci": "pnpm run test --coverage",
     "test:watch": "pnpm run test --watch",
     "install-maestro": "curl -Ls 'https://get.maestro.mobile.dev' | bash",
-    "e2e-test": "maestro test .maestro/ -e APP_ID=com.udaychittala.satyacablenetwork.development"
+    "e2e-test": "maestro test .maestro/ -e APP_ID=com.udaychittala.satyacablenetwork.development -e DEV_SERVER=http://10.0.2.2:8081 -e DEV_SCHEME=satyaCable.development"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
@@ -98,6 +98,7 @@
     "react-native-keyboard-controller": "^1.18.5",
     "react-native-mmkv": "~4.1.1",
     "react-native-nitro-modules": "^0.33.2",
+    "react-native-qrcode-svg": "^6.3.24",
     "react-native-reanimated": "~4.1.6",
     "react-native-restart": "0.0.27",
     "react-native-safe-area-context": "5.6.2",

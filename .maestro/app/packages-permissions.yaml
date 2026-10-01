@@ -9,8 +9,8 @@ tags:
 - runFlow:
     file: ../utils/fresh-login.yaml
     env:
-      EMAIL: staff@satyacable.dev
-      PASSWORD: Passw0rd!
+      EMAIL: suresh.staff@sscn.com
+      PASSWORD: Staff@123456
 
 - runFlow: ../utils/open-packages.yaml
 - assertVisible: 'Packages & Plans'

@@ -8,6 +8,7 @@ export default function AdminIssueConfirmScreen() {
     itemName: string;
     itemCode: string;
     serialNumber?: string;
+    equipmentId?: string;
     customerId: string;
     customerName: string;
     customerCode: string;
@@ -18,6 +19,7 @@ export default function AdminIssueConfirmScreen() {
       itemName={params.itemName}
       itemCode={params.itemCode}
       serialNumber={params.serialNumber}
+      equipmentId={params.equipmentId}
       customerId={params.customerId}
       customerName={params.customerName}
       customerCode={params.customerCode}

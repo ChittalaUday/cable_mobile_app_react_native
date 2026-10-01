@@ -1,6 +1,7 @@
 import type { Collection } from '@/lib/hooks/api/use-payments';
 import { render, screen } from '@testing-library/react-native';
 import * as React from 'react';
+import i18n from '@/lib/i18n';
 import { ReceiptView } from './receipt-view';
 
 const mockReverse = jest.fn();
@@ -28,6 +29,8 @@ function receipt(overrides: Partial<Collection> = {}): Collection {
     customerName: 'Kavitha Devi',
     customerCode: 'SSCN-1',
     subscriptionId: 'sub-1',
+    customerEquipmentId: null,
+    equipment: null,
     serviceAccountNumber: 'ACT9001',
     locationId: 'loc-1',
     locationPath: 'Mandapeta / Main Road',
@@ -63,7 +66,10 @@ function mount(row: Collection | undefined, scope: 'ALL' | 'LOCATION' | null = '
   return render(<ReceiptView id="rcp-1" />);
 }
 
-beforeEach(() => mockReverse.mockReset());
+beforeEach(async () => {
+  mockReverse.mockReset();
+  await i18n.changeLanguage('en');
+});
 
 describe('a receipt', () => {
   it('shows what was taken and where it left the balance', () => {
@@ -73,6 +79,22 @@ describe('a receipt', () => {
     expect(screen.getByText('Paid in full')).toBeTruthy();
     expect(screen.getByText('ACT9001')).toBeTruthy();
     expect(screen.getByText('₹150.00')).toBeTruthy();
+  });
+
+  it('labels an equipment receipt without presenting it as subscription dues', async () => {
+    await i18n.changeLanguage('te');
+    mount(receipt({
+      subscriptionId: null,
+      serviceAccountNumber: null,
+      customerEquipmentId: 'ce-1',
+      equipment: { itemName: 'Set-top box', itemCode: 'STB', serialNumber: 'SN-1', brand: null, model: null },
+      duesPaid: '250.00',
+      totalCollected: '250.00',
+    }));
+
+    expect(screen.getByText('పరికర చెల్లింపు')).toBeTruthy();
+    expect(screen.getByText('SN-1')).toBeTruthy();
+    expect(screen.queryByText('Balance after')).toBeNull();
   });
 
   it('offers no way to reverse without a tenant-wide grant', () => {

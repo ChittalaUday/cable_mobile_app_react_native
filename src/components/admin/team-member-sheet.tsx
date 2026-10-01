@@ -2,10 +2,12 @@ import type { LocationRef, TeamMember } from '@/lib/api/types';
 import { Location01Icon, StarIcon, UserRemove01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as React from 'react';
-import { Alert, Switch } from 'react-native';
+import { Switch } from 'react-native';
+import { dialogs } from '@/components/common/dialogs';
 
 import { Card } from '@/components/common/shell';
 import { LocationPickerSheet } from '@/components/locations/location-picker-sheet';
+import { toggleArea } from '@/components/locations/toggle-area';
 import {
   colors,
   Modal,
@@ -87,11 +89,7 @@ export function TeamMemberSheet({ member, teamAreas, onClose, onSaved }: {
   const setTeamAreas = useSetStaffTeamAreas();
   const saving = updateStaff.isPending || setTeamAreas.isPending;
 
-  const toggle = (node: LocationRef) => setAreas(current => (
-    current.some(area => area.id === node.id)
-      ? current.filter(area => area.id !== node.id)
-      : [...current, node]
-  ));
+  const toggle = (node: LocationRef) => setAreas(current => toggleArea(current, node));
 
   const save = async () => {
     if (!member)
@@ -108,35 +106,31 @@ export function TeamMemberSheet({ member, teamAreas, onClose, onSaved }: {
       onClose();
     }
     catch (error) {
-      Alert.alert('Could not save', apiErrorMessage(error, 'Try again.'));
+      void dialogs.notify('Could not save', apiErrorMessage(error, 'Try again.'));
     }
   };
 
-  const removeFromTeam = () => {
+  const removeFromTeam = async () => {
     if (!member)
       return;
 
-    Alert.alert(
-      'Remove from this team',
-      `${member.name ?? 'They'} stay on as staff, but lose every area they reached through this crew.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await updateStaff.mutateAsync({ id: member.id, patch: { teamId: null } });
-              onSaved();
-              onClose();
-            }
-            catch (error) {
-              Alert.alert('Could not remove', apiErrorMessage(error, 'Try again.'));
-            }
-          },
-        },
-      ],
-    );
+    const agreed = await dialogs.confirm({
+      title: 'Remove from this team',
+      message: `${member.name ?? 'They'} stay on as staff, but lose every area they reached through this crew.`,
+      confirmLabel: 'Remove',
+    });
+
+    if (!agreed)
+      return;
+
+    try {
+      await updateStaff.mutateAsync({ id: member.id, patch: { teamId: null } });
+      onSaved();
+      onClose();
+    }
+    catch (error) {
+      void dialogs.notify('Could not remove', apiErrorMessage(error, 'Try again.'));
+    }
   };
 
   return (

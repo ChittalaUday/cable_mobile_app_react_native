@@ -2,7 +2,7 @@ import type { CustomerDetail } from '@/lib/api/types';
 import type { RecordCollectionPayload } from '@/lib/hooks/api/use-payments';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import * as React from 'react';
-import { Alert } from 'react-native';
+import { dialogs } from '@/components/common/dialogs';
 import { CollectPaymentScreen } from './collect-payment';
 
 /** What `useRecordCollection().mutate` is handed, so the assertions are typed. */
@@ -163,7 +163,7 @@ describe('collecting a payment', () => {
   });
 
   it('refuses a no-payment visit with no reason, and sends the reason once given', async () => {
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const alert = jest.spyOn(dialogs, 'notify').mockResolvedValue();
     await mount();
 
     fireEvent.press(screen.getByText('No payment'));
@@ -258,7 +258,7 @@ describe('collecting a payment', () => {
   });
 
   it('says plainly that nothing was taken when the write fails', async () => {
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const alert = jest.spyOn(dialogs, 'notify').mockResolvedValue();
     await mount();
 
     fireEvent.press(screen.getByTestId('collect-submit'));

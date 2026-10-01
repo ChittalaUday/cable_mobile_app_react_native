@@ -3,7 +3,9 @@ import { CheckmarkCircle02Icon, Rotate01Icon } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
-import { Alert, Platform } from 'react-native';
+import { useTranslation } from 'react-i18next';
+
+import { dialogs } from '@/components/common/dialogs';
 import { Card, LoadError, Loading, ScreenHeader } from '@/components/common/shell';
 import { Button, colors, ScrollView, Text, View } from '@/components/ui';
 import { PERMISSIONS } from '@/constants/permissions';
@@ -31,6 +33,7 @@ function Row({ label, value }: { label: string; value: string }) {
 
 export function ReceiptView({ id }: { id: string }) {
   const router = useRouter();
+  const { t } = useTranslation();
   const { hasScope } = usePermissions();
   const { mutate: reverse, isPending: isReversing } = useReverseCollection();
 
@@ -56,6 +59,7 @@ export function ReceiptView({ id }: { id: string }) {
     return <LoadError onRetry={refetch} />;
 
   const isReversed = receipt.reversedById !== null;
+  const isEquipment = receipt.customerEquipmentId !== null;
   // Only a tenant-wide grant may unwind a receipt — a collector correcting
   // their own round is exactly what the rule is there to stop.
   const canReverse = hasScope(PERMISSIONS.PAYMENTS_UPDATE, 'ALL')
@@ -65,33 +69,23 @@ export function ReceiptView({ id }: { id: string }) {
   const submitReversal = (reason: string) => {
     reverse({ id: receipt.id, reason }, {
       onSuccess: () => refetch(),
-      onError: failure => Alert.alert('Not reversed', failure.message),
+      onError: failure => void dialogs.notify('Not reversed', failure.message),
     });
   };
 
-  // `Alert.prompt` is iOS-only. Android gets a confirmation with the reason it
-  // will be recorded under, rather than a prompt that silently never appears.
-  const confirmReverse = () => {
-    if (Platform.OS === 'ios') {
-      Alert.prompt(
-        'Reverse this receipt',
-        'The original stays on the record. Say why:',
-        (reason?: string) => {
-          if (reason != null && reason.trim() !== '')
-            submitReversal(reason.trim());
-        },
-      );
-      return;
-    }
+  // Both platforms ask for the reason now. This used to branch on `Platform`
+  // because `Alert.prompt` is iOS-only, so Android recorded every reversal
+  // under one canned sentence — an audit trail that said nothing.
+  const confirmReverse = async () => {
+    const reason = await dialogs.prompt({
+      title: 'Reverse this receipt',
+      message: 'The original stays on the record and both are audited. Say why:',
+      confirmLabel: 'Reverse',
+      prompt: { placeholder: 'Collected twice by mistake' },
+    });
 
-    Alert.alert(
-      'Reverse this receipt',
-      'The original stays on the record and both are audited.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Reverse', style: 'destructive', onPress: () => submitReversal('Reversed by an administrator') },
-      ],
-    );
+    if (reason !== null)
+      submitReversal(reason);
   };
 
   return (
@@ -118,10 +112,13 @@ export function ReceiptView({ id }: { id: string }) {
         </Card>
 
         <Card className="border border-border p-4">
-          <Row label="Account" value={receipt.serviceAccountNumber ?? '—'} />
-          <Row label="Dues paid" value={rupees(receipt.duesPaid)} />
+          <Row
+            label={isEquipment ? t('recharge.equipment') : 'Account'}
+            value={isEquipment ? (receipt.equipment?.serialNumber ?? receipt.equipment?.itemName ?? '—') : (receipt.serviceAccountNumber ?? '—')}
+          />
+          <Row label={isEquipment ? t('recharge.equipment_payment') : 'Dues paid'} value={rupees(receipt.duesPaid)} />
           {Number(receipt.accessoryAmount) !== 0 && <Row label="Accessories" value={rupees(receipt.accessoryAmount)} />}
-          <Row label="Balance after" value={rupees(receipt.balanceAfter)} />
+          {!isEquipment && <Row label="Balance after" value={rupees(receipt.balanceAfter)} />}
           <Row label="Method" value={receipt.method ?? '—'} />
           <Row label="Collected by" value={receipt.collectorName ?? '—'} />
           <Row label="When" value={new Date(receipt.collectedAt).toLocaleString('en-IN')} />

@@ -1,15 +1,12 @@
 import * as React from 'react';
+import { registryFor } from '@/lib/app-registry';
 import { usePermissions } from '@/lib/hooks/common/use-permissions';
-import { useAppRegistryStore } from '@/lib/hooks/stores/use-app-registry-store';
+import { useAuthStore } from '@/lib/hooks/stores/use-auth-store';
 
 export function useAppSearch(searchTerm: string) {
-  const items = useAppRegistryStore.use.items();
-  const fetchRegistry = useAppRegistryStore.use.fetchRegistry();
+  const role = useAuthStore.use.role();
   const { can } = usePermissions();
-
-  React.useEffect(() => {
-    fetchRegistry();
-  }, [fetchRegistry]);
+  const items = React.useMemo(() => registryFor(role), [role]);
 
   const results = React.useMemo(() => {
     const term = searchTerm.trim().toLowerCase();

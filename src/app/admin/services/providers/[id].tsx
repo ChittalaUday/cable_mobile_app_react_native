@@ -11,9 +11,10 @@ import { HugeiconsIcon } from '@hugeicons/react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as React from 'react';
-import { Alert, Linking, RefreshControl, TextInput } from 'react-native';
-
+import { Linking, RefreshControl, TextInput } from 'react-native';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
+
+import { dialogs } from '@/components/common/dialogs';
 import { Card, Loading, ScreenHeader } from '@/components/common/shell';
 import { getProviderBrand } from '@/components/services/provider-brand-utils';
 import {
@@ -194,7 +195,7 @@ export function ProviderDetailsScreen() {
     }
     catch (err) {
       setConfirmDelete(false);
-      Alert.alert('Could not delete', (err as Error).message);
+      void dialogs.notify('Could not delete', (err as Error).message);
     }
   };
 

@@ -4,9 +4,8 @@ import {
   Call02Icon,
   Comment01Icon,
   CreditCardIcon,
-  File01Icon,
   Location01Icon,
-  PencilEdit02Icon,
+  Package01Icon,
   Tv01Icon,
   Wifi01Icon,
 } from '@hugeicons/core-free-icons';
@@ -356,6 +355,38 @@ export function CustomerDetailsView({
   const displayName = customer.name || customer.customerCode || 'Customer';
   const hasDue = Number(customer.outstandingBalance) > 0;
 
+  /**
+   * What an operator does next from this page.
+   *
+   * Empty for a subscriber reading their own record: collecting is a staff act
+   * against a round, and fitting a box moves stock. "View Customer Details" and
+   * "Edit Customer" used to sit here with `onPress: () => {}` — a row that
+   * looks tappable and answers nothing is worse than no row.
+   */
+  const actions = role === undefined || role === 'customer'
+    ? []
+    : [
+        {
+          id: 'collect-payment',
+          title: 'Collect Payment',
+          icon: CreditCardIcon,
+          onPress: () => router.push(`/${role}/collect/${customer.id}`),
+        },
+        {
+          id: 'issue-equipment',
+          title: 'Issue Equipment',
+          icon: Package01Icon,
+          onPress: () => router.push({
+            pathname: `/${role}/inventory/issue`,
+            params: {
+              customerId: customer.id,
+              customerName: displayName,
+              customerCode: customer.customerCode ?? '',
+            },
+          }),
+        },
+      ];
+
   return (
     <View className="flex-1 bg-surface">
       {/* Top Header Bar */}
@@ -628,32 +659,17 @@ export function CustomerDetailsView({
         </View>
 
         {/* Quick Actions List Items (when role is provided) */}
-        {role
+        {actions.length > 0
           ? (
               <View className="mt-4 overflow-hidden rounded-2xl border border-border bg-card">
                 <Text className="border-b border-border/60 p-3.5 text-xs font-extrabold tracking-wider text-muted-foreground uppercase">
-                  Quick Actions (
-                  {role.toUpperCase()}
-                  )
+                  Quick Actions
                 </Text>
                 <View className="divide-y divide-border/60">
-                  {[
-                    // Collecting is a staff act. A subscriber reading their own
-                    // record has no round to record against, and there is no
-                    // `/customer/collect` route for the button to point at.
-                    ...(role === 'customer'
-                      ? []
-                      : [{
-                          id: 'add-payment',
-                          title: 'Collect Payment',
-                          icon: CreditCardIcon,
-                          onPress: () => router.push(`/${role}/collect/${customer.id}`),
-                        }]),
-                    { id: 'view-details', title: 'View Customer Details', icon: File01Icon, onPress: () => {} },
-                    { id: 'edit-customer', title: 'Edit Customer', icon: PencilEdit02Icon, onPress: () => {} },
-                  ].map(item => (
+                  {actions.map(item => (
                     <Pressable
                       key={item.id}
+                      accessibilityRole="button"
                       onPress={item.onPress}
                       className="flex-row items-center justify-between p-3.5 active:bg-muted/40"
                     >

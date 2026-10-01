@@ -36,13 +36,15 @@ export const PERMISSIONS = {
   STAFF_CREATE: 'staff.create',
   STAFF_UPDATE: 'staff.update',
 
-  // Complaints / Tickets
-  COMPLAINTS_VIEW: 'complaints.view',
-  COMPLAINTS_CREATE: 'complaints.create',
-  COMPLAINTS_UPDATE: 'complaints.update',
-  COMPLAINTS_ASSIGN: 'complaints.assign',
-  COMPLAINTS_RESOLVE: 'complaints.resolve',
-  COMPLAINTS_DELETE: 'complaints.delete',
+  // Complaints. The server calls them tickets, and these strings are matched
+  // against its grants verbatim — `complaints.*` matched nothing, so every
+  // guard behind them was silently closed.
+  TICKETS_VIEW: 'tickets.view',
+  TICKETS_CREATE: 'tickets.create',
+  TICKETS_UPDATE: 'tickets.update',
+  TICKETS_ASSIGN: 'tickets.assign',
+  TICKETS_RESOLVE: 'tickets.resolve',
+  TICKETS_DELETE: 'tickets.delete',
 
   // Payments
   PAYMENTS_VIEW: 'payments.view',
@@ -94,6 +96,11 @@ export const PERMISSIONS = {
   // Inventory
   INVENTORY_VIEW: 'inventory.view',
   INVENTORY_UPDATE: 'inventory.update',
+  INVENTORY_ISSUE: 'inventory.issue',
+
+  // Remotes & notifications
+  REMOTES_VIEW: 'remotes.view',
+  NOTIFICATIONS_SEND: 'notifications.send',
 
   // Reports
   REPORTS_VIEW: 'reports.view',

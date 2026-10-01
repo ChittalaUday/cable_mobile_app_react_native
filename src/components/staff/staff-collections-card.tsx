@@ -15,10 +15,15 @@ export function StaffCollectionsCard({ dashboard }: { dashboard: StaffDashboard 
 
   return (
     <View className="gap-4">
-      <View className="flex-row rounded-xl border border-border bg-card p-1">
-        <ScopeButton label={t('staff_dashboard.personal')} selected={scope === 'personal'} onPress={() => setScope('personal')} />
-        <ScopeButton label={t('staff_dashboard.team')} selected={scope === 'team'} disabled={!dashboard.team} onPress={() => setScope('team')} />
-      </View>
+      {/* The server sends team totals only to the crew's leader. */}
+      {dashboard.team
+        ? (
+            <View className="flex-row rounded-xl border border-border bg-card p-1">
+              <ScopeButton label={t('staff_dashboard.personal')} selected={scope === 'personal'} onPress={() => setScope('personal')} />
+              <ScopeButton label={t('staff_dashboard.team')} selected={scope === 'team'} onPress={() => setScope('team')} />
+            </View>
+          )
+        : null}
 
       <View className="gap-2 rounded-2xl bg-charcoal-900 p-5">
         <Text className="text-sm font-semibold text-primary-300">{scope === 'team' ? t('staff_dashboard.team_status') : t('staff_dashboard.personal_status')}</Text>

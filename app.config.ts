@@ -65,8 +65,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
     package: Env.EXPO_PUBLIC_PACKAGE,
     googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? './google-services.json',
-    // Android 13+ will not show a notification without the user granting this.
-    permissions: ['android.permission.POST_NOTIFICATIONS'],
+    permissions: [
+      // Android 13+ will not show a notification without the user granting this.
+      'android.permission.POST_NOTIFICATIONS',
+      // Reaching the paired receipt printer. Declared in the bt-printer module's
+      // manifest too; repeated here so the merged manifest is obvious from the
+      // config, and so `expo prebuild` keeps them across a clean.
+      'android.permission.BLUETOOTH_CONNECT',
+      'android.permission.BLUETOOTH_SCAN',
+    ],
   },
   web: {
     favicon: './assets/favicon.png',

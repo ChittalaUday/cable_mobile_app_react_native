@@ -8,6 +8,7 @@ import { Keyboard, StyleSheet } from 'react-native';
 import FlashMessage from 'react-native-flash-message';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
+import { DialogProvider } from '@/components/common/dialog-provider';
 import { useThemeConfig } from '@/components/ui/use-theme-config';
 import { logScreenView, setUserId as setAnalyticsUserId } from '@/lib/analytics';
 import { APIProvider, queryClient } from '@/lib/api';
@@ -150,7 +151,9 @@ function Providers({
         <ThemeProvider value={theme}>
           <APIProvider>
             <BottomSheetModalProvider>
-              {children}
+              <DialogProvider>
+                {children}
+              </DialogProvider>
             </BottomSheetModalProvider>
             <FlashMessage position="top" />
           </APIProvider>

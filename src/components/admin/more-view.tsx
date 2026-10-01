@@ -1,7 +1,9 @@
 import type { IconSvgElement } from '@hugeicons/react-native';
+import type { Href } from 'expo-router';
 import type { TintKey } from '@/components/common/shell';
 import {
   ArrowRight01Icon,
+  HeadsetIcon,
   Location01Icon,
   Logout01Icon,
   Package01Icon,
@@ -34,13 +36,7 @@ type NavItem = {
   subtitle: string;
   icon: IconSvgElement;
   tint: TintKey;
-  route:
-    | '/admin/services'
-    | '/admin/channels'
-    | '/admin/locations'
-    | '/admin/staff'
-    | '/admin/inventory'
-    | '/admin/profile';
+  route: Href;
 };
 
 const NAV_ITEMS: NavItem[] = [
@@ -85,6 +81,14 @@ const NAV_ITEMS: NavItem[] = [
     route: '/admin/inventory',
   },
   {
+    key: 'tickets',
+    title: 'Complaints',
+    subtitle: 'Faults raised, who holds them & what is still open',
+    icon: HeadsetIcon,
+    tint: 'red',
+    route: '/admin/tickets',
+  },
+  {
     key: 'profile',
     title: 'Profile',
     subtitle: 'Account details, settings, and security',
@@ -94,7 +98,17 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
-export function MoreView() {
+export type MoreNavItem = NavItem;
+
+export function MoreView({
+  items = NAV_ITEMS,
+  profileRoute = '/admin/profile',
+  subtitle = 'Manage services, network catalog, staff, and account',
+}: {
+  items?: NavItem[];
+  profileRoute?: Href;
+  subtitle?: string;
+}) {
   const router = useRouter();
   const user = useAuthStore.use.user();
   const role = useAuthStore.use.role();
@@ -115,7 +129,7 @@ export function MoreView() {
     <View className="flex-1 bg-surface">
       <ScreenHeader
         title="More"
-        subtitle="Manage services, network catalog, staff, and account"
+        subtitle={subtitle}
       />
 
       <ScrollView
@@ -126,7 +140,7 @@ export function MoreView() {
         <Card className="border border-border p-3.5">
           <Pressable
             accessibilityRole="button"
-            onPress={() => router.push('/admin/profile')}
+            onPress={() => router.push(profileRoute)}
             className="flex-row items-center justify-between"
           >
             <View className="flex-row items-center gap-3">
@@ -162,7 +176,7 @@ export function MoreView() {
         </Card>
 
         <Card className="gap-1 border border-border p-2">
-          {NAV_ITEMS.map((item, index) => (
+          {items.map((item, index) => (
             <Pressable
               key={item.key}
               accessibilityRole="button"

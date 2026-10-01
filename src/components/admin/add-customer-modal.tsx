@@ -1,30 +1,45 @@
+import type { CustomerDetail, Location } from '@/lib/api/types';
+import type { NormalizedPackage } from '@/lib/hooks/api/use-packages';
 import {
   AlertCircleIcon,
   Cancel01Icon,
   CheckmarkCircle02Icon,
   Tv01Icon,
   UserIcon,
-  Wifi01Icon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, ScrollView, TextInput, TouchableOpacity } from 'react-native';
+import { Modal, TextInput, TouchableOpacity } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Button, colors, Pressable, Text, View } from '@/components/ui';
 
-import { useCreateCustomer } from '@/lib/hooks/api/use-admin-dashboard';
+import { useCreateCustomer, useCustomers } from '@/lib/hooks/api/use-customers';
+import { useLocations } from '@/lib/hooks/api/use-locations';
 import { usePackages } from '@/lib/hooks/api/use-packages';
 import { useDismissKeyboardOnExit } from '@/lib/hooks/common/use-dismiss-keyboard';
 
 export type AddCustomerModalProps = {
   visible: boolean;
   onClose: () => void;
-  onSuccess?: () => void;
+  /** The subscriber that was registered, so the caller can open or refresh it. */
+  onSuccess?: (created: CustomerDetail) => void;
 };
 
-type StepKey = 1 | 2 | 3;
+type StepKey = 1 | 2;
 
+/** How many matching areas to offer at once. More than this means search harder. */
+const AREA_RESULTS = 8;
+
+/**
+ * Register a subscriber and fit their first connection, in one sheet.
+ *
+ * Two steps, not three. The package is picked from the tenant's own catalogue
+ * rather than typed, because its price, cycle and provider all come with it,
+ * and the area is picked from the location tree, because that is what decides
+ * who can see this customer afterwards. Hardware is not here at all: issuing a
+ * box moves stock and books a serial, which is the inventory flow's job.
+ */
 export function AddCustomerModal({ visible, onClose, onSuccess }: AddCustomerModalProps) {
   const { t } = useTranslation();
   const [step, setStep] = React.useState<StepKey>(1);
@@ -35,50 +50,39 @@ export function AddCustomerModal({ visible, onClose, onSuccess }: AddCustomerMod
   // going false rather than an unmount.
   useDismissKeyboardOnExit(visible);
 
-  // Step 1 Form State
   const [name, setName] = React.useState('');
   const [phone, setPhone] = React.useState('');
   const [address, setAddress] = React.useState('');
-  const [email, setEmail] = React.useState('');
 
-  // Step 2 Form State
-  const [serviceType, setServiceType] = React.useState<'cable' | 'broadband'>('cable');
-  const [packageName, setPackageName] = React.useState('');
-  const [monthlyPrice, setMonthlyPrice] = React.useState('350');
-  const [speedMbps, setSpeedMbps] = React.useState('');
-  const [packageId, setPackageId] = React.useState<string | undefined>();
+  const digits = phone.replace(/\D/g, '');
 
-  // Step 3 Form State
-  const [stbNumber, setStbNumber] = React.useState('');
-  const [vcNumber, setVcNumber] = React.useState('');
-  const [locationLabel, setLocationLabel] = React.useState('Living Room');
-
-  const createCustomerMutation = useCreateCustomer();
-  const { data: allPackages = [] } = usePackages();
-
-  /*
-   * Every plan on sale.
+  /**
+   * Is this number already on the book?
    *
-   * This used to narrow by the cable/broadband toggle below, which worked while
-   * a package carried a fixed `serviceType`. Services are the tenant's own now,
-   * so there is nothing to match that toggle against — the toggle still labels
-   * the connection itself, but the catalogue is no longer filtered by it.
-   *
-   * ponytail: filter by service once this screen is wired to the real customer
-   * API, which will know which service the connection is for.
+   * A second line for the same person belongs on their existing record as
+   * another connection — registering them twice splits one household's balance
+   * across two accounts, and nothing afterwards puts it back together. It warns
+   * rather than blocks: a shop and the flat above it really do share a handset.
    */
-  const catalogue = React.useMemo(
-    () => allPackages.filter(pkg => pkg.active),
-    [allPackages],
-  );
+  const { data: phoneMatches } = useCustomers({
+    variables: { q: digits },
+    enabled: digits.length === 10,
+  });
+  const duplicate = digits.length === 10
+    ? (phoneMatches?.pages[0]?.items ?? []).find(item => item.phone === digits) ?? null
+    : null;
 
-  const selectCataloguePackage = (pkg: (typeof allPackages)[number]) => {
-    setPackageId(pkg.id);
-    setPackageName(pkg.name);
-    setMonthlyPrice(String(pkg.monthlyPrice));
-    if (pkg.speedMbps)
-      setSpeedMbps(String(pkg.speedMbps));
-  };
+  const [packageId, setPackageId] = React.useState<string | null>(null);
+  const [areaQuery, setAreaQuery] = React.useState('');
+  const [area, setArea] = React.useState<Location | null>(null);
+
+  const { mutateAsync: createCustomer, isPending } = useCreateCustomer();
+  const { data: allPackages } = usePackages({ variables: { status: 'active' } });
+  const { data: areaPage } = useLocations({ variables: areaQuery.trim() === '' ? undefined : { q: areaQuery.trim() } });
+
+  const catalogue = (allPackages ?? []).filter(item => item.active);
+  const chosen = catalogue.find(item => item.id === packageId) ?? null;
+  const areas = (areaPage?.items ?? []).slice(0, AREA_RESULTS);
 
   const resetForm = () => {
     setStep(1);
@@ -87,15 +91,9 @@ export function AddCustomerModal({ visible, onClose, onSuccess }: AddCustomerMod
     setName('');
     setPhone('');
     setAddress('');
-    setEmail('');
-    setServiceType('cable');
-    setPackageName('');
-    setMonthlyPrice('350');
-    setSpeedMbps('');
-    setPackageId(undefined);
-    setStbNumber('');
-    setVcNumber('');
-    setLocationLabel('Living Room');
+    setPackageId(null);
+    setAreaQuery('');
+    setArea(null);
   };
 
   const handleClose = () => {
@@ -105,87 +103,62 @@ export function AddCustomerModal({ visible, onClose, onSuccess }: AddCustomerMod
 
   const validateStep1 = (): boolean => {
     const errs: Record<string, string> = {};
-    if (!name.trim()) {
+    if (!name.trim())
       errs.name = t('add_customer.name_required', 'Full name is required');
-    }
-    const cleanPhone = phone.trim().replace(/\D/g, '');
-    if (!cleanPhone || cleanPhone.length < 10) {
+
+    if (digits.length !== 10)
       errs.phone = t('add_customer.phone_required', 'Valid 10-digit phone number is required');
-    }
-    if (!address.trim()) {
+
+    if (!address.trim())
       errs.address = t('add_customer.address_required', 'Address / Line Area is required');
-    }
+
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
 
   const validateStep2 = (): boolean => {
     const errs: Record<string, string> = {};
-    if (!packageName.trim()) {
-      errs.packageName = t('add_customer.package_required', 'Package name is required');
-    }
-    setErrors(errs);
-    return Object.keys(errs).length === 0;
-  };
+    if (chosen === null)
+      errs.packageId = t('add_customer.package_required', 'Pick the package this connection is on');
 
-  const validateStep3 = (): boolean => {
-    const errs: Record<string, string> = {};
-    if (!stbNumber.trim() && !vcNumber.trim()) {
-      errs.stbOrVc = t('add_customer.stb_or_vc_required', 'Please enter STB serial or VC card number');
-    }
+    if (area === null)
+      errs.area = t('add_customer.area_required', 'Pick the area the line is fitted in');
+
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
 
   const handleNext = () => {
-    if (step === 1 && validateStep1()) {
+    if (validateStep1())
       setStep(2);
-      if (!packageName) {
-        setPackageName(serviceType === 'cable' ? 'Standard Cable HD Pack' : '100Mbps Fiber Broadband');
-      }
-    }
-    else if (step === 2 && validateStep2()) {
-      setStep(3);
-    }
-  };
-
-  const handleBack = () => {
-    setErrors({});
-    if (step > 1) {
-      setStep((step - 1) as StepKey);
-    }
   };
 
   const handleSubmit = async () => {
-    if (!validateStep3()) {
+    if (!validateStep2() || chosen === null || area === null)
       return;
-    }
-
-    const payload = {
-      name: name.trim(),
-      phone: phone.trim(),
-      email: email.trim() || undefined,
-      address: address.trim(),
-      serviceType,
-      packageName: packageName.trim() || (serviceType === 'broadband' ? 'Fiber 100Mbps' : 'HD Starter Pack'),
-      packageId,
-      monthlyPrice: Number(monthlyPrice) || 350,
-      speedMbps: speedMbps ? Number(speedMbps) : undefined,
-      stbNumber: stbNumber.trim() || undefined,
-      vcNumber: vcNumber.trim() || undefined,
-      locationLabel: locationLabel.trim() || 'Living Room',
-    };
 
     try {
-      await createCustomerMutation.mutateAsync({ payload });
+      const created = await createCustomer({
+        payload: {
+          name: name.trim(),
+          phone: digits,
+          address: address.trim(),
+          connection: {
+            packageId: chosen.id,
+            locationId: area.id,
+            installationAddress: address.trim(),
+          },
+        },
+      });
+
       setSuccessMessage(t('add_customer.success', 'Customer added successfully!'));
       setTimeout(() => {
-        onSuccess?.();
+        onSuccess?.(created);
         handleClose();
       }, 1000);
     }
-    catch (err) {
-      setErrors({ submit: (err as Error).message || 'Failed to add customer. Please try again.' });
+    catch (failure) {
+      setErrors({ submit: (failure as Error).message || 'Failed to add customer. Please try again.' });
     }
   };
 
@@ -198,27 +171,24 @@ export function AddCustomerModal({ visible, onClose, onSuccess }: AddCustomerMod
     >
       <View className="flex-1 justify-end bg-black/60">
         <View className="max-h-[90%] rounded-t-3xl border-t border-border bg-surface">
-          {/* Header Bar */}
           <View className="flex-row items-center justify-between border-b border-border/60 px-5 py-4">
             <View>
               <Text className="text-xl font-extrabold text-foreground">
                 {t('add_customer.title', 'Add New Customer')}
               </Text>
               <Text className="text-xs text-muted-foreground">
-                {t('add_customer.subtitle', 'Register subscriber, service plan, and hardware box')}
+                {t('add_customer.subtitle', 'Register the subscriber and their first connection')}
               </Text>
             </View>
-            <TouchableOpacity onPress={handleClose} hitSlop={12} className="rounded-full bg-neutral-100 p-2 dark:bg-neutral-800">
+            <TouchableOpacity onPress={handleClose} hitSlop={12} testID="add-customer-close" accessibilityRole="button" accessibilityLabel={t('add_customer.close', 'Close')} className="rounded-full bg-neutral-100 p-2 dark:bg-neutral-800">
               <HugeiconsIcon icon={Cancel01Icon} size={20} color={colors.neutral[500]} />
             </TouchableOpacity>
           </View>
 
-          {/* Wizard Progress Steps Indicator */}
           <View className="flex-row border-b border-border/40 bg-neutral-50 px-4 py-3 dark:bg-neutral-900/40">
             {[
               { key: 1, label: t('add_customer.step1_title', '1. Customer Details'), icon: UserIcon },
-              { key: 2, label: t('add_customer.step2_title', '2. Service Details'), icon: serviceType === 'broadband' ? Wifi01Icon : Tv01Icon },
-              { key: 3, label: t('add_customer.step3_title', '3. Box Details'), icon: CheckmarkCircle02Icon },
+              { key: 2, label: t('add_customer.step2_title', '2. Connection'), icon: Tv01Icon },
             ].map((item) => {
               const isActive = step === item.key;
               const isDone = step > item.key;
@@ -255,30 +225,22 @@ export function AddCustomerModal({ visible, onClose, onSuccess }: AddCustomerMod
             })}
           </View>
 
-          {/* Form Step Content */}
           <KeyboardAwareScrollView
             style={{ paddingHorizontal: 20, paddingVertical: 16 }}
             contentContainerStyle={{ gap: 16, paddingBottom: 32 }}
             keyboardShouldPersistTaps="handled"
             bottomOffset={24}
           >
-            {successMessage
-              ? (
-                  <View className="items-center justify-center gap-3 py-10">
-                    <HugeiconsIcon icon={CheckmarkCircle02Icon} size={48} color={colors.success[500]} />
-                    <Text className="text-lg font-bold text-success-600">{successMessage}</Text>
-                  </View>
-                )
-              : null}
+            {successMessage !== '' && (
+              <View className="items-center justify-center gap-3 py-10">
+                <HugeiconsIcon icon={CheckmarkCircle02Icon} size={48} color={colors.success[500]} />
+                <Text className="text-lg font-bold text-success-600">{successMessage}</Text>
+              </View>
+            )}
 
-            {!successMessage && step === 1 && (
+            {successMessage === '' && step === 1 && (
               <View className="gap-3.5">
-                <View className="gap-1">
-                  <Text className="text-sm font-bold text-foreground">
-                    {t('add_customer.full_name', 'Full Name')}
-                    {' '}
-                    <Text className="text-danger-500">*</Text>
-                  </Text>
+                <Field label={t('add_customer.full_name', 'Full Name')} required error={errors.name}>
                   <TextInput
                     value={name}
                     onChangeText={setName}
@@ -286,15 +248,9 @@ export function AddCustomerModal({ visible, onClose, onSuccess }: AddCustomerMod
                     placeholderTextColor={colors.neutral[400]}
                     className="rounded-xl border border-border bg-card px-4 py-3 text-base text-foreground"
                   />
-                  {errors.name && <Text className="text-xs font-semibold text-danger-500">{errors.name}</Text>}
-                </View>
+                </Field>
 
-                <View className="gap-1">
-                  <Text className="text-sm font-bold text-foreground">
-                    {t('add_customer.phone', 'Mobile Number')}
-                    {' '}
-                    <Text className="text-danger-500">*</Text>
-                  </Text>
+                <Field label={t('add_customer.phone', 'Mobile Number')} required error={errors.phone}>
                   <TextInput
                     value={phone}
                     onChangeText={setPhone}
@@ -304,15 +260,20 @@ export function AddCustomerModal({ visible, onClose, onSuccess }: AddCustomerMod
                     placeholderTextColor={colors.neutral[400]}
                     className="rounded-xl border border-border bg-card px-4 py-3 text-base text-foreground"
                   />
-                  {errors.phone && <Text className="text-xs font-semibold text-danger-500">{errors.phone}</Text>}
-                </View>
+                  {duplicate !== null && (
+                    <View className="mt-1 flex-row items-center gap-1.5 rounded-lg bg-warning-50 p-2.5 dark:bg-warning-900/20">
+                      <HugeiconsIcon icon={AlertCircleIcon} size={16} color={colors.warning[500]} />
+                      <Text className="flex-1 text-xs font-semibold text-warning-700 dark:text-warning-400" testID="add-customer-duplicate-phone">
+                        {t('add_customer.duplicate_phone', 'Already registered')}
+                        {': '}
+                        {duplicate.name ?? duplicate.customerCode ?? t('add_customer.duplicate_phone_fallback', 'an existing customer')}
+                        {duplicate.customerCode == null || duplicate.name == null ? '' : ` (${duplicate.customerCode})`}
+                      </Text>
+                    </View>
+                  )}
+                </Field>
 
-                <View className="gap-1">
-                  <Text className="text-sm font-bold text-foreground">
-                    {t('add_customer.address', 'Address / Line Area')}
-                    {' '}
-                    <Text className="text-danger-500">*</Text>
-                  </Text>
+                <Field label={t('add_customer.address', 'Address / Line Area')} required error={errors.address}>
                   <TextInput
                     value={address}
                     onChangeText={setAddress}
@@ -322,243 +283,104 @@ export function AddCustomerModal({ visible, onClose, onSuccess }: AddCustomerMod
                     placeholderTextColor={colors.neutral[400]}
                     className="rounded-xl border border-border bg-card px-4 py-3 text-base text-foreground"
                   />
-                  {errors.address && <Text className="text-xs font-semibold text-danger-500">{errors.address}</Text>}
-                </View>
-
-                <View className="gap-1">
-                  <Text className="text-sm font-bold text-foreground">
-                    {t('add_customer.email', 'Email Address (Optional)')}
-                  </Text>
-                  <TextInput
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    placeholder={t('add_customer.email_placeholder', 'e.g. ramesh@example.com')}
-                    placeholderTextColor={colors.neutral[400]}
-                    className="rounded-xl border border-border bg-card px-4 py-3 text-base text-foreground"
-                  />
-                </View>
+                </Field>
               </View>
             )}
 
-            {!successMessage && step === 2 && (
+            {successMessage === '' && step === 2 && (
               <View className="gap-3.5">
-                <View className="gap-1">
-                  <Text className="text-sm font-bold text-foreground">
-                    {t('add_customer.service_type', 'Service Type')}
-                  </Text>
-                  <View className="flex-row gap-3">
-                    <Pressable
-                      onPress={() => {
-                        setServiceType('cable');
-                        setPackageId(undefined);
-                        if (!packageName || packageName.includes('Broadband')) {
-                          setPackageName('Standard Cable HD Pack');
-                        }
-                      }}
-                      className={`flex-1 flex-row items-center justify-center gap-2 rounded-xl border p-3.5 ${
-                        serviceType === 'cable'
-                          ? 'border-primary-500 bg-primary-500/10'
-                          : 'border-border bg-card'
-                      }`}
-                    >
-                      <HugeiconsIcon icon={Tv01Icon} size={20} color={serviceType === 'cable' ? colors.primary[600] : colors.neutral[500]} />
-                      <Text className={`text-sm font-bold ${serviceType === 'cable' ? 'text-primary-600' : 'text-foreground'}`}>
-                        {t('add_customer.cable_tv', 'Cable TV')}
-                      </Text>
-                    </Pressable>
-
-                    <Pressable
-                      onPress={() => {
-                        setServiceType('broadband');
-                        setPackageId(undefined);
-                        if (!packageName || packageName.includes('Cable')) {
-                          setPackageName('100Mbps Fiber Broadband');
-                        }
-                      }}
-                      className={`flex-1 flex-row items-center justify-center gap-2 rounded-xl border p-3.5 ${
-                        serviceType === 'broadband'
-                          ? 'border-primary-500 bg-primary-500/10'
-                          : 'border-border bg-card'
-                      }`}
-                    >
-                      <HugeiconsIcon icon={Wifi01Icon} size={20} color={serviceType === 'broadband' ? colors.primary[600] : colors.neutral[500]} />
-                      <Text className={`text-sm font-bold ${serviceType === 'broadband' ? 'text-primary-600' : 'text-foreground'}`}>
-                        {t('add_customer.broadband', 'Broadband / Fiber')}
-                      </Text>
-                    </Pressable>
-                  </View>
-                </View>
-
-                {catalogue.length > 0
-                  ? (
-                      <View className="gap-1.5">
-                        <Text className="text-sm font-bold text-foreground">
-                          {t('add_customer.choose_package', 'Choose from Packages & Plans')}
+                <Field label={t('add_customer.choose_package', 'Package')} required error={errors.packageId}>
+                  {catalogue.length === 0
+                    ? (
+                        <Text className="text-xs text-muted-foreground">
+                          {t('add_customer.no_packages', 'No active packages yet. Add one under Packages first.')}
                         </Text>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2">
-                          {catalogue.map(pkg => (
-                            <Pressable
-                              key={pkg.id}
-                              accessibilityRole="button"
-                              onPress={() => selectCataloguePackage(pkg)}
-                              className={`rounded-xl border px-3.5 py-2.5 ${
-                                packageId === pkg.id ? 'border-primary-500 bg-primary-500/10' : 'border-border bg-card'
-                              }`}
-                            >
-                              <Text className={`text-xs font-extrabold ${packageId === pkg.id ? 'text-primary-600' : 'text-foreground'}`}>
-                                {pkg.name}
-                              </Text>
-                              <Text className="text-[11px] font-semibold text-muted-foreground">
-                                {`\u20B9${pkg.monthlyPrice}${pkg.durationMonths > 1 ? ` / ${pkg.durationMonths} mo` : ' / mo'}`}
-                              </Text>
-                            </Pressable>
+                      )
+                    : (
+                        <View className="gap-2">
+                          {catalogue.map(item => (
+                            <PackageRow
+                              key={item.id}
+                              item={item}
+                              selected={item.id === packageId}
+                              onPress={() => setPackageId(item.id)}
+                            />
                           ))}
-                        </ScrollView>
-                      </View>
-                    )
-                  : null}
+                        </View>
+                      )}
+                </Field>
 
-                <View className="gap-1">
-                  <Text className="text-sm font-bold text-foreground">
-                    {t('add_customer.package_name', 'Plan / Package Name')}
-                    {' '}
-                    <Text className="text-danger-500">*</Text>
-                  </Text>
+                <Field label={t('add_customer.area', 'Area the line is fitted in')} required error={errors.area}>
                   <TextInput
-                    value={packageName}
-                    onChangeText={(text) => {
-                      setPackageName(text);
-                      setPackageId(undefined);
-                    }}
-                    placeholder={t('add_customer.package_name_placeholder', 'e.g. Standard HD Pack or 100Mbps')}
+                    value={areaQuery}
+                    onChangeText={setAreaQuery}
+                    placeholder={t('add_customer.area_placeholder', 'Search an area or block')}
                     placeholderTextColor={colors.neutral[400]}
+                    autoCorrect={false}
                     className="rounded-xl border border-border bg-card px-4 py-3 text-base text-foreground"
+                    testID="add-customer-area-search"
                   />
-                  {errors.packageName && <Text className="text-xs font-semibold text-danger-500">{errors.packageName}</Text>}
-                </View>
-
-                <View className="flex-row gap-3">
-                  <View className="flex-1 gap-1">
-                    <Text className="text-sm font-bold text-foreground">
-                      {t('add_customer.monthly_price', 'Monthly Charge (₹)')}
-                    </Text>
-                    <TextInput
-                      value={monthlyPrice}
-                      onChangeText={setMonthlyPrice}
-                      keyboardType="numeric"
-                      placeholder={t('add_customer.monthly_price_placeholder', 'e.g. 350')}
-                      placeholderTextColor={colors.neutral[400]}
-                      className="rounded-xl border border-border bg-card px-4 py-3 text-base text-foreground"
-                    />
+                  <View className="mt-2 gap-2">
+                    {areas.length === 0
+                      ? (
+                          <Text className="text-xs text-muted-foreground">
+                            {t('add_customer.no_areas', 'No area matches that.')}
+                          </Text>
+                        )
+                      : areas.map(node => (
+                          <Pressable
+                            key={node.id}
+                            accessibilityRole="radio"
+                            accessibilityState={{ selected: node.id === area?.id }}
+                            onPress={() => setArea(node)}
+                            className={`rounded-xl border px-3.5 py-2.5 ${
+                              node.id === area?.id ? 'border-primary-500 bg-primary-500/10' : 'border-border bg-card'
+                            }`}
+                          >
+                            <Text className="text-sm font-bold text-foreground" numberOfLines={1}>{node.name}</Text>
+                            <Text className="text-[11px] text-muted-foreground" numberOfLines={1}>{node.path}</Text>
+                          </Pressable>
+                        ))}
                   </View>
+                </Field>
 
-                  {serviceType === 'broadband' && (
-                    <View className="flex-1 gap-1">
-                      <Text className="text-sm font-bold text-foreground">
-                        {t('add_customer.speed', 'Speed (Mbps)')}
-                      </Text>
-                      <TextInput
-                        value={speedMbps}
-                        onChangeText={setSpeedMbps}
-                        keyboardType="numeric"
-                        placeholder={t('add_customer.speed_placeholder', 'e.g. 100')}
-                        placeholderTextColor={colors.neutral[400]}
-                        className="rounded-xl border border-border bg-card px-4 py-3 text-base text-foreground"
-                      />
-                    </View>
-                  )}
-                </View>
-              </View>
-            )}
-
-            {!successMessage && step === 3 && (
-              <View className="gap-3.5">
-                <View className="gap-1">
-                  <Text className="text-sm font-bold text-foreground">
-                    {t('add_customer.stb_number', 'STB Serial Number')}
-                  </Text>
-                  <TextInput
-                    value={stbNumber}
-                    onChangeText={setStbNumber}
-                    placeholder={t('add_customer.stb_number_placeholder', 'e.g. STB987654321')}
-                    placeholderTextColor={colors.neutral[400]}
-                    className="rounded-xl border border-border bg-card px-4 py-3 text-base text-foreground"
-                  />
-                </View>
-
-                <View className="gap-1">
-                  <Text className="text-sm font-bold text-foreground">
-                    {t('add_customer.vc_number', 'VC / Smart Card Number')}
-                  </Text>
-                  <TextInput
-                    value={vcNumber}
-                    onChangeText={setVcNumber}
-                    placeholder={t('add_customer.vc_number_placeholder', 'e.g. VC001234567')}
-                    placeholderTextColor={colors.neutral[400]}
-                    className="rounded-xl border border-border bg-card px-4 py-3 text-base text-foreground"
-                  />
-                </View>
-
-                {errors.stbOrVc && (
+                {errors.submit != null && (
                   <View className="flex-row items-center gap-1.5 rounded-lg bg-danger-50 p-2.5 dark:bg-danger-900/20">
                     <HugeiconsIcon icon={AlertCircleIcon} size={16} color={colors.danger[500]} />
-                    <Text className="text-xs font-semibold text-danger-500">{errors.stbOrVc}</Text>
+                    <Text className="text-xs font-semibold text-danger-500">{errors.submit}</Text>
                   </View>
-                )}
-
-                <View className="gap-1">
-                  <Text className="text-sm font-bold text-foreground">
-                    {t('add_customer.location_label', 'Box Location')}
-                  </Text>
-                  <TextInput
-                    value={locationLabel}
-                    onChangeText={setLocationLabel}
-                    placeholder={t('add_customer.location_label_placeholder', 'e.g. Living Room, Bedroom')}
-                    placeholderTextColor={colors.neutral[400]}
-                    className="rounded-xl border border-border bg-card px-4 py-3 text-base text-foreground"
-                  />
-                </View>
-
-                {errors.submit && (
-                  <Text className="text-xs font-semibold text-danger-500">{errors.submit}</Text>
                 )}
               </View>
             )}
           </KeyboardAwareScrollView>
 
-          {/* Action Footer Bar */}
-          {!successMessage && (
+          {successMessage === '' && (
             <View className="flex-row items-center gap-3 border-t border-border/60 bg-surface px-5 py-4">
-              {step > 1
-                ? (
-                    <View className="flex-1">
-                      <Button
-                        label={t('add_customer.back', 'Back')}
-                        variant="outline"
-                        size="lg"
-                        onPress={handleBack}
-                      />
-                    </View>
-                  )
-                : null}
+              {step > 1 && (
+                <View className="flex-1">
+                  <Button
+                    label={t('add_customer.back', 'Back')}
+                    variant="outline"
+                    size="lg"
+                    onPress={() => {
+                      setErrors({});
+                      setStep(1);
+                    }}
+                  />
+                </View>
+              )}
 
               <View className="flex-1">
-                {step < 3
-                  ? (
-                      <Button
-                        label={t('add_customer.next', 'Next Step')}
-                        size="lg"
-                        onPress={handleNext}
-                      />
-                    )
+                {step === 1
+                  ? <Button label={t('add_customer.next', 'Next Step')} size="lg" onPress={handleNext} />
                   : (
                       <Button
-                        label={createCustomerMutation.isPending ? t('add_customer.submitting', 'Creating Customer...') : t('add_customer.submit', 'Create Customer')}
+                        label={isPending
+                          ? t('add_customer.submitting', 'Creating Customer...')
+                          : t('add_customer.submit', 'Create Customer')}
                         size="lg"
-                        disabled={createCustomerMutation.isPending}
-                        onPress={handleSubmit}
+                        disabled={isPending}
+                        onPress={() => void handleSubmit()}
                       />
                     )}
               </View>
@@ -567,5 +389,50 @@ export function AddCustomerModal({ visible, onClose, onSuccess }: AddCustomerMod
         </View>
       </View>
     </Modal>
+  );
+}
+
+function Field({ label, required = false, error, children }: {
+  label: string;
+  required?: boolean;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <View className="gap-1">
+      <Text className="text-sm font-bold text-foreground">
+        {label}
+        {required && <Text className="text-danger-500"> *</Text>}
+      </Text>
+      {children}
+      {error != null && <Text className="text-xs font-semibold text-danger-500">{error}</Text>}
+    </View>
+  );
+}
+
+function PackageRow({ item, selected, onPress }: {
+  item: NormalizedPackage;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      className={`flex-row items-center justify-between gap-2 rounded-xl border px-3.5 py-2.5 ${
+        selected ? 'border-primary-500 bg-primary-500/10' : 'border-border bg-card'
+      }`}
+    >
+      <View className="min-w-0 flex-1">
+        <Text className="text-sm font-extrabold text-foreground" numberOfLines={1}>{item.name}</Text>
+        {item.providerName != null && (
+          <Text className="text-[11px] text-muted-foreground" numberOfLines={1}>{item.providerName}</Text>
+        )}
+      </View>
+      <Text className="text-xs font-bold text-primary-600">
+        {`₹${item.monthlyPrice} / ${item.billingCycle}`}
+      </Text>
+    </Pressable>
   );
 }

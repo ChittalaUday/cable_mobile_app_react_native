@@ -22,8 +22,8 @@ describe('access-compiler', () => {
         enabled: true,
         permissions: {
           [PERMISSIONS.CUSTOMERS_VIEW]: { scope: 'LOCATION' },
-          [PERMISSIONS.COMPLAINTS_VIEW]: { scope: 'ASSIGNED' },
-          [PERMISSIONS.COMPLAINTS_RESOLVE]: { scope: 'ASSIGNED' },
+          [PERMISSIONS.TICKETS_VIEW]: { scope: 'ASSIGNED' },
+          [PERMISSIONS.TICKETS_RESOLVE]: { scope: 'ASSIGNED' },
         },
       },
       {
@@ -54,7 +54,7 @@ describe('access-compiler', () => {
       expect(access.uid).toBe('user_1');
       expect(access.version).toBe(1);
       expect(access.permissions[PERMISSIONS.CUSTOMERS_VIEW]).toBe('ALL');
-      expect(access.permissions[PERMISSIONS.COMPLAINTS_VIEW]).toBe('ASSIGNED');
+      expect(access.permissions[PERMISSIONS.TICKETS_VIEW]).toBe('ASSIGNED');
       expect(access.permissions[PERMISSIONS.REPORTS_VIEW]).toBe('ALL');
       expect(access.locationIds).toEqual({ loc_01: true, loc_02: true });
       expect(access.areaIds).toEqual({ area_01: true });
@@ -100,7 +100,7 @@ describe('access-compiler', () => {
       teamId: 'team_a',
       permissions: {
         [PERMISSIONS.CUSTOMERS_VIEW]: 'LOCATION' as const,
-        [PERMISSIONS.COMPLAINTS_RESOLVE]: 'ASSIGNED' as const,
+        [PERMISSIONS.TICKETS_RESOLVE]: 'ASSIGNED' as const,
         [PERMISSIONS.REPORTS_VIEW]: 'ALL' as const,
         [PERMISSIONS.INVENTORY_VIEW]: 'OWN' as const,
         [PERMISSIONS.ASSETS_VIEW]: 'TEAM' as const,
@@ -128,8 +128,8 @@ describe('access-compiler', () => {
     });
 
     it('evaluates ASSIGNED scope correctly', () => {
-      expect(evaluateScopeAccess(sampleAccess, PERMISSIONS.COMPLAINTS_RESOLVE, { assignedTo: 'user_1' })).toBe(true);
-      expect(evaluateScopeAccess(sampleAccess, PERMISSIONS.COMPLAINTS_RESOLVE, { assignedTo: 'other_user' })).toBe(false);
+      expect(evaluateScopeAccess(sampleAccess, PERMISSIONS.TICKETS_RESOLVE, { assignedTo: 'user_1' })).toBe(true);
+      expect(evaluateScopeAccess(sampleAccess, PERMISSIONS.TICKETS_RESOLVE, { assignedTo: 'other_user' })).toBe(false);
     });
 
     it('evaluates OWN scope correctly', () => {

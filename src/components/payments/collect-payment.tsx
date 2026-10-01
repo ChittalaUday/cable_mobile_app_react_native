@@ -1,4 +1,4 @@
-import type { CustomerSubscription, PaymentMethod } from '@/lib/api/types';
+import type { CustomerSubscription, PaymentEntryMethod } from '@/lib/api/types';
 import type { RecordCollectionPayload } from '@/lib/hooks/api/use-payments';
 import type { CollectionFix } from '@/lib/hooks/common/use-collection-fix';
 import {
@@ -11,21 +11,24 @@ import {
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
-import { Alert } from 'react-native';
+
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { dialogs } from '@/components/common/dialogs';
 import { Card, LoadError, Loading, ScreenHeader } from '@/components/common/shell';
 import {
   Button,
   colors,
   Input,
   Pressable,
-  ScrollView,
   Text,
   View,
 } from '@/components/ui';
+import { PAYMENT_METHOD_LABELS, PAYMENT_METHODS } from '@/lib/constants/billing';
 import { useCustomer } from '@/lib/hooks/api/use-customers';
 import { useInventoryStock } from '@/lib/hooks/api/use-inventory';
 import { newCollectionReference, useRecordCollection } from '@/lib/hooks/api/use-payments';
 import { fixPayload, useCollectionFix } from '@/lib/hooks/common/use-collection-fix';
+import { rupeesExact as rupees } from '@/lib/utils/admin-format';
 
 /**
  * The three outcomes a collector reports. `amount` is what changes between
@@ -40,17 +43,7 @@ const OUTCOMES = [
 
 type OutcomeChoice = (typeof OUTCOMES)[number]['id'];
 
-const METHODS: { id: PaymentMethod; label: string }[] = [
-  { id: 'cash', label: 'Cash' },
-  { id: 'upi', label: 'UPI' },
-  { id: 'card', label: 'Card' },
-  { id: 'bank_transfer', label: 'Bank' },
-  { id: 'cheque', label: 'Cheque' },
-];
-
 type AccessoryLine = { catalogId: string; name: string; quantity: number; unitPrice: string };
-
-const rupees = (value: string | number) => `₹${Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 /** Says plainly whether this receipt will carry a position, and how good it is. */
 function fixLabel(fix: CollectionFix): string {
@@ -82,7 +75,7 @@ export function CollectPaymentScreen({ customerId, basePath }: {
 
   const [outcome, setOutcome] = React.useState<OutcomeChoice>('full');
   const [typedAmount, setTypedAmount] = React.useState('');
-  const [method, setMethod] = React.useState<PaymentMethod>('cash');
+  const [method, setMethod] = React.useState<PaymentEntryMethod>('cash');
   const [subscriptionIndex, setSubscriptionIndex] = React.useState(0);
   const [accessories, setAccessories] = React.useState<AccessoryLine[]>([]);
   const [reason, setReason] = React.useState('');
@@ -126,7 +119,7 @@ export function CollectPaymentScreen({ customerId, basePath }: {
 
   const submit = () => {
     if (outcome === 'none' && reason.trim() === '') {
-      Alert.alert('Reason needed', 'Say why nothing was collected — it is the part of the round an operator actually reads.');
+      void dialogs.notify('Reason needed', 'Say why nothing was collected — it is the part of the round an operator actually reads.');
       return;
     }
 
@@ -149,7 +142,7 @@ export function CollectPaymentScreen({ customerId, basePath }: {
         router.replace(`${basePath}/receipts/${receipt.id}`);
       },
       onError: (failure) => {
-        Alert.alert('Not recorded', failure.message || 'The payment was not recorded. Nothing was taken off the account.');
+        void dialogs.notify('Not recorded', failure.message || 'The payment was not recorded. Nothing was taken off the account.');
       },
     });
   };
@@ -164,7 +157,14 @@ export function CollectPaymentScreen({ customerId, basePath }: {
     <View className="flex-1 bg-surface">
       <ScreenHeader title="Collect payment" subtitle={customer.name ?? customer.customerCode ?? 'Customer'} showBack withSafeArea />
 
-      <ScrollView className="flex-1" contentContainerClassName="p-4 pb-24 gap-4" keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ gap: 16, padding: 16, paddingBottom: 96 }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        bottomOffset={24}
+        showsVerticalScrollIndicator={false}
+      >
         <Card className="gap-1 border border-border p-4">
           <Text className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Outstanding</Text>
           <Text className="text-3xl font-black text-foreground">{rupees(due)}</Text>
@@ -223,6 +223,7 @@ export function CollectPaymentScreen({ customerId, basePath }: {
                     onChangeText={setTypedAmount}
                     editable={outcome === 'partial'}
                     keyboardType="decimal-pad"
+                    returnKeyType="done"
                     placeholder="0.00"
                     testID="collect-amount"
                   />
@@ -231,15 +232,15 @@ export function CollectPaymentScreen({ customerId, basePath }: {
                 <View className="gap-1.5">
                   <Text className="text-xs font-semibold text-foreground">Paid by</Text>
                   <View className="flex-row flex-wrap gap-2">
-                    {METHODS.map(option => (
+                    {PAYMENT_METHODS.map(option => (
                       <Pressable
-                        key={option.id}
+                        key={option}
                         accessibilityRole="radio"
-                        accessibilityState={{ selected: method === option.id }}
-                        onPress={() => setMethod(option.id)}
-                        className={`rounded-full border px-4 py-2 ${method === option.id ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/40' : 'border-border bg-card'}`}
+                        accessibilityState={{ selected: method === option }}
+                        onPress={() => setMethod(option)}
+                        className={`rounded-full border px-4 py-2 ${method === option ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/40' : 'border-border bg-card'}`}
                       >
-                        <Text className="text-xs font-bold text-foreground">{option.label}</Text>
+                        <Text className="text-xs font-bold text-foreground">{PAYMENT_METHOD_LABELS[option]}</Text>
                       </Pressable>
                     ))}
                   </View>
@@ -252,6 +253,7 @@ export function CollectPaymentScreen({ customerId, basePath }: {
                 <Input
                   value={reason}
                   onChangeText={setReason}
+                  returnKeyType="done"
                   placeholder="Nobody home, asked to call back Friday…"
                   testID="collect-reason"
                 />
@@ -308,7 +310,7 @@ export function CollectPaymentScreen({ customerId, basePath }: {
 
         <View className="gap-1.5">
           <Text className="text-xs font-semibold text-foreground">Notes (optional)</Text>
-          <Input value={notes} onChangeText={setNotes} placeholder="Anything the office should know" />
+          <Input value={notes} onChangeText={setNotes} returnKeyType="done" placeholder="Anything the office should know" />
         </View>
 
         <Card className="flex-row items-center justify-between border border-border p-4">
@@ -335,7 +337,7 @@ export function CollectPaymentScreen({ customerId, basePath }: {
             Once recorded, a receipt cannot be edited or deleted by anyone. A mistake is corrected by an admin posting a reversal, and both are kept.
           </Text>
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </View>
   );
 }

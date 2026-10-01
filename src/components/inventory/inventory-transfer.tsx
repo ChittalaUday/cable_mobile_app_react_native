@@ -7,7 +7,8 @@ import {
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
-import { Alert } from 'react-native';
+
+import { dialogs } from '@/components/common/dialogs';
 import { Card, ScreenHeader } from '@/components/common/shell';
 import { LocationPickerSheet } from '@/components/locations/location-picker-sheet';
 import {
@@ -20,12 +21,14 @@ import {
   useModal,
   View,
 } from '@/components/ui';
+import { PERMISSIONS } from '@/constants/permissions';
 import {
   lookupInventory,
   useInventoryStock,
   useTransferStock,
 } from '@/lib/hooks/api/use-inventory';
 import { useStaff } from '@/lib/hooks/api/use-staff';
+import { usePermissions } from '@/lib/hooks/common/use-permissions';
 
 export function InventoryTransferScreen({ basePath }: { basePath: '/admin/inventory' | '/staff/inventory' }) {
   const router = useRouter();
@@ -47,7 +50,10 @@ export function InventoryTransferScreen({ basePath }: { basePath: '/admin/invent
   const [itemPickerOpen, setItemPickerOpen] = React.useState(false);
 
   const { data: stockItems } = useInventoryStock();
-  const { data: staffPage } = useStaff();
+  // Handing stock to a colleague's van needs the staff list, which field staff
+  // cannot read; for them the van option is hidden rather than an empty picker.
+  const canPickStaff = usePermissions().can(PERMISSIONS.STAFF_VIEW);
+  const { data: staffPage } = useStaff({ enabled: canPickStaff });
   const { mutate: transferStock, isPending } = useTransferStock();
 
   const staffMembers = staffPage?.items ?? [];
@@ -68,36 +74,36 @@ export function InventoryTransferScreen({ basePath }: { basePath: '/admin/invent
           if (match.locationId)
             setFromLocation({ id: match.locationId, name: match.locationName ?? 'Current Location' });
         }
-        Alert.alert('Matched Item', `${match.itemName} (${match.itemCode ?? 'SKU'}) found in inventory.`);
+        void dialogs.notify('Matched Item', `${match.itemName} (${match.itemCode ?? 'SKU'}) found in inventory.`);
       }
       else {
-        Alert.alert('Not Found', `No equipment found with serial "${s}".`);
+        void dialogs.notify('Not Found', `No equipment found with serial "${s}".`);
       }
     }
     catch (err) {
-      Alert.alert('Lookup Failed', err instanceof Error ? err.message : 'Could not lookup equipment.');
+      void dialogs.notify('Lookup Failed', err instanceof Error ? err.message : 'Could not lookup equipment.');
     }
   };
 
   const handleSubmit = () => {
     if (!selectedCatalogId && !equipmentId) {
-      Alert.alert('Validation Error', 'Please select an item or scan a serial number to transfer.');
+      void dialogs.notify('Validation Error', 'Please select an item or scan a serial number to transfer.');
       return;
     }
 
     if (destinationType === 'location' && !toLocation) {
-      Alert.alert('Validation Error', 'Please select a destination location.');
+      void dialogs.notify('Validation Error', 'Please select a destination location.');
       return;
     }
 
     if (destinationType === 'van' && !toStaffId) {
-      Alert.alert('Validation Error', 'Please select a technician for staff van assignment.');
+      void dialogs.notify('Validation Error', 'Please select a technician for staff van assignment.');
       return;
     }
 
     const qty = Number.parseInt(quantity, 10);
     if (Number.isNaN(qty) || qty <= 0) {
-      Alert.alert('Validation Error', 'Please specify a valid quantity.');
+      void dialogs.notify('Validation Error', 'Please specify a valid quantity.');
       return;
     }
 
@@ -115,23 +121,16 @@ export function InventoryTransferScreen({ basePath }: { basePath: '/admin/invent
       },
       {
         onSuccess: () => {
-          Alert.alert(
-            'Transfer Complete',
-            `Successfully transferred stock to ${
+          void dialogs
+            .notify('Transfer Complete', `Successfully transferred stock to ${
               destinationType === 'van'
                 ? (toStaff?.name ? `technician ${toStaff.name}` : 'Staff Van')
                 : (toLocation?.name ?? 'new location')
-            }.`,
-            [
-              {
-                text: 'View Movements',
-                onPress: () => router.replace(`${basePath}/movements`),
-              },
-            ],
-          );
+            }.`)
+            .then(() => router.replace(`${basePath}/movements`));
         },
         onError: (err) => {
-          Alert.alert('Transfer Failed', err?.message ?? 'Could not transfer stock.');
+          void dialogs.notify('Transfer Failed', err?.message ?? 'Could not transfer stock.');
         },
       },
     );
@@ -272,22 +271,24 @@ export function InventoryTransferScreen({ basePath }: { basePath: '/admin/invent
               </Text>
             </Pressable>
 
-            <Pressable
-              accessibilityRole="tab"
-              accessibilityState={{ selected: destinationType === 'van' }}
-              onPress={() => setDestinationType('van')}
-              className={`flex-1 items-center rounded-lg py-2 ${
-                destinationType === 'van' ? 'bg-primary-600' : ''
-              }`}
-            >
-              <Text
-                className={`text-xs font-bold ${
-                  destinationType === 'van' ? 'text-white' : 'text-neutral-600'
+            {canPickStaff && (
+              <Pressable
+                accessibilityRole="tab"
+                accessibilityState={{ selected: destinationType === 'van' }}
+                onPress={() => setDestinationType('van')}
+                className={`flex-1 items-center rounded-lg py-2 ${
+                  destinationType === 'van' ? 'bg-primary-600' : ''
                 }`}
               >
-                Technician / Staff Van
-              </Text>
-            </Pressable>
+                <Text
+                  className={`text-xs font-bold ${
+                    destinationType === 'van' ? 'text-white' : 'text-neutral-600'
+                  }`}
+                >
+                  Technician / Staff Van
+                </Text>
+              </Pressable>
+            )}
           </View>
         </View>
 

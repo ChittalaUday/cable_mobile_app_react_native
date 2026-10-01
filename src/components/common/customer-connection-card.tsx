@@ -9,7 +9,6 @@ import {
   Wifi01Icon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
-import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { ScrollView } from 'react-native';
 
@@ -218,7 +217,7 @@ function ConnectionCardItem({
         <View className="min-w-[100px] flex-1 rounded-lg border border-border bg-surface px-2.5 py-1.5">
           <Text className="text-[11px] font-semibold text-muted-foreground">Due Amount</Text>
           <Text className="text-sm font-extrabold text-primary-600 dark:text-primary-400" numberOfLines={1}>
-            {`${connection.currency ?? '₹'}${connection.monthlyPrice}/mo`}
+            {`${connection.currency ?? '₹'}${connection.monthlyPrice}`}
           </Text>
         </View>
 
@@ -308,7 +307,6 @@ export function CustomerConnectionCard({
   onViewDetails,
   defaultActiveIndex = 0,
 }: CustomerConnectionCardProps) {
-  const router = useRouter();
   const [activeIndex, setActiveIndex] = React.useState(defaultActiveIndex);
   const [containerWidth, setContainerWidth] = React.useState(0);
   const scrollViewRef = React.useRef<ScrollView>(null);
@@ -324,13 +322,10 @@ export function CustomerConnectionCard({
     }
   };
 
-  const handleViewCustomerDetails = () => {
-    if (onViewDetails) {
-      onViewDetails(customer);
-      return;
-    }
-    router.push(`/admin/customers/${customer.id}`);
-  };
+  // No default route: this card is drawn for operators AND for subscribers
+  // reading their own account, and the admin customer page is closed to the
+  // latter — it would bounce them out of their own app.
+  const handleViewCustomerDetails = () => onViewDetails?.(customer);
 
   const handleMomentumScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     if (containerWidth <= 0) {

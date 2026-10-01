@@ -4,8 +4,9 @@ import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as React from 'react';
-import { Alert, ScrollView, Switch, TextInput } from 'react-native';
+import { ScrollView, Switch, TextInput } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { dialogs } from '@/components/common/dialogs';
 
 import { SaveBar } from '@/components/common/save-bar';
 import { Card, ScreenHeader } from '@/components/common/shell';
@@ -241,7 +242,7 @@ export function AddLocationScreen() {
       router.back();
     }
     catch (err) {
-      Alert.alert('Could not save location', (err as Error).message || 'Please try again.');
+      void dialogs.notify('Could not save location', (err as Error).message || 'Please try again.');
     }
   };
 

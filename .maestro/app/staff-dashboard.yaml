@@ -3,20 +3,36 @@ tags:
   - e2e
   - staff
 ---
-# Field staff land on collections, not the admin panel.
+# Field staff land on their scoped operational dashboard, not the admin panel.
 - runFlow:
     file: ../utils/fresh-login.yaml
     env:
-      EMAIL: staff@satyacable.dev
-      PASSWORD: Passw0rd!
+      EMAIL: suresh.staff@sscn.com
+      PASSWORD: Staff@123456
 
-- assertVisible: 'Satya Cable & Broadband'
-- assertVisible: Staff Collections
+- assertVisible: .*Suresh.*
+- assertVisible: Field Officer
 - assertNotVisible: Operator Panel
+- assertVisible: Quick Actions
+- assertVisible: Personal
+- assertVisible: Collected today
+- assertVisible: Workload
+- takeScreenshot: .maestro/screenshots/staff-home
 
-- tapOn: My Route
-- tapOn: Receipts
+# Tab bar: same five destinations as the office, scoped to this officer.
+- tapOn: Payments
+- assertVisible: My Collections
 - tapOn: More
-- tapOn: Today
+- assertVisible: Complaints
+- assertVisible: Inventory
+- assertNotVisible: Staff & Teams
+- tapOn: Home
+- assertVisible: Collected today
 
-- assertVisible: Sign out
+# Search only offers what a field officer can open.
+- tapOn: Global Search
+- inputText: issue
+- assertVisible: Issue Equipment
+- eraseText: 5
+- inputText: package
+- assertNotVisible: Packages & Plans

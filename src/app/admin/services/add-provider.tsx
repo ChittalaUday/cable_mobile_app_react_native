@@ -12,8 +12,9 @@ import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
-import { Alert, ScrollView } from 'react-native';
+import { ScrollView } from 'react-native';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { dialogs } from '@/components/common/dialogs';
 
 import { SaveBar } from '@/components/common/save-bar';
 import { Card, ScreenHeader } from '@/components/common/shell';
@@ -205,7 +206,7 @@ export function AddProviderScreen() {
     }
     catch (err) {
       setConfirming(null);
-      Alert.alert('Could not save provider', (err as Error).message || 'Please try again.');
+      void dialogs.notify('Could not save provider', (err as Error).message || 'Please try again.');
     }
   };
 
@@ -224,7 +225,7 @@ export function AddProviderScreen() {
     }
     catch (err) {
       setConfirming(null);
-      Alert.alert('Could not save coverage', (err as Error).message || 'Please try again.');
+      void dialogs.notify('Could not save coverage', (err as Error).message || 'Please try again.');
     }
   };
 
@@ -241,7 +242,7 @@ export function AddProviderScreen() {
     }
     catch (err) {
       setPendingDelete(null);
-      Alert.alert('Could not delete service', (err as Error).message);
+      void dialogs.notify('Could not delete service', (err as Error).message);
     }
   };
 
@@ -272,7 +273,7 @@ export function AddProviderScreen() {
 
       <ServiceFormSheet
         ref={serviceSheet.ref}
-        onCreated={(created) => {
+        onSaved={(created) => {
           serviceSheet.dismiss();
           setField('serviceId', created.id);
         }}

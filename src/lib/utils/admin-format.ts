@@ -59,3 +59,14 @@ export function initials(name?: string | null) {
     return 'AD';
   return (parts.length > 1 ? `${parts[0][0]}${parts[1][0]}` : parts[0].slice(0, 2)).toUpperCase();
 }
+
+/**
+ * Money with the paise kept. `rupees` rounds, which is right for a dashboard
+ * tile and wrong for a balance — a receipt that says ₹500 when ₹499.50 was
+ * taken is an argument at the door.
+ */
+export function rupeesExact(value: number | string) {
+  const paise = Math.round(Number(value || 0) * 100);
+  const abs = Math.abs(paise);
+  return `${paise < 0 ? '-' : ''}₹${grouped(Math.trunc(abs / 100))}.${String(abs % 100).padStart(2, '0')}`;
+}

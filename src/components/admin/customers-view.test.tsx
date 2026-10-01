@@ -135,6 +135,7 @@ jest.mock('@/lib/hooks/api/use-customers', () => ({
     };
   },
   customerItemToConsolidated: jest.requireActual<typeof UseCustomersModule>('@/lib/hooks/api/use-customers').customerItemToConsolidated,
+  useCreateCustomer: () => ({ mutateAsync: jest.fn(), isPending: false }),
 }));
 
 jest.mock('@/lib/hooks/api/use-locations', () => ({
@@ -178,13 +179,6 @@ jest.mock('@/lib/hooks/api/use-service-providers', () => ({
   }),
 }));
 
-jest.mock('@/lib/hooks/api/use-admin-dashboard', () => ({
-  useCreateCustomer: () => ({
-    mutateAsync: jest.fn(),
-    isPending: false,
-  }),
-}));
-
 jest.mock('@/lib/hooks/api/use-packages', () => ({
   usePackages: () => ({ data: [], isPending: false }),
 }));
@@ -215,7 +209,7 @@ describe('customersView', () => {
   });
 
   it('renders Customers & Lines header, search bar, and customer records', () => {
-    renderWithClient(<CustomersView />);
+    renderWithClient(<CustomersView basePath="/admin" />);
 
     expect(screen.getByText('Customers & Lines')).toBeTruthy();
     expect(screen.getByText('Add')).toBeTruthy();
@@ -224,7 +218,7 @@ describe('customersView', () => {
   });
 
   it('filters customers list by search query input', () => {
-    renderWithClient(<CustomersView />);
+    renderWithClient(<CustomersView basePath="/admin" />);
 
     const searchInput = screen.getByPlaceholderText('Search customer, account, location or equipment...');
     fireEvent.changeText(searchInput, 'Anil');
@@ -238,7 +232,7 @@ describe('customersView', () => {
   });
 
   it('filters customers by Active status chip', () => {
-    renderWithClient(<CustomersView />);
+    renderWithClient(<CustomersView basePath="/admin" />);
 
     fireEvent.press(screen.getAllByText('Active')[0]);
 
@@ -247,7 +241,7 @@ describe('customersView', () => {
   });
 
   it('filters customers by Multi-Box (2+) chip', () => {
-    renderWithClient(<CustomersView />);
+    renderWithClient(<CustomersView basePath="/admin" />);
 
     fireEvent.press(screen.getByText('Multi-Box (2+)'));
 
@@ -256,23 +250,31 @@ describe('customersView', () => {
     expect(screen.queryByText('Bhavani Prasad')).toBeNull();
   });
 
-  it('navigates to /add-customer page route when + Add Customer button is pressed', () => {
-    renderWithClient(<CustomersView />);
+  it('opens the add-customer sheet in place when + Add is pressed', () => {
+    renderWithClient(<CustomersView basePath="/admin" />);
 
     fireEvent.press(screen.getByText('Add'));
 
-    expect(mockPush).toHaveBeenCalledWith('/admin/customers/add');
+    expect(screen.getByText('Register the subscriber and their first connection')).toBeTruthy();
+  });
+
+  it('opens a row on the customer page for the role that is looking', () => {
+    renderWithClient(<CustomersView basePath="/staff" />);
+
+    fireEvent.press(screen.getByText('Anil Reddy'));
+
+    expect(mockPush).toHaveBeenCalledWith(expect.stringMatching(/^\/staff\/customers\//));
   });
 
   it('localizes the expanded search prompt in Telugu', async () => {
     await i18n.changeLanguage('te');
-    renderWithClient(<CustomersView />);
+    renderWithClient(<CustomersView basePath="/admin" />);
 
     expect(screen.getByPlaceholderText('కస్టమర్, ఖాతా, ప్రదేశం లేదా పరికరాన్ని శోధించండి...')).toBeTruthy();
   });
 
   it('opens filter modal when filter button beside search bar is pressed', () => {
-    renderWithClient(<CustomersView />);
+    renderWithClient(<CustomersView basePath="/admin" />);
 
     const filterBtn = screen.getByLabelText('Open filters');
     expect(filterBtn).toBeTruthy();
@@ -287,7 +289,7 @@ describe('customersView', () => {
   });
 
   it('selects location filter from modal and applies it', () => {
-    renderWithClient(<CustomersView />);
+    renderWithClient(<CustomersView basePath="/admin" />);
 
     fireEvent.press(screen.getByLabelText('Open filters'));
     fireEvent.press(screen.getByLabelText('Select Location'));
@@ -299,7 +301,7 @@ describe('customersView', () => {
   });
 
   it('resets filters when Clear All is pressed', () => {
-    renderWithClient(<CustomersView />);
+    renderWithClient(<CustomersView basePath="/admin" />);
 
     fireEvent.press(screen.getByLabelText('Open filters'));
     fireEvent.press(screen.getByLabelText('Select Location'));
