@@ -28,3 +28,6 @@ expo-env.d.ts
 .env.*
 !.env.example
 # @end expo-cli
+
+# Maestro test-run output (screenshots, hierarchy dumps)
+.maestro/artifacts/
