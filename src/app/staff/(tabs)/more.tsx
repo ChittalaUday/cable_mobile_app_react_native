@@ -15,7 +15,7 @@ const STAFF_ITEMS: MoreNavItem[] = [
   { key: 'tickets', title: 'Complaints', subtitle: 'Faults assigned to you', icon: HeadsetIcon, tint: 'red', route: '/staff/tickets' },
   { key: 'inventory', title: 'Inventory', subtitle: 'Your stock, issue & return equipment', icon: Package01Icon, tint: 'orange', route: '/staff/inventory' },
   { key: 'notify', title: 'Message the office', subtitle: 'Send a notification to your admins', icon: Notification03Icon, tint: 'blue', route: '/staff/notifications/send' },
-  { key: 'profile', title: 'Profile', subtitle: 'Account details, settings, and security', icon: UserIcon, tint: 'purple', route: '/staff/profile' },
+  { key: 'profile', title: 'Profile', subtitle: 'Account, theme, language and sign-in', icon: UserIcon, tint: 'purple', route: '/staff/profile' },
 ];
 
 export default function StaffMoreTab() {

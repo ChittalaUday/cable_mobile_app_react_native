@@ -37,7 +37,8 @@ const ADMIN_ONLY: Entry[] = [
   ['staff', 'screen', 'Staff & Teams', '/admin/staff', P.STAFF_VIEW, 'users', ['employees', 'crew', 'team', 'collectors'], 'People, crews and their areas'],
   ['locations', 'screen', 'Locations', '/admin/locations', P.LOCATIONS_VIEW, 'settings', ['areas', 'villages', 'coverage'], 'Hierarchy and coverage nodes'],
   ['services', 'screen', 'Services', '/admin/services', P.SERVICES_VIEW, 'settings', ['broadband', 'cable', 'providers'], 'Service types and providers'],
-  ['settings', 'setting', 'Settings', '/admin/settings', P.SETTINGS_VIEW, 'settings', ['language', 'theme', 'upi'], 'Language, theme and UPI accounts'],
+  ['settings', 'setting', 'Theme & language', '/admin/profile', P.SETTINGS_VIEW, 'settings', ['language', 'theme', 'dark', 'profile'], 'In your profile'],
+  ['upi-accounts', 'setting', 'UPI accounts', '/admin/settings/upi', P.SETTINGS_UPDATE, 'settings', ['upi', 'qr', 'payments'], 'Where customers pay by UPI'],
 ];
 
 const STAFF_ONLY: Entry[] = [

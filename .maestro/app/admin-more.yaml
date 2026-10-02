@@ -85,7 +85,7 @@ tags:
 - extendedWaitUntil:
     notVisible: 'Manage services, network catalog, staff, and account'
     timeout: 30000
-- assertVisible: Account details, settings, and security
+- assertVisible: Account, theme, language and sign-in
 - back
 - extendedWaitUntil:
     visible: 'Manage services, network catalog, staff, and account'

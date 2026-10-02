@@ -45,7 +45,8 @@ describe('the reusable customer details view', () => {
     renderWithClient(<CustomerDetailsView role="admin" />);
     expect(screen.getAllByText('Ramesh Kumar').length).toBeGreaterThan(0);
     expect(screen.getAllByText('SSCN00101').length).toBeGreaterThan(0);
-    expect(screen.getByText('Outstanding Balance')).toBeTruthy();
+    // The demo customer owes nothing and its plan cycle is paid.
+    expect(screen.getByTestId('customer-outstanding')).toHaveTextContent('All clear');
 
     fireEvent.press(screen.getByText('Collect Payment'));
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/admin/recharge/[id]', params: { id: 'cust-demo-101', subscriptionId: 'sub-1' } });
@@ -64,7 +65,7 @@ describe('the reusable customer details view', () => {
     fireEvent.press(screen.getByText('Services'));
     expect(screen.getByText('ACT9001')).toBeTruthy();
 
-    fireEvent.press(screen.getByText('Equipment'));
+    // Equipment sits under its connections in the same tab.
     expect(screen.getByText('STB123456789')).toBeTruthy();
     fireEvent.press(screen.getByText('Add Equipment'));
     expect(mockPush).toHaveBeenCalledWith(expect.objectContaining({ pathname: '/staff/inventory/issue' }));

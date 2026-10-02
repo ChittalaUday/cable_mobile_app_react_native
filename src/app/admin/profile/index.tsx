@@ -4,38 +4,39 @@ import {
   ArrowRight01Icon,
   Logout01Icon,
   Notification03Icon,
-  Settings02Icon,
+  QrCodeIcon,
 } from '@hugeicons/core-free-icons';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { showMessage } from 'react-native-flash-message';
 
 import { dialogs } from '@/components/common/dialogs';
+import { LanguageItem, ThemeItem } from '@/components/common/settings';
 
 import { Card, Divider, IconTile, ScreenHeader, TINT } from '@/components/common/shell';
 import { FocusAwareStatusBar, Image, Pressable, ScrollView, Text, ThemedIcon, View } from '@/components/ui';
+import { PERMISSIONS } from '@/constants/permissions';
+import { usePermissions } from '@/lib/hooks/common/use-permissions';
 import { useAuthStore } from '@/lib/hooks/stores/use-auth-store';
 import { translate } from '@/lib/i18n';
 import { initials } from '@/lib/utils/admin-format';
 import { authErrorMessage } from '@/lib/utils/auth-error';
 
 /**
- * Only rows that land on a screen.
- *
- * Account details, Language and Help & support used to sit here as labels that
- * answered a tap with "not wired up yet" — a cost of one tap to learn nothing,
- * every time. Settings is where the language picker actually lives, and it had
- * no entry point of its own until this row.
+ * Only rows that land on a screen. Theme and language live right here; there
+ * is no separate Settings page. UPI accounts are an office setting, shown to
+ * whoever may change them.
  */
-function rowsFor(basePath: '/admin' | '/staff'): { key: string; icon: IconSvgElement; tint: keyof typeof TINT; label: string; route: Href }[] {
+function rowsFor(canManageUpi: boolean): { key: string; icon: IconSvgElement; tint: keyof typeof TINT; label: string; route: Href }[] {
   return [
     { key: 'notifications', icon: Notification03Icon, tint: 'orange', label: 'Notifications', route: '/notifications' },
-    { key: 'settings', icon: Settings02Icon, tint: 'purple', label: 'Settings', route: `${basePath}/settings` as Href },
+    ...(canManageUpi ? [{ key: 'upi', icon: QrCodeIcon, tint: 'purple' as const, label: translate('settings.upi_accounts'), route: '/admin/settings/upi' as Href }] : []),
   ];
 }
 
-export function ProfileScreen({ basePath = '/admin' }: { basePath?: '/admin' | '/staff' }) {
+export function ProfileScreen() {
   const router = useRouter();
+  const { can } = usePermissions();
   const user = useAuthStore.use.user();
   const role = useAuthStore.use.role();
   const signOut = useAuthStore.use.signOut();
@@ -74,7 +75,7 @@ export function ProfileScreen({ basePath = '/admin' }: { basePath?: '/admin' | '
       <FocusAwareStatusBar />
       <ScreenHeader
         title="Profile"
-        subtitle="Account details, settings, and security"
+        subtitle="Account, theme, language and sign-in"
         showBack
         withSafeArea
       />
@@ -100,7 +101,14 @@ export function ProfileScreen({ basePath = '/admin' }: { basePath?: '/admin' | '
         </Card>
 
         <Card className="px-3.5">
-          {rowsFor(basePath).map((row, index) => (
+          <Text className="pt-3 text-xs font-bold tracking-wider text-muted-foreground uppercase">Appearance</Text>
+          <ThemeItem />
+          <Divider />
+          <LanguageItem />
+        </Card>
+
+        <Card className="px-3.5">
+          {rowsFor(can(PERMISSIONS.SETTINGS_UPDATE)).map((row, index) => (
             <View key={row.key}>
               {index > 0 && <Divider />}
               <Pressable

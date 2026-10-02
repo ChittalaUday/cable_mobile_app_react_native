@@ -12,7 +12,7 @@ tags:
     timeout: 30000
 
 - tapOn: More
-- tapOn: 'Account details, settings, and security'
+- tapOn: 'Account, theme, language and sign-in'
 - extendedWaitUntil:
     visible: suresh.staff@sscn.com
     timeout: 20000

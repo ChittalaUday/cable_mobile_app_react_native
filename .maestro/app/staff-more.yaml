@@ -60,7 +60,7 @@ tags:
 - extendedWaitUntil:
     notVisible: Complaints, inventory and your account
     timeout: 30000
-- assertVisible: Account details, settings, and security
+- assertVisible: Account, theme, language and sign-in
 - back
 - extendedWaitUntil:
     visible: Complaints, inventory and your account

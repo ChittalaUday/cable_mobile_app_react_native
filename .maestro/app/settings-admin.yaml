@@ -4,8 +4,9 @@ tags:
   - admin
   - settings
 ---
-# Admin settings: every row renders, Language switches the app's copy and
-# back, Theme is offered but pinned to Light, and Logout signs out.
+# Admin profile: theme and language live in Profile (there is no Settings
+# page), UPI handles are reachable for an admin, and none of the template's
+# placeholder rows (share, rate, privacy, links) remain.
 - runFlow: ../utils/login-admin.yaml
 - extendedWaitUntil:
     visible: Operator Panel
@@ -13,34 +14,17 @@ tags:
 - runFlow: ../utils/account-open-settings.yaml
 
 # --- Renders ------------------------------------------------------------------
-- assertVisible: Settings
+- assertVisible: Theme
 - assertVisible: Language
 - assertVisible: English
-- assertVisible: Theme
-- assertVisible: 'Light.*'
-# Payments section is admin-only (settings.update).
-- assertVisible: Payments
 - assertVisible: UPI handles
-- assertVisible: About
-- assertVisible: App Name
-- assertVisible: Version
-- scrollUntilVisible:
-    element: Logout
-- assertVisible: Support Us
-- assertVisible: Share
-- assertVisible: Rate
-- assertVisible: Support
-- assertVisible: Links
-- assertVisible: Privacy Policy
-- assertVisible: Terms of Service
-- assertVisible: Github
-- assertVisible: Website
-- assertVisible: Logout
-- scrollUntilVisible:
-    element: Language
-    direction: UP
+- assertVisible: Sign out
+- assertNotVisible: Share
+- assertNotVisible: Rate
+- assertNotVisible: Privacy Policy
+- assertNotVisible: Github
 
-# --- Language: Telugu translates the screen, English restores it --------------
+# --- Language: Telugu translates the rows, English restores them -------------
 - tapOn: Language
 - extendedWaitUntil:
     visible:
@@ -49,11 +33,9 @@ tags:
 - tapOn:
     id: settings-language-item-te
 - extendedWaitUntil:
-    visible: సెట్టింగ్‌లు
+    visible: భాష
     timeout: 10000
-- assertVisible: భాష
 - assertVisible: థీమ్
-- assertNotVisible: General
 - tapOn: భాష
 - extendedWaitUntil:
     visible:
@@ -62,13 +44,10 @@ tags:
 - tapOn:
     id: settings-language-item-en
 - extendedWaitUntil:
-    visible: General
+    visible: Language
     timeout: 10000
-- assertVisible: Settings
-- assertVisible: English
 
-# --- Theme: all three are offered; dark is disabled app-wide for now
-# (use-selected-theme.tsx TODO), so any pick stays on Light.
+# --- Theme: dark, then back to light ------------------------------------------
 - tapOn: Theme
 - extendedWaitUntil:
     visible:
@@ -79,10 +58,14 @@ tags:
 - tapOn:
     id: settings-theme-item-dark
 - extendedWaitUntil:
-    notVisible:
-      id: settings-theme-item-system
+    visible: 'Dark.*'
     timeout: 10000
-- assertVisible: 'Light.*'
+- tapOn: Theme
+- tapOn:
+    id: settings-theme-item-light
+- extendedWaitUntil:
+    visible: 'Light.*'
+    timeout: 10000
 
 # --- UPI handles opens its own screen; Back returns ---------------------------
 - tapOn: UPI handles
@@ -91,13 +74,5 @@ tags:
     timeout: 20000
 - tapOn: Back
 - extendedWaitUntil:
-    visible: General
+    visible: Appearance
     timeout: 10000
-
-# --- Logout at the bottom signs out -------------------------------------------
-- scrollUntilVisible:
-    element: Logout
-- tapOn: Logout
-- extendedWaitUntil:
-    visible: Welcome Back
-    timeout: 30000

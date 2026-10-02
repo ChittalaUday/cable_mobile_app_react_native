@@ -3,6 +3,7 @@ import type { RaiseTicketTarget } from '@/components/tickets/raise-ticket-sheet'
 import type { CustomerDetail, CustomerEquipment, CustomerSubscription, CustomerTransaction } from '@/lib/api/types';
 import {
   Add01Icon,
+  Alert02Icon,
   ArrowDown01Icon,
   ArrowDown02Icon,
   ArrowLeft02Icon,
@@ -11,6 +12,7 @@ import {
   Calendar03Icon,
   Call02Icon,
   CheckListIcon,
+  CheckmarkCircle02Icon,
   CreditCardIcon,
   IdIcon,
   Location01Icon,
@@ -21,6 +23,7 @@ import {
   RouterIcon,
   Tv01Icon,
   UserIcon,
+  Wallet01Icon,
   WhatsappIcon,
   Wifi01Icon,
 } from '@hugeicons/core-free-icons';
@@ -36,7 +39,7 @@ import { Avatar, IconTile, Segmented, StatusPill, TINT } from '@/components/comm
 import { EditCustomerSheet } from '@/components/customer/edit-customer-sheet';
 import { RaiseTicketSheet } from '@/components/tickets/raise-ticket-sheet';
 import { Button, colors, Pressable, Text, ThemedIcon, View } from '@/components/ui';
-import { dateTime, dayMonthYear } from '@/lib/utils/admin-format';
+import { dateTime, dayMonthYear, planRupees } from '@/lib/utils/admin-format';
 
 export type CustomerDetailsData = {
   id: string;
@@ -196,13 +199,12 @@ function balanceTone(value: number) {
   return { tint: undefined, text: 'text-foreground' };
 }
 
-type DetailTab = 'overview' | 'services' | 'payments' | 'equipment';
+type DetailTab = 'overview' | 'services' | 'payments';
 
 const DETAIL_TABS = [
   { key: 'overview', label: 'Overview' },
   { key: 'services', label: 'Services' },
   { key: 'payments', label: 'Payments' },
-  { key: 'equipment', label: 'Equipment' },
 ] as const;
 
 const PAYMENT_RANGES = [
@@ -314,25 +316,43 @@ function SummaryTile({ value, label, tint }: { value: string; label: string; tin
   );
 }
 
-function OverviewTab({ customer }: { customer: CustomerDetail }) {
-  const balance = Number(customer.outstandingBalance);
-  const tone = balanceTone(balance);
+/**
+ * What the customer owes, said the way a collector reads it: due in red,
+ * advance in green, all clear. "Payable now" adds any plan cycle that has run
+ * out — the same sum the recharge flow will ask for.
+ */
+function BalanceCard({ customer }: { customer: CustomerDetail }) {
+  const paise = Math.round(Number(customer.outstandingBalance) * 100);
+  const cyclesDue = customer.subscriptions.reduce((total, sub) => total + Math.round(Number(sub.nextPlanCharge) * 100), 0);
+  const payable = paise + cyclesDue;
+  const state = paise > 0 ? 'due' : paise < 0 ? 'advance' : 'clear';
+  const look = {
+    due: { tint: TINT.red, icon: Alert02Icon, headline: `${planRupees(paise / 100)} due` },
+    advance: { tint: TINT.green, icon: Wallet01Icon, headline: `${planRupees(-paise / 100)} advance` },
+    clear: { tint: TINT.blue, icon: CheckmarkCircle02Icon, headline: 'All clear' },
+  }[state];
 
   return (
-    <View className="mt-4 gap-3">
-      <View
-        className={`rounded-2xl p-4 ${tone.tint ? '' : 'border border-border bg-card'}`}
-        style={tone.tint ? { backgroundColor: tone.tint.bg } : undefined}
-      >
-        <View className="flex-row items-center justify-between">
-          <Text className="text-sm font-medium text-foreground">Outstanding Balance</Text>
-          {tone.tint ? <Badge label={balance < 0 ? 'Credit' : 'Due'} tint={tone.tint} /> : null}
-        </View>
-        <Text testID="customer-outstanding" className={`mt-1 text-3xl font-bold ${tone.text}`}>{`₹${customer.outstandingBalance}`}</Text>
-        <Text className={`text-xs ${tone.text}`}>
-          {balance < 0 ? 'Customer is in credit' : balance > 0 ? 'Payment pending' : 'No dues'}
+    <View className="flex-row items-center gap-3 rounded-2xl p-4" style={{ backgroundColor: look.tint.bg }} testID="customer-balance-card">
+      <View className="size-12 items-center justify-center rounded-full" style={{ backgroundColor: look.tint.bg }}>
+        <HugeiconsIcon icon={look.icon} size={26} color={look.tint.fg} />
+      </View>
+      <View className="flex-1 gap-0.5">
+        <Text testID="customer-outstanding" className="text-2xl font-extrabold" style={{ color: look.tint.fg }}>{look.headline}</Text>
+        <Text className="text-xs text-muted-foreground">
+          {cyclesDue > 0
+            ? `Payable now ${planRupees(Math.max(0, payable) / 100)} · includes ${planRupees(cyclesDue / 100)} for the plan cycle`
+            : state === 'advance' ? 'Taken off the next plan charge' : state === 'due' ? 'Owed from earlier cycles' : 'Nothing owed, plan cycle paid'}
         </Text>
       </View>
+    </View>
+  );
+}
+
+function OverviewTab({ customer }: { customer: CustomerDetail }) {
+  return (
+    <View className="mt-4 gap-3">
+      <BalanceCard customer={customer} />
 
       <View className="flex-row gap-2">
         <StatTile icon={CheckListIcon} tint="green" value={String(customer.summary.activeSubscriptions)} label={customer.summary.activeSubscriptions === 1 ? 'Active Service' : 'Active Services'} />
@@ -661,11 +681,21 @@ export function CustomerDetailsView({
       >
         <View className="flex-row items-center gap-3 pt-3">
           <Avatar name={displayName} size={64} />
-          <View className="flex-1 gap-0.5">
+          <View className="flex-1 gap-1">
             <Text className="text-lg font-bold text-foreground" numberOfLines={2}>{displayName}</Text>
             {customer.customerCode ? <Text selectable className="text-sm text-muted-foreground">{customer.customerCode}</Text> : null}
+            <View className="flex-row flex-wrap items-center gap-2">
+              {customer.phone
+                ? (
+                    <Pressable accessibilityRole="link" accessibilityLabel={`Call ${customer.phone}`} onPress={() => Linking.openURL(`tel:${customer.phone}`)} className="flex-row items-center gap-1">
+                      <HugeiconsIcon icon={Call02Icon} size={14} color={TINT.blue.fg} />
+                      <Text selectable className="text-sm font-semibold text-foreground">{customer.phone}</Text>
+                    </Pressable>
+                  )
+                : null}
+              <StatusPill status={customer.status} />
+            </View>
           </View>
-          <StatusPill status={customer.status} />
         </View>
 
         {customer.phone || isOperator
@@ -704,15 +734,7 @@ export function CustomerDetailsView({
                         <ServiceCard key={sub.id} sub={sub} onManage={isOperator ? () => recharge(sub.id) : undefined} />
                       ))}
                 </View>
-              </>
-            )
-          : null}
 
-        {tab === 'payments' ? <PaymentsTab customer={customer} /> : null}
-
-        {tab === 'equipment'
-          ? (
-              <>
                 <SectionHead
                   title="Equipment"
                   action={isOperator
@@ -738,6 +760,9 @@ export function CustomerDetailsView({
               </>
             )
           : null}
+
+        {tab === 'payments' ? <PaymentsTab customer={customer} /> : null}
+
       </ScrollView>
 
       {isOperator

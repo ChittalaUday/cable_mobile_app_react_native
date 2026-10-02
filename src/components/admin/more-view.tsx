@@ -99,7 +99,7 @@ const NAV_ITEMS: NavItem[] = [
   {
     key: 'profile',
     title: 'Profile',
-    subtitle: 'Account details, settings, and security',
+    subtitle: 'Account, theme, language and sign-in',
     icon: UserIcon,
     tint: 'blue',
     route: '/admin/profile',

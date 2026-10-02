@@ -44,7 +44,7 @@ tags:
 
 # --- Sign out from Profile ----------------------------------------------------
 - tapOn: More
-- tapOn: 'Account details, settings, and security'
+- tapOn: 'Account, theme, language and sign-in'
 - extendedWaitUntil:
     visible: uday@sscn.com
     timeout: 20000
