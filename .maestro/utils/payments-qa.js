@@ -37,7 +37,7 @@ function uuid() {
 var token = request('POST', '/auth/login', null, { identifier: 'admin@sscn.com', password: 'Admin@123456' }).accessToken;
 
 if (ACTION === 'setup') {
-  var plan = request('GET', '/plans?status=active&limit=100', token).items.filter(function (p) { return p.slug === 'satya-basic'; })[0];
+  var plan = request('GET', '/plans?status=active&kind=base&limit=100', token).items.filter(function (p) { return p.slug === 'satya-basic'; })[0];
   var location = request('GET', '/locations?limit=1', token).items[0];
   var stamp = String(Date.now()).slice(-6);
   output.qaName = 'QA Race ' + stamp;

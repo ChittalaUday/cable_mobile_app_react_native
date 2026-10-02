@@ -13970,6 +13970,369 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/customers/{id}/visits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark a visit to a customer — paid or not, home or not
+         * @description For the door where nothing else gets recorded: the customer was not home, refused, or asked to come later — for a bill, a complaint or an installation.
+         *
+         *     Needs where it happened (`latitude`, `longitude`, `gpsAccuracyM`), like a payment. Idempotent on `reference`: a retry returns the first visit.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        subscriptionId?: string;
+                        /** Format: uuid */
+                        ticketId?: string;
+                        /** @enum {string} */
+                        purpose: "payment" | "complaint" | "installation" | "other";
+                        /** @enum {string} */
+                        outcome: "not_available" | "refused" | "come_later" | "done" | "other";
+                        notes?: string;
+                        /** Format: date-time */
+                        nextVisitAt?: string;
+                        latitude: number;
+                        longitude: number;
+                        gpsAccuracyM: number;
+                        reference: string;
+                        /** Format: date-time */
+                        visitedAt?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            customerId: string;
+                            customerName: string | null;
+                            customerCode: string | null;
+                            subscriptionId: string | null;
+                            ticketId: string | null;
+                            /** Format: uuid */
+                            visitedBy: string;
+                            visitorName: string | null;
+                            /** @enum {string} */
+                            purpose: "payment" | "complaint" | "installation" | "other";
+                            /** @enum {string} */
+                            outcome: "not_available" | "refused" | "come_later" | "done" | "other";
+                            notes: string | null;
+                            nextVisitAt: string | null;
+                            /** @description Decimal degrees, e.g. "16.8697000" */
+                            latitude: string;
+                            /** @description Decimal degrees, e.g. "16.8697000" */
+                            longitude: string;
+                            gpsAccuracyM: string;
+                            reference: string;
+                            /** Format: date-time */
+                            visitedAt: string;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/visits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Visits this caller may see, newest first
+         * @description Your own visits always; others' only for customers you can open. `visitedBy=me` narrows to yours.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    page?: unknown;
+                    limit?: unknown;
+                    customerId?: string;
+                    visitedBy?: string | "me";
+                    purpose?: "payment" | "complaint" | "installation" | "other";
+                    outcome?: "not_available" | "refused" | "come_later" | "done" | "other";
+                    from?: string;
+                    to?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            items: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                customerId: string;
+                                customerName: string | null;
+                                customerCode: string | null;
+                                subscriptionId: string | null;
+                                ticketId: string | null;
+                                /** Format: uuid */
+                                visitedBy: string;
+                                visitorName: string | null;
+                                /** @enum {string} */
+                                purpose: "payment" | "complaint" | "installation" | "other";
+                                /** @enum {string} */
+                                outcome: "not_available" | "refused" | "come_later" | "done" | "other";
+                                notes: string | null;
+                                nextVisitAt: string | null;
+                                /** @description Decimal degrees, e.g. "16.8697000" */
+                                latitude: string;
+                                /** @description Decimal degrees, e.g. "16.8697000" */
+                                longitude: string;
+                                gpsAccuracyM: string;
+                                reference: string;
+                                /** Format: date-time */
+                                visitedAt: string;
+                            }[];
+                            total: number;
+                            page: number;
+                            limit: number;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/customers/{id}/timeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Everything that happened to a customer, newest first
+         * @description Merges the audit log (registration, edits, plan changes, lines added — with who made them) with receipts, visits, complaints and equipment fitted or returned. Page with `before`.
+         */
+        get: {
+            parameters: {
+                query: {
+                    limit: number;
+                    before?: string;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            items: {
+                                id: string;
+                                /** Format: date-time */
+                                at: string;
+                                /** @enum {string} */
+                                kind: "customer" | "line" | "payment" | "visit" | "ticket" | "equipment";
+                                title: string;
+                                detail: string | null;
+                                actorName: string | null;
+                                amount: string | null;
+                                refId: string | null;
+                            }[];
+                            nextBefore: string | null;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {

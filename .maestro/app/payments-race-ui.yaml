@@ -28,7 +28,7 @@ tags:
     timeout: 20000
 - assertVisible:
     id: customer-outstanding
-    text: ₹0.00
+    text: All clear
 
 # --- 1. Another device collects while this screen is open --------------------
 # ₹100 on a fresh line: the ₹250 plan is charged, ₹150 is left owing.
@@ -43,7 +43,7 @@ tags:
 - extendedWaitUntil:
     visible:
       id: customer-outstanding
-      text: ₹150.00
+      text: ₹150 due
     timeout: 20000
 
 # --- 2. A stale screen pays what it last saw ----------------------------------
@@ -92,7 +92,7 @@ tags:
 - extendedWaitUntil:
     visible:
       id: customer-outstanding
-      text: ₹-50.00
+      text: ₹50 advance
     timeout: 30000
 
 # --- 3. A double tap on Record writes one receipt ------------------------------
@@ -131,7 +131,7 @@ tags:
 - extendedWaitUntil:
     visible:
       id: customer-outstanding
-      text: ₹-51.00
+      text: ₹51 advance
     timeout: 30000
 
 # --- 4. A refund from another device ---------------------------------------
@@ -157,7 +157,7 @@ tags:
 - extendedWaitUntil:
     visible:
       id: customer-outstanding
-      text: ₹-51.00
+      text: ₹51 advance
     timeout: 20000
 - runScript:
     file: ../utils/payments-qa.js

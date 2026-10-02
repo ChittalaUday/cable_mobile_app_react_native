@@ -22,6 +22,8 @@ executionOrder:
     - plans-on-customers
     # Payments under races: a second device collects and refunds mid-flow.
     - payments-race-ui
+    # Door visits: marked, on the timeline, tracked.
+    - visits-mark
     # Other roles and sign-out last (sign-out clears the session).
     - customer-dashboard
     - staff-dashboard

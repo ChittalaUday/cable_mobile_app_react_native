@@ -46,6 +46,7 @@ Tags: `auth`, `admin`, `customer`, `staff`, `search`, `packages`, `customers`,
 | `app/add-customer-flow`         | 3-screen Add Customer wizard + per-step validation            |
 | `app/plans-on-customers`        | A plan (price − discount) becomes a customer's line           |
 | `app/payments-race-ui`          | Second device pays/refunds mid-flow; stale screen; double tap |
+| `app/visits-mark`               | Not-available visit with GPS → timeline → Visits list         |
 | `app/customer-dashboard`        | Subscriber view, no operator surface                          |
 | `app/staff-dashboard`           | Field-staff collections view                                  |
 | `app/profile-and-signout`       | Profile screen, sign out, session really cleared              |

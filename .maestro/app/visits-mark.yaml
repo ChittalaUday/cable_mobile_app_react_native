@@ -1,0 +1,67 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - visits
+---
+# A door visit nobody answered: marked from the customer's page with the
+# phone's location, it shows on the customer's timeline and in Visits.
+- runScript:
+    file: ../utils/payments-qa.js
+    env:
+      ACTION: setup
+- runFlow: ../utils/login-admin.yaml
+- tapOn: Customers
+- tapOn:
+    id: customer-search-input
+- inputText: ${output.qaPhone}
+- extendedWaitUntil:
+    visible: ${output.qaName}
+    timeout: 20000
+- tapOn: ${output.qaName}
+- extendedWaitUntil:
+    visible: Customer Details
+    timeout: 20000
+
+# --- Mark it ---------------------------------------------------------------------
+- tapOn:
+    id: customer-mark-visit
+- runFlow:
+    when:
+      visible: '.*access this device.s location.*'
+    commands:
+      - tapOn: While using the app
+- extendedWaitUntil:
+    visible: '.*Location attached.*'
+    timeout: 30000
+- tapOn:
+    id: visit-outcome-not_available
+- tapOn:
+    id: visit-next-tomorrow
+- tapOn:
+    id: visit-notes
+- inputText: Door locked
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: visit-submit
+- extendedWaitUntil:
+    visible: Visit marked
+    timeout: 20000
+- tapOn: OK
+
+# --- On the customer's timeline, with the registration before it ---------------
+- tapOn: Timeline
+- extendedWaitUntil:
+    visible: Customer not available (bill)
+    timeout: 20000
+- assertVisible: '.*Door locked.*next visit.*'
+- assertVisible: Customer registered
+
+# --- And in Visits, for the office to track -----------------------------------
+- tapOn: Back
+- tapOn: More
+- tapOn: Visits
+- extendedWaitUntil:
+    visible: ${output.qaName}
+    timeout: 20000
+- assertVisible: '.*Not available · Bill · Door locked.*'

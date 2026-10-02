@@ -89,6 +89,14 @@ const NAV_ITEMS: NavItem[] = [
     route: '/admin/inventory',
   },
   {
+    key: 'visits',
+    title: 'Visits',
+    subtitle: 'Who visited which door, and what happened',
+    icon: Location01Icon,
+    tint: 'green',
+    route: '/admin/visits',
+  },
+  {
     key: 'tickets',
     title: 'Complaints',
     subtitle: 'Faults raised, who holds them & what is still open',

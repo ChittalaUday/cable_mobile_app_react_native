@@ -1,6 +1,7 @@
 import type { MoreNavItem } from '@/components/admin/more-view';
 import {
   HeadsetIcon,
+  Location01Icon,
   Notification03Icon,
   Package01Icon,
   UserIcon,
@@ -12,6 +13,7 @@ import { FocusAwareStatusBar, SafeAreaView, View } from '@/components/ui';
 
 /** Only what the staff role can open: catalogue, staff and location admin stay with the office. */
 const STAFF_ITEMS: MoreNavItem[] = [
+  { key: 'visits', title: 'Visits', subtitle: 'Doors you visited, paid or not', icon: Location01Icon, tint: 'green', route: '/staff/visits' },
   { key: 'tickets', title: 'Complaints', subtitle: 'Faults assigned to you', icon: HeadsetIcon, tint: 'red', route: '/staff/tickets' },
   { key: 'inventory', title: 'Inventory', subtitle: 'Your stock, issue & return equipment', icon: Package01Icon, tint: 'orange', route: '/staff/inventory' },
   { key: 'notify', title: 'Message the office', subtitle: 'Send a notification to your admins', icon: Notification03Icon, tint: 'blue', route: '/staff/notifications/send' },

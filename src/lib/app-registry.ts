@@ -16,6 +16,7 @@ function SHARED(base: '/admin' | '/staff'): Entry[] {
     ['add-customer', 'action', 'Add Customer', `${base}/customers/add`, P.CUSTOMERS_CREATE, 'user-plus', ['new', 'register', 'subscriber'], 'Register a new subscriber'],
     ['collect-payment', 'action', 'Collect Payment', `${base}/(tabs)/customers`, P.PAYMENTS_COLLECT, 'dollar-sign', ['cash', 'upi', 'recharge', 'bill'], 'Pick a customer to collect from'],
     ['receipts', 'screen', 'Receipts', `${base}/receipts`, P.PAYMENTS_VIEW, 'credit-card', ['payments', 'collections', 'history'], 'Receipts issued'],
+    ['visits', 'screen', 'Visits', `${base}/visits`, P.VISITS_VIEW, 'map-pin', ['visit', 'not home', 'door', 'round'], 'Doors visited, paid or not'],
     ['complaints', 'screen', 'Complaints', `${base}/tickets`, P.TICKETS_VIEW, 'alert-circle', ['tickets', 'faults', 'issues'], 'Faults raised and who holds them'],
     ['inventory', 'screen', 'Inventory', `${base}/inventory`, P.INVENTORY_VIEW, 'package', ['stock', 'equipment', 'stb', 'router'], 'Stock, issues and returns'],
     ['issue-equipment', 'action', 'Issue Equipment', `${base}/inventory/issue`, P.INVENTORY_ISSUE, 'package-add', ['fit', 'install', 'stb', 'scan', 'serial'], 'Scan or pick a box to fit at a customer'],

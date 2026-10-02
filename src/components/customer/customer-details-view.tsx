@@ -1,5 +1,6 @@
 import type { IconSvgElement } from '@hugeicons/react-native';
 import type { RaiseTicketTarget } from '@/components/tickets/raise-ticket-sheet';
+import type { MarkVisitTarget } from '@/components/visits/mark-visit-sheet';
 import type { CustomerDetail, CustomerEquipment, CustomerSubscription, CustomerTransaction } from '@/lib/api/types';
 import {
   Add01Icon,
@@ -36,9 +37,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PlanPrice } from '@/components/common/plan-price';
 import { Avatar, IconTile, Segmented, StatusPill, TINT } from '@/components/common/shell';
+import { CustomerTimeline } from '@/components/customer/customer-timeline';
 import { EditCustomerSheet } from '@/components/customer/edit-customer-sheet';
 import { RaiseTicketSheet } from '@/components/tickets/raise-ticket-sheet';
 import { Button, colors, Pressable, Text, ThemedIcon, View } from '@/components/ui';
+import { MarkVisitSheet } from '@/components/visits/mark-visit-sheet';
+import { PERMISSIONS } from '@/constants/permissions';
+import { usePermissions } from '@/lib/hooks/common/use-permissions';
 import { dateTime, dayMonthYear, planRupees } from '@/lib/utils/admin-format';
 
 export type CustomerDetailsData = {
@@ -199,12 +204,13 @@ function balanceTone(value: number) {
   return { tint: undefined, text: 'text-foreground' };
 }
 
-type DetailTab = 'overview' | 'services' | 'payments';
+type DetailTab = 'overview' | 'services' | 'payments' | 'timeline';
 
 const DETAIL_TABS = [
   { key: 'overview', label: 'Overview' },
   { key: 'services', label: 'Services' },
   { key: 'payments', label: 'Payments' },
+  { key: 'timeline', label: 'Timeline' },
 ] as const;
 
 const PAYMENT_RANGES = [
@@ -597,6 +603,8 @@ export function CustomerDetailsView({
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [tab, setTab] = React.useState<DetailTab>('overview');
+  const [visitFor, setVisitFor] = React.useState<MarkVisitTarget | null>(null);
+  const { can } = usePermissions();
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [ticketFor, setTicketFor] = React.useState<RaiseTicketTarget | null>(null);
   const [editing, setEditing] = React.useState(false);
@@ -763,14 +771,28 @@ export function CustomerDetailsView({
 
         {tab === 'payments' ? <PaymentsTab customer={customer} /> : null}
 
+        {tab === 'timeline' ? <CustomerTimeline customerId={customer.id} /> : null}
+
       </ScrollView>
 
       {isOperator
         ? (
-            <View className="border-t border-border/60 bg-card px-4 pt-3" style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
+            <View className="flex-row gap-2 border-t border-border/60 bg-card px-4 pt-3" style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
+              {can(PERMISSIONS.VISITS_CREATE)
+                ? (
+                    <Button
+                      label="Mark visit"
+                      variant="outline"
+                      className="h-12 flex-1 rounded-xl"
+                      textClassName="text-base font-bold"
+                      testID="customer-mark-visit"
+                      onPress={() => setVisitFor({ customerId: customer.id, customerName: displayName, ...(plan ? { subscriptionId: plan.id } : {}) })}
+                    />
+                  )
+                : null}
               <Button
                 label="Collect Payment"
-                className="h-12 rounded-xl bg-primary-500"
+                className="h-12 flex-1 rounded-xl bg-primary-500"
                 textClassName="text-base font-bold"
                 onPress={() => recharge(plan?.id)}
               />
@@ -779,6 +801,7 @@ export function CustomerDetailsView({
         : null}
 
       <RaiseTicketSheet target={ticketFor} onClose={() => setTicketFor(null)} />
+      <MarkVisitSheet target={visitFor} onClose={() => setVisitFor(null)} />
       <EditCustomerSheet customer={editing ? customer : null} onClose={() => setEditing(false)} />
     </View>
   );

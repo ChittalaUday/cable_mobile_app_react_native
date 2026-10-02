@@ -90,6 +90,8 @@ export const PERMISSIONS = {
   PLANS_CREATE: 'plans.create',
   PLANS_UPDATE: 'plans.update',
   PLANS_DELETE: 'plans.delete',
+  VISITS_VIEW: 'visits.view',
+  VISITS_CREATE: 'visits.create',
 
   // Service catalogue
   SERVICES_VIEW: 'services.view',
