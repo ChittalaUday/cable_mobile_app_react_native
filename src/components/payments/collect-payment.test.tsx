@@ -83,7 +83,7 @@ function line(id: string, account: string, due: string): CustomerSubscription {
     installationAddress: null,
     service: { id: 's1', name: account.startsWith('NET') ? 'Broadband' : 'Cable TV', slug: 'svc', icon: null },
     provider: { id: 'p1', name: 'ACT', slug: 'act' },
-    plan: { id: 'plan1', name: 'Gold', slug: 'gold', price: '400.00', discount: '50.00', amount: '350.00', billingCycle: 'monthly' as const },
+    plan: { id: 'plan1', name: 'Gold', slug: 'gold', kind: 'base' as const, price: '400.00', discount: '50.00', amount: '350.00', billingCycle: 'monthly' as const },
   };
 }
 

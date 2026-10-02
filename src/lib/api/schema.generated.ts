@@ -1250,6 +1250,8 @@ export interface paths {
                                         id: string;
                                         name: string;
                                         slug: string;
+                                        /** @enum {string} */
+                                        kind: "base" | "addon";
                                         /** @description Decimal string, e.g. "349.00" */
                                         price: string;
                                         /** @description Decimal string, e.g. "349.00" */
@@ -1540,6 +1542,8 @@ export interface paths {
                                     id: string;
                                     name: string;
                                     slug: string;
+                                    /** @enum {string} */
+                                    kind: "base" | "addon";
                                     /** @description Decimal string, e.g. "349.00" */
                                     price: string;
                                     /** @description Decimal string, e.g. "349.00" */
@@ -1728,6 +1732,8 @@ export interface paths {
                                     id: string;
                                     name: string;
                                     slug: string;
+                                    /** @enum {string} */
+                                    kind: "base" | "addon";
                                     /** @description Decimal string, e.g. "349.00" */
                                     price: string;
                                     /** @description Decimal string, e.g. "349.00" */
@@ -1916,6 +1922,8 @@ export interface paths {
                                     id: string;
                                     name: string;
                                     slug: string;
+                                    /** @enum {string} */
+                                    kind: "base" | "addon";
                                     /** @description Decimal string, e.g. "349.00" */
                                     price: string;
                                     /** @description Decimal string, e.g. "349.00" */
@@ -2092,6 +2100,8 @@ export interface paths {
                                 id: string;
                                 name: string;
                                 slug: string;
+                                /** @enum {string} */
+                                kind: "base" | "addon";
                                 /** @description Decimal string, e.g. "349.00" */
                                 price: string;
                                 /** @description Decimal string, e.g. "349.00" */
@@ -2235,6 +2245,8 @@ export interface paths {
                                 id: string;
                                 name: string;
                                 slug: string;
+                                /** @enum {string} */
+                                kind: "base" | "addon";
                                 /** @description Decimal string, e.g. "349.00" */
                                 price: string;
                                 /** @description Decimal string, e.g. "349.00" */
@@ -8411,6 +8423,7 @@ export interface paths {
                     serviceProviderId?: string;
                     serviceId?: string;
                     packageId?: string;
+                    kind?: "base" | "addon";
                     status?: "active" | "inactive";
                     q?: string;
                 };
@@ -8439,6 +8452,8 @@ export interface paths {
                                 serviceIcon: string | null;
                                 name: string;
                                 slug: string;
+                                /** @enum {string} */
+                                kind: "base" | "addon";
                                 /** @description Decimal string, e.g. "349.00" */
                                 price: string;
                                 /** @description Decimal string, e.g. "349.00" */
@@ -8541,6 +8556,8 @@ export interface paths {
                         serviceProviderId: string;
                         name: string;
                         slug?: string;
+                        /** @enum {string} */
+                        kind?: "base" | "addon";
                         /** @description Decimal string, never negative, e.g. "349.00" */
                         price: string;
                         /** @description Decimal string, never negative, e.g. "349.00" */
@@ -8574,6 +8591,8 @@ export interface paths {
                             serviceIcon: string | null;
                             name: string;
                             slug: string;
+                            /** @enum {string} */
+                            kind: "base" | "addon";
                             /** @description Decimal string, e.g. "349.00" */
                             price: string;
                             /** @description Decimal string, e.g. "349.00" */
@@ -8696,6 +8715,8 @@ export interface paths {
                             serviceIcon: string | null;
                             name: string;
                             slug: string;
+                            /** @enum {string} */
+                            kind: "base" | "addon";
                             /** @description Decimal string, e.g. "349.00" */
                             price: string;
                             /** @description Decimal string, e.g. "349.00" */
@@ -8862,6 +8883,8 @@ export interface paths {
                 content: {
                     "application/json": {
                         name?: string;
+                        /** @enum {string} */
+                        kind?: "base" | "addon";
                         /** @description Decimal string, never negative, e.g. "349.00" */
                         price?: string;
                         /** @description Decimal string, never negative, e.g. "349.00" */
@@ -8897,6 +8920,8 @@ export interface paths {
                             serviceIcon: string | null;
                             name: string;
                             slug: string;
+                            /** @enum {string} */
+                            kind: "base" | "addon";
                             /** @description Decimal string, e.g. "349.00" */
                             price: string;
                             /** @description Decimal string, e.g. "349.00" */
@@ -11274,6 +11299,7 @@ export interface paths {
                                         id: string;
                                         name: string;
                                         slug: string;
+                                        kind: string;
                                         price: string;
                                         discount: string;
                                         amount: string;

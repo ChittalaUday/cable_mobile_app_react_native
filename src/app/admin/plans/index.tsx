@@ -34,6 +34,9 @@ function PlanCard({ plan, canUpdate, canDelete, onEdit, onDelete }: {
         <View className="flex-1 gap-1">
           <View className="flex-row items-center justify-between gap-2">
             <Text className="flex-1 text-base font-extrabold text-foreground" numberOfLines={1}>{plan.name}</Text>
+            {plan.kind === 'addon'
+              ? <Text className="rounded-md bg-primary-500/15 px-2 py-0.5 text-[11px] font-bold text-primary-600">Add-on</Text>
+              : null}
             <StatusPill status={plan.status} />
           </View>
           <Text className="text-xs font-semibold text-muted-foreground">
@@ -90,6 +93,7 @@ export function PlansScreen() {
   const params = useLocalSearchParams<{ action?: string }>();
   const { can } = usePermissions();
   const [query, setQuery] = React.useState('');
+  const [kind, setKind] = React.useState<'all' | Plan['kind']>('base');
   const [pendingDelete, setPendingDelete] = React.useState<Plan | null>(null);
 
   const canView = can(PERMISSIONS.PLANS_VIEW);
@@ -108,9 +112,10 @@ export function PlansScreen() {
   }, [params.action, canCreate, openCreate]);
 
   const term = query.trim().toLowerCase();
+  const ofKind = kind === 'all' ? plans : plans.filter(plan => plan.kind === kind);
   const visible = term === ''
-    ? plans
-    : plans.filter(plan => plan.name.toLowerCase().includes(term)
+    ? ofKind
+    : ofKind.filter(plan => plan.name.toLowerCase().includes(term)
       || plan.serviceProviderName.toLowerCase().includes(term)
       || plan.serviceName.toLowerCase().includes(term));
 
@@ -185,6 +190,22 @@ export function PlansScreen() {
               placeholderTextColor={colors.neutral[400]}
               className="ml-2 flex-1 py-0 text-sm text-foreground"
             />
+          </View>
+          <View className="flex-row gap-2 pt-1">
+            {([['base', 'Plans'], ['addon', 'Add-ons'], ['all', 'All']] as const).map(([key, label]) => (
+              <Pressable
+                key={key}
+                accessibilityRole="button"
+                accessibilityState={{ selected: kind === key }}
+                testID={`plans-kind-${key}`}
+                onPress={() => setKind(key)}
+                className={`rounded-full px-3.5 py-1.5 ${kind === key ? 'bg-primary-600' : 'border border-border bg-surface'}`}
+              >
+                <Text className={`text-xs font-bold ${kind === key ? 'text-white' : 'text-foreground'}`}>
+                  {`${label} (${key === 'all' ? plans.length : plans.filter(plan => plan.kind === key).length})`}
+                </Text>
+              </Pressable>
+            ))}
           </View>
         </ScreenHeader>
       </SafeAreaView>

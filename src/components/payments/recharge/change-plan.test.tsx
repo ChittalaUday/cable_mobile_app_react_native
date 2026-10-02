@@ -26,8 +26,8 @@ jest.mock('@/lib/hooks/api/use-customers', () => ({
   useAddSubscription: () => ({ mutate: mockAddSubscription, isPending: false }),
 }));
 
-function mockPlan(id: string, name: string, price: string, discount: string, amount: string, billingCycle = 'monthly', status = 'active') {
-  return { id, name, price, discount, amount, billingCycle, status };
+function mockPlan(id: string, name: string, price: string, discount: string, amount: string, billingCycle = 'monthly', status = 'active', kind = 'base') {
+  return { id, name, price, discount, amount, billingCycle, status, kind };
 }
 
 jest.mock('@/lib/hooks/api/use-plans', () => ({
@@ -36,7 +36,7 @@ jest.mock('@/lib/hooks/api/use-plans', () => ({
       mockPlan('plan-gold', 'Gold HD', '400.00', '50.00', '350.00'),
       mockPlan('plan-platinum', 'Platinum', '600.00', '50.00', '550.00'),
       mockPlan('plan-quarter', 'Gold 3 Months', '900.00', '200.00', '700.00', 'quarterly'),
-      mockPlan('plan-sports', 'Sports Pack', '99.00', '0.00', '99.00'),
+      mockPlan('plan-sports', 'Sports Pack', '99.00', '0.00', '99.00', 'monthly', 'active', 'addon'),
       mockPlan('plan-old', 'Retired Plan', '10.00', '0.00', '10.00', 'monthly', 'inactive'),
     ],
     isPending: false,
@@ -59,7 +59,7 @@ const CUSTOMER = {
     outstandingBalance: '500.00',
     service: { id: 's1', name: 'Cable TV', slug: 'cable', icon: null },
     provider: { id: 'p1', name: 'ACT', slug: 'act' },
-    plan: { id: 'plan-gold', name: 'Gold HD', slug: 'gold', price: '400.00', discount: '50.00', amount: '350.00', billingCycle: 'monthly' },
+    plan: { id: 'plan-gold', name: 'Gold HD', slug: 'gold', kind: 'base' as const, price: '400.00', discount: '50.00', amount: '350.00', billingCycle: 'monthly' },
   }],
 } as unknown as CustomerDetail;
 
@@ -78,13 +78,13 @@ beforeEach(async () => {
 });
 
 describe('the plans page', () => {
-  it('pins the current plan and lists the other plans to switch to, by amount', () => {
+  it('pins the current plan and lists the other base plans to switch to, by amount', () => {
     mount();
 
     expect(screen.getByText('Current plan')).toBeTruthy();
     expect(screen.getByText('ACT • ₹400 ₹350')).toBeTruthy();
-    expect(screen.getByRole('tab', { name: 'Plans (3)' })).toBeTruthy();
-    expect(screen.getByRole('tab', { name: 'Add-ons (4)' })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Plans (2)' })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Add-ons (1)' })).toBeTruthy();
     expect(screen.getByText('Platinum')).toBeTruthy();
     expect(screen.getByText('₹900 ₹700')).toBeTruthy();
     // The current plan is pinned, not repeated among switch choices; a retired one is not offered.
@@ -95,14 +95,15 @@ describe('the plans page', () => {
   it('switches what a tap does when the other tab is pressed', () => {
     mount();
 
-    const plans = screen.getByRole('tab', { name: 'Plans (3)' });
-    const addons = screen.getByRole('tab', { name: 'Add-ons (4)' });
+    const plans = screen.getByRole('tab', { name: 'Plans (2)' });
+    const addons = screen.getByRole('tab', { name: 'Add-ons (1)' });
 
     expect(plans.props.accessibilityState).toEqual({ selected: true });
     fireEvent.press(addons);
     expect(addons.props.accessibilityState).toEqual({ selected: true });
-    // Adding a line can put the same plan on a second box.
-    expect(screen.getAllByText('Gold HD')).toHaveLength(2);
+    // Add-ons are their own plans; base plans are not offered here.
+    expect(screen.getByText('Sports Pack')).toBeTruthy();
+    expect(screen.queryByText('Platinum')).toBeNull();
   });
 
   it('localizes the category tabs and current-plan label in Telugu', async () => {
@@ -110,8 +111,8 @@ describe('the plans page', () => {
     mount();
 
     expect(screen.getByText('ప్రస్తుత ప్లాన్')).toBeTruthy();
-    expect(screen.getByRole('tab', { name: 'ప్లాన్‌లు (3)' })).toBeTruthy();
-    expect(screen.getByRole('tab', { name: 'యాడ్-ఆన్‌లు (4)' })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'ప్లాన్‌లు (2)' })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'యాడ్-ఆన్‌లు (1)' })).toBeTruthy();
   });
 
   it('searches by plan name and says when nothing matches', () => {
@@ -160,7 +161,7 @@ describe('the plans page', () => {
   it('adds a plan as another line against the chosen one and makes it the one the flow acts on', async () => {
     mount();
 
-    fireEvent.press(screen.getByRole('tab', { name: 'Add-ons (4)' }));
+    fireEvent.press(screen.getByRole('tab', { name: 'Add-ons (1)' }));
     fireEvent.press(screen.getByText('Sports Pack'));
 
     await waitFor(() => expect(mockAddSubscription).toHaveBeenCalled());

@@ -56,6 +56,7 @@ function PlanForm({ existing }: { existing: Plan | null }) {
   const [price, setPrice] = React.useState(existing?.price ?? '');
   const [discount, setDiscount] = React.useState(existing?.discount ?? '0');
   const [billingCycle, setBillingCycle] = React.useState<Cycle>(existing?.billingCycle ?? 'monthly');
+  const [kind, setKind] = React.useState<Plan['kind']>(existing?.kind ?? 'base');
   const [description, setDescription] = React.useState(existing?.description ?? '');
   const [isActive, setIsActive] = React.useState(existing === null || existing.status === 'active');
   const [packageIds, setPackageIds] = React.useState<string[]>((existing?.packages ?? []).map(pkg => pkg.id));
@@ -109,6 +110,7 @@ function PlanForm({ existing }: { existing: Plan | null }) {
           id: editingId,
           patch: {
             name: name.trim(),
+            kind,
             price: money(price),
             discount: money(discount),
             billingCycle,
@@ -123,6 +125,7 @@ function PlanForm({ existing }: { existing: Plan | null }) {
           payload: {
             serviceProviderId: providerId,
             name: name.trim(),
+            kind,
             price: money(price),
             discount: money(discount),
             billingCycle,
@@ -209,6 +212,24 @@ function PlanForm({ existing }: { existing: Plan | null }) {
                 <Text className="text-sm font-semibold text-foreground">{providerName}</Text>
               </View>
             )}
+
+        <View className="gap-1.5">
+          <FieldLabel required>Sold as</FieldLabel>
+          <View className="flex-row gap-2">
+            {([['base', 'Plan — what a connection is on'], ['addon', 'Add-on — beside a plan']] as const).map(([key, label]) => (
+              <Pressable
+                key={key}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: kind === key }}
+                testID={`plan-kind-${key}`}
+                onPress={() => setKind(key)}
+                className={`flex-1 rounded-2xl border p-3 ${kind === key ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/40' : 'border-border bg-card'}`}
+              >
+                <Text className={`text-xs font-bold ${kind === key ? 'text-primary-600' : 'text-foreground'}`}>{label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
 
         <View className="flex-row gap-3">
           <View className="flex-1 gap-1.5">

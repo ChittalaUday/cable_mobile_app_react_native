@@ -83,7 +83,7 @@ const DEFAULT_CUSTOMER_DETAIL: CustomerDetail = {
       installationAddress: '12-3-45, Main Road, Mandapeta',
       service: { id: 'srv-1', name: 'Standard Cable HD Pack', slug: 'standard-cable-hd', icon: 'tv' },
       provider: { id: 'prov-1', name: 'Satya Cable', slug: 'satya-cable' },
-      plan: { id: 'plan-1', name: 'Standard HD', slug: 'standard-hd', price: '400.00', discount: '50.00', amount: '350.00', billingCycle: 'monthly' },
+      plan: { id: 'plan-1', name: 'Standard HD', slug: 'standard-hd', kind: 'base' as const, price: '400.00', discount: '50.00', amount: '350.00', billingCycle: 'monthly' },
     },
   ],
   equipment: [
@@ -148,7 +148,7 @@ function normalizeCustomerDetail(c: CustomerDetail | CustomerDetailsData | undef
             installationAddress: data.address || null,
             service: { id: 'srv-legacy', name: data.packageName, slug: 'cable', icon: 'tv' },
             provider: { id: 'prov-legacy', name: 'Satya Cable', slug: 'satya' },
-            plan: { id: 'plan-legacy', name: data.packageName, slug: 'standard', price: '350.00', discount: '0.00', amount: '350.00', billingCycle: 'monthly' },
+            plan: { id: 'plan-legacy', name: data.packageName, slug: 'standard', kind: 'base' as const, price: '350.00', discount: '0.00', amount: '350.00', billingCycle: 'monthly' },
           },
         ]
       : [],

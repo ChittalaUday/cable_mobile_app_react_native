@@ -108,7 +108,7 @@ function line(id: string, planName: string, due: string) {
     installationAddress: null,
     service: { id: 's1', name: 'Cable TV', slug: 'cable', icon: null },
     provider: { id: 'p1', name: 'ACT', slug: 'act' },
-    plan: { id: `plan-${id}`, name: planName, slug: 'plan', price: '400.00', discount: '50.00', amount: '350.00', billingCycle: 'monthly' as const },
+    plan: { id: `plan-${id}`, name: planName, slug: 'plan', kind: 'base' as const, price: '400.00', discount: '50.00', amount: '350.00', billingCycle: 'monthly' as const },
   };
 }
 

@@ -2835,6 +2835,7 @@
                                       "id",
                                       "name",
                                       "slug",
+                                      "kind",
                                       "price",
                                       "discount",
                                       "amount",
@@ -2850,6 +2851,13 @@
                                       },
                                       "slug": {
                                         "type": "string"
+                                      },
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "base",
+                                          "addon"
+                                        ]
                                       },
                                       "price": {
                                         "type": "string",
@@ -3869,6 +3877,7 @@
                               "id",
                               "name",
                               "slug",
+                              "kind",
                               "price",
                               "discount",
                               "amount",
@@ -3884,6 +3893,13 @@
                               },
                               "slug": {
                                 "type": "string"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "base",
+                                  "addon"
+                                ]
                               },
                               "price": {
                                 "type": "string",
@@ -4442,6 +4458,7 @@
                               "id",
                               "name",
                               "slug",
+                              "kind",
                               "price",
                               "discount",
                               "amount",
@@ -4457,6 +4474,13 @@
                               },
                               "slug": {
                                 "type": "string"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "base",
+                                  "addon"
+                                ]
                               },
                               "price": {
                                 "type": "string",
@@ -5066,6 +5090,7 @@
                               "id",
                               "name",
                               "slug",
+                              "kind",
                               "price",
                               "discount",
                               "amount",
@@ -5081,6 +5106,13 @@
                               },
                               "slug": {
                                 "type": "string"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "base",
+                                  "addon"
+                                ]
                               },
                               "price": {
                                 "type": "string",
@@ -5524,6 +5556,7 @@
                         "id",
                         "name",
                         "slug",
+                        "kind",
                         "price",
                         "discount",
                         "amount",
@@ -5539,6 +5572,13 @@
                         },
                         "slug": {
                           "type": "string"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "base",
+                            "addon"
+                          ]
                         },
                         "price": {
                           "type": "string",
@@ -5824,6 +5864,7 @@
                         "id",
                         "name",
                         "slug",
+                        "kind",
                         "price",
                         "discount",
                         "amount",
@@ -5839,6 +5880,13 @@
                         },
                         "slug": {
                           "type": "string"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "base",
+                            "addon"
+                          ]
                         },
                         "price": {
                           "type": "string",
@@ -19185,6 +19233,18 @@
             "schema": {
               "type": "string",
               "enum": [
+                "base",
+                "addon"
+              ]
+            },
+            "in": "query",
+            "name": "kind",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
                 "active",
                 "inactive"
               ]
@@ -19231,6 +19291,7 @@
                           "serviceIcon",
                           "name",
                           "slug",
+                          "kind",
                           "price",
                           "discount",
                           "amount",
@@ -19282,6 +19343,13 @@
                             "minLength": 1,
                             "maxLength": 60,
                             "pattern": "^[a-z0-9]+(?:[-_][a-z0-9]+)*$"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "base",
+                              "addon"
+                            ]
                           },
                           "price": {
                             "type": "string",
@@ -19488,6 +19556,13 @@
                     "maxLength": 60,
                     "pattern": "^[a-z0-9]+(?:[-_][a-z0-9]+)*$"
                   },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "base",
+                      "addon"
+                    ]
+                  },
                   "price": {
                     "type": "string",
                     "pattern": "^\\d{1,10}(\\.\\d{1,2})?$",
@@ -19566,6 +19641,7 @@
                     "serviceIcon",
                     "name",
                     "slug",
+                    "kind",
                     "price",
                     "discount",
                     "amount",
@@ -19617,6 +19693,13 @@
                       "minLength": 1,
                       "maxLength": 60,
                       "pattern": "^[a-z0-9]+(?:[-_][a-z0-9]+)*$"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "base",
+                        "addon"
+                      ]
                     },
                     "price": {
                       "type": "string",
@@ -19811,6 +19894,7 @@
                     "serviceIcon",
                     "name",
                     "slug",
+                    "kind",
                     "price",
                     "discount",
                     "amount",
@@ -19862,6 +19946,13 @@
                       "minLength": 1,
                       "maxLength": 60,
                       "pattern": "^[a-z0-9]+(?:[-_][a-z0-9]+)*$"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "base",
+                        "addon"
+                      ]
                     },
                     "price": {
                       "type": "string",
@@ -20040,6 +20131,13 @@
                     "minLength": 1,
                     "maxLength": 120
                   },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "base",
+                      "addon"
+                    ]
+                  },
                   "price": {
                     "type": "string",
                     "pattern": "^\\d{1,10}(\\.\\d{1,2})?$",
@@ -20144,6 +20242,7 @@
                     "serviceIcon",
                     "name",
                     "slug",
+                    "kind",
                     "price",
                     "discount",
                     "amount",
@@ -20195,6 +20294,13 @@
                       "minLength": 1,
                       "maxLength": 60,
                       "pattern": "^[a-z0-9]+(?:[-_][a-z0-9]+)*$"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "base",
+                        "addon"
+                      ]
                     },
                     "price": {
                       "type": "string",
@@ -25950,6 +26056,7 @@
                                       "id",
                                       "name",
                                       "slug",
+                                      "kind",
                                       "price",
                                       "discount",
                                       "amount",
@@ -25964,6 +26071,9 @@
                                         "type": "string"
                                       },
                                       "slug": {
+                                        "type": "string"
+                                      },
+                                      "kind": {
                                         "type": "string"
                                       },
                                       "price": {

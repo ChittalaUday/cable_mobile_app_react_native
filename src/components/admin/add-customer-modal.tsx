@@ -77,7 +77,8 @@ export function AddCustomerModal({ visible, onClose, onSuccess }: AddCustomerMod
   const [area, setArea] = React.useState<Location | null>(null);
 
   const { mutateAsync: createCustomer, isPending } = useCreateCustomer();
-  const { data: allPlans } = usePlans({ variables: { status: 'active' } });
+  // A connection sits on a base plan; add-ons are added to it afterwards.
+  const { data: allPlans } = usePlans({ variables: { status: 'active', kind: 'base' } });
   const { data: areaPage } = useLocations({ variables: areaQuery.trim() === '' ? undefined : { q: areaQuery.trim() } });
 
   const catalogue = (allPlans ?? []).filter(item => item.status === 'active');

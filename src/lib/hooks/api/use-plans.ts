@@ -10,11 +10,18 @@ export type PlanVariables = ApiQuery<'/api/v1/plans'> | void;
 
 export const usePlans = createQuery<Plan[], PlanVariables, Error>({
   queryKey: [QUERY_KEYS.PLANS],
+  // Every page: a provider can sell hundreds of add-ons, past the API's page cap.
   fetcher: async (variables) => {
-    const response = await client.get<ApiResponse<'/api/v1/plans', 'get', 200>>('/plans', {
-      params: { limit: MAX_PAGE_SIZE, ...variables },
-    });
-    return response.data.items ?? [];
+    const all: Plan[] = [];
+    for (let page = 1; ; page += 1) {
+      const response = await client.get<ApiResponse<'/api/v1/plans', 'get', 200>>('/plans', {
+        params: { limit: MAX_PAGE_SIZE, page, ...variables },
+      });
+      const items = response.data.items ?? [];
+      all.push(...items);
+      if (items.length < MAX_PAGE_SIZE || all.length >= response.data.total)
+        return all;
+    }
   },
   staleTime: 5 * 60 * 1000,
 });

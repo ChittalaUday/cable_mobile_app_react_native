@@ -59,16 +59,17 @@ export function ChangePlanScreen() {
   const busy = isChanging || isAdding;
 
   const needle = query.trim().toLowerCase();
-  // Plans are the only thing sold: a switch moves this line, an add puts the
-  // plan on a line of its own beside it (an addon or a second box).
+  // A switch moves this line onto another base plan; an add-on goes on as a
+  // line of its own beside it.
   const sellable = (offered ?? []).filter(item =>
     item.status === 'active'
     && (needle === '' || item.name.toLowerCase().includes(needle)),
   );
-  const plans = sellable.filter(item => item.id !== line?.plan.id);
+  const plans = sellable.filter(item => item.kind === 'base' && item.id !== line?.plan.id);
+  const addons = sellable.filter(item => item.kind === 'addon');
   const sections: PlanSection[] = [
     { key: 'plans', title: 'Change plan', empty: needle === '' ? 'No other plan from this provider.' : 'No plan matches that.', trailing: 'Switch', data: plans },
-    { key: 'addons', title: 'Add as another line', empty: needle === '' ? 'No plans from this provider.' : 'No plan matches that.', trailing: 'Add', data: sellable },
+    { key: 'addons', title: t('recharge.add_ons'), empty: needle === '' ? 'No add-ons from this provider.' : 'No add-on matches that.', trailing: 'Add', data: addons },
   ];
 
   // The tab picks what a tap does: move this line, or add a line beside it.
