@@ -1,3 +1,4 @@
+import type { ApiBody, ApiQuery, ApiResponse } from '@/lib/api/contracts';
 import type {
   Availability,
   Coverage,
@@ -7,7 +8,6 @@ import type {
   LocationCategory,
   LocationSchema,
   Page,
-  QueryOptions,
 } from '@/lib/api/types';
 import { createInfiniteQuery, createMutation, createQuery } from 'react-query-kit';
 import { client } from '@/lib/api/client';
@@ -16,7 +16,7 @@ import { MAX_PAGE_SIZE } from '@/lib/api/types';
 export const useLocationCategories = createQuery<LocationCategory[], void, Error>({
   queryKey: ['location-categories'],
   fetcher: async () => {
-    const response = await client.get<LocationCategory[]>('/location-categories');
+    const response = await client.get<ApiResponse<'/api/v1/location-categories', 'get', 200>>('/location-categories');
     return response.data;
   },
   staleTime: 10 * 60 * 1000,
@@ -25,24 +25,18 @@ export const useLocationCategories = createQuery<LocationCategory[], void, Error
 export const useLocationSchemas = createQuery<LocationSchema[], void, Error>({
   queryKey: ['location-schemas'],
   fetcher: async () => {
-    const response = await client.get<LocationSchema[]>('/location-schemas');
+    const response = await client.get<ApiResponse<'/api/v1/location-schemas', 'get', 200>>('/location-schemas');
     return response.data;
   },
   staleTime: 10 * 60 * 1000,
 });
 
-export type LocationQueryVariables = (QueryOptions & {
-  parentId?: string;
-  categoryId?: string;
-  schemaId?: string;
-  /** Free-text search; the API calls it `q`. */
-  q?: string;
-}) | void;
+export type LocationQueryVariables = ApiQuery<'/api/v1/locations'> | void;
 
 export const useLocations = createQuery<Page<Location>, LocationQueryVariables, Error>({
   queryKey: ['locations'],
   fetcher: async (variables) => {
-    const response = await client.get<Page<Location>>('/locations', {
+    const response = await client.get<ApiResponse<'/api/v1/locations', 'get', 200>>('/locations', {
       params: { limit: MAX_PAGE_SIZE, ...variables },
     });
     return response.data;
@@ -52,7 +46,7 @@ export const useLocations = createQuery<Page<Location>, LocationQueryVariables, 
 
 /** The chain to a node, for opening the tree straight onto it. */
 export async function fetchLocationAncestors(id: string): Promise<LocationAncestor[]> {
-  const response = await client.get<LocationAncestor[]>(`/locations/${id}/ancestors`);
+  const response = await client.get<ApiResponse<'/api/v1/locations/{id}/ancestors', 'get', 200>>(`/locations/${id}/ancestors`);
   return response.data;
 }
 
@@ -70,7 +64,7 @@ export const useLocationLevel = createInfiniteQuery<
 >({
   queryKey: ['locations', 'level'],
   fetcher: async ({ parentId }, { pageParam }) => {
-    const response = await client.get<Page<Location>>('/locations', {
+    const response = await client.get<ApiResponse<'/api/v1/locations', 'get', 200>>('/locations', {
       params: { parentId: parentId ?? 'null', limit: MAX_PAGE_SIZE, page: pageParam },
     });
     return response.data;
@@ -85,7 +79,7 @@ export const useLocationLevel = createInfiniteQuery<
 
 export const useCreateLocation = createMutation<Location, { payload: CreateLocationInput }, Error>({
   mutationFn: async ({ payload }) => {
-    const response = await client.post<Location>('/locations', payload);
+    const response = await client.post<ApiResponse<'/api/v1/locations', 'post', 201>>('/locations', payload);
     return response.data;
   },
 });
@@ -96,7 +90,7 @@ export const useUpdateLocation = createMutation<
   Error
 >({
   mutationFn: async ({ id, patch }) => {
-    const response = await client.patch<Location>(`/locations/${id}`, patch);
+    const response = await client.patch<ApiResponse<'/api/v1/locations/{id}', 'patch', 200>>(`/locations/${id}`, patch);
     return response.data;
   },
 });
@@ -110,7 +104,7 @@ export const useDeleteLocation = createMutation<void, { id: string }, Error>({
 export const useLocationAvailability = createQuery<Availability, { id: string }, Error>({
   queryKey: ['locations', 'availability'],
   fetcher: async ({ id }) => {
-    const response = await client.get<Availability>(`/locations/${id}/available-services`);
+    const response = await client.get<ApiResponse<'/api/v1/locations/{id}/available-services', 'get', 200>>(`/locations/${id}/available-services`);
     return response.data;
   },
   staleTime: 5 * 60 * 1000,
@@ -119,7 +113,7 @@ export const useLocationAvailability = createQuery<Availability, { id: string },
 export const useServiceCoverage = createQuery<Coverage[], { id: string }, Error>({
   queryKey: ['services', 'coverage'],
   fetcher: async ({ id }) => {
-    const response = await client.get<Coverage[]>(`/services/${id}/coverage`);
+    const response = await client.get<ApiResponse<'/api/v1/services/{id}/coverage', 'get', 200>>(`/services/${id}/coverage`);
     return response.data;
   },
   staleTime: 5 * 60 * 1000,
@@ -128,7 +122,7 @@ export const useServiceCoverage = createQuery<Coverage[], { id: string }, Error>
 export const useServiceProviderCoverage = createQuery<Coverage[], { id: string }, Error>({
   queryKey: ['service-providers', 'coverage'],
   fetcher: async ({ id }) => {
-    const response = await client.get<Coverage[]>(`/service-providers/${id}/coverage`);
+    const response = await client.get<ApiResponse<'/api/v1/service-providers/{id}/coverage', 'get', 200>>(`/service-providers/${id}/coverage`);
     return response.data;
   },
   staleTime: 5 * 60 * 1000,
@@ -137,7 +131,7 @@ export const useServiceProviderCoverage = createQuery<Coverage[], { id: string }
 export const usePackageCoverage = createQuery<Coverage[], { id: string }, Error>({
   queryKey: ['packages', 'coverage'],
   fetcher: async ({ id }) => {
-    const response = await client.get<Coverage[]>(`/packages/${id}/coverage`);
+    const response = await client.get<ApiResponse<'/api/v1/packages/{id}/coverage', 'get', 200>>(`/packages/${id}/coverage`);
     return response.data;
   },
   staleTime: 5 * 60 * 1000,
@@ -150,11 +144,7 @@ export const usePackageCoverage = createQuery<Coverage[], { id: string }, Error>
  * covered — "the whole town, except Block C" is two entries, not one per street
  * around it.
  */
-export type CoverageEntryInput = {
-  locationId: string;
-  isAvailable?: boolean;
-  note?: string;
-};
+export type CoverageEntryInput = ApiBody<'/api/v1/services/{id}/coverage', 'put'>['entries'][number];
 
 export const useUpdateServiceCoverage = createMutation<
   void,

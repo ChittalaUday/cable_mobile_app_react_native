@@ -43,7 +43,10 @@
     "test:ci": "pnpm run test --coverage",
     "test:watch": "pnpm run test --watch",
     "install-maestro": "curl -Ls 'https://get.maestro.mobile.dev' | bash",
-    "e2e-test": "maestro test .maestro/ -e APP_ID=com.udaychittala.satyacablenetwork.development -e DEV_SERVER=http://10.0.2.2:8081 -e DEV_SCHEME=satyaCable.development"
+    "e2e-test": "maestro test .maestro/ -e APP_ID=com.udaychittala.satyacablenetwork.development -e DEV_SERVER=http://10.0.2.2:8081 -e DEV_SCHEME=satyaCable.development",
+    "api:generate": "openapi-typescript api/openapi.json -o src/lib/api/schema.generated.ts --default-non-nullable false",
+    "api:check": "openapi-typescript api/openapi.json -o src/lib/api/schema.generated.ts --default-non-nullable false --check",
+    "api:sync": "node scripts/sync-api.mjs"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
@@ -60,6 +63,7 @@
     "@react-native-firebase/messaging": "^26.4.0",
     "@react-native-firebase/perf": "^26.4.0",
     "@react-native-google-signin/google-signin": "^16.1.5",
+    "@react-navigation/native": "7.1.28",
     "@shopify/flash-list": "2.0.2",
     "@tanstack/react-form": "^1.27.7",
     "@tanstack/react-query": "^5.90.19",
@@ -128,6 +132,7 @@
     "@types/invariant": "^2.2.37",
     "@types/jest": "^29.5.14",
     "@types/lodash.memoize": "^4.1.9",
+    "@types/node": "25.0.9",
     "@types/react": "~19.1.17",
     "@types/react-test-renderer": "^19",
     "babel-plugin-module-resolver": "^5.0.2",
@@ -149,6 +154,7 @@
     "jest-junit": "^16.0.0",
     "lint-staged": "^16.2.7",
     "np": "^10.3.0",
+    "openapi-typescript": "^7.13.0",
     "tailwindcss": "4.1.18",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"

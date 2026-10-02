@@ -50,6 +50,7 @@ const DEFAULT_CUSTOMER_DETAIL: CustomerDetail = {
   subscriptions: [
     {
       id: 'sub-1',
+      locationId: 'location-1',
       serviceAccountNumber: 'ACT9001',
       status: 'active',
       startDate: '2026-01-01',
@@ -113,6 +114,7 @@ function normalizeCustomerDetail(c: CustomerDetail | CustomerDetailsData | undef
       ? [
           {
             id: 'sub-legacy-1',
+            locationId: 'location-1',
             serviceAccountNumber: data.vcNumber || 'LEGACY-01',
             status: 'active',
             startDate: '2026-01-01',
@@ -123,7 +125,7 @@ function normalizeCustomerDetail(c: CustomerDetail | CustomerDetailsData | undef
             installationAddress: data.address || null,
             service: { id: 'srv-legacy', name: data.packageName, slug: 'cable', icon: 'tv' },
             provider: { id: 'prov-legacy', name: 'Satya Cable', slug: 'satya' },
-            package: { id: 'pkg-legacy', name: data.packageName, slug: 'standard', packageType: 'cable' },
+            package: { id: 'pkg-legacy', name: data.packageName, slug: 'standard', packageType: 'base' },
           },
         ]
       : [],

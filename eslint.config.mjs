@@ -33,6 +33,7 @@ export default antfu(
     // Global ignores
     ignores: [
       'dist/*',
+      'src/lib/api/schema.generated.ts',
       'node_modules',
       '__tests__/',
       'coverage',

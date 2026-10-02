@@ -1,3 +1,4 @@
+import type { ApiQuery, ApiResponse } from '@/lib/api/contracts';
 import type {
   ApprovalRequest,
   ApprovalRequestPayload,
@@ -22,11 +23,7 @@ function refreshInventory() {
   handleRealtimeSync({ sync: 'inventory' });
 }
 
-export type StockListParams = {
-  locationId?: string;
-  status?: 'all' | 'in_stock' | 'low_stock';
-  search?: string;
-};
+export type StockListParams = ApiQuery<'/api/v1/inventory/stock'>;
 
 export const useInventoryDashboard = createQuery<
   InventoryDashboard,
@@ -35,7 +32,7 @@ export const useInventoryDashboard = createQuery<
 >({
   queryKey: ['inventory', 'dashboard'],
   fetcher: async (variables) => {
-    const response = await client.get<InventoryDashboard>('/inventory/dashboard', {
+    const response = await client.get<ApiResponse<'/api/v1/inventory/dashboard', 'get', 200>>('/inventory/dashboard', {
       params: variables || {},
     });
     return response.data;
@@ -46,7 +43,7 @@ export const useInventoryDashboard = createQuery<
 export const useInventoryStock = createQuery<StockItem[], StockListParams | void, Error>({
   queryKey: ['inventory', 'stock'],
   fetcher: async (variables) => {
-    const response = await client.get<StockItem[]>('/inventory/stock', {
+    const response = await client.get<ApiResponse<'/api/v1/inventory/stock', 'get', 200>>('/inventory/stock', {
       params: variables || {},
     });
     return response.data;
@@ -57,7 +54,7 @@ export const useInventoryStock = createQuery<StockItem[], StockListParams | void
 export const useInventoryItem = createQuery<ItemDetails, { id: string }, Error>({
   queryKey: ['inventory', 'item'],
   fetcher: async ({ id }) => {
-    const response = await client.get<ItemDetails>(`/inventory/stock/${id}`);
+    const response = await client.get<ApiResponse<'/api/v1/inventory/stock/{id}', 'get', 200>>(`/inventory/stock/${id}`);
     return response.data;
   },
   staleTime: 60 * 1000,
@@ -69,27 +66,27 @@ export const useIssueEquipment = createMutation<
   Error
 >({
   mutationFn: async ({ payload }) => {
-    const response = await client.post<IssueEquipmentResponse>('/inventory/issue', payload);
+    const response = await client.post<ApiResponse<'/api/v1/inventory/issue', 'post', 201>>('/inventory/issue', payload);
     return response.data;
   },
   onSuccess: refreshInventory,
 });
 
-export const useCreateCatalogItem = createMutation<StockItem, { payload: CatalogItemPayload }, Error>({
+export const useCreateCatalogItem = createMutation<ApiResponse<'/api/v1/inventory/catalog', 'post', 201>, { payload: CatalogItemPayload }, Error>({
   mutationFn: async ({ payload }) => {
-    const response = await client.post<StockItem>('/inventory/catalog', payload);
+    const response = await client.post<ApiResponse<'/api/v1/inventory/catalog', 'post', 201>>('/inventory/catalog', payload);
     return response.data;
   },
   onSuccess: refreshInventory,
 });
 
 export const useCreateApprovalRequest = createMutation<
-  ApprovalRequest,
+  ApiResponse<'/api/v1/inventory/approval-requests', 'post', 201>,
   { payload: ApprovalRequestPayload },
   Error
 >({
   mutationFn: async ({ payload }) => {
-    const response = await client.post<ApprovalRequest>('/inventory/approval-requests', payload);
+    const response = await client.post<ApiResponse<'/api/v1/inventory/approval-requests', 'post', 201>>('/inventory/approval-requests', payload);
     return response.data;
   },
   onSuccess: refreshInventory,
@@ -98,7 +95,7 @@ export const useCreateApprovalRequest = createMutation<
 export const useApprovalRequests = createQuery<ApprovalRequest[], void, Error>({
   queryKey: ['inventory', 'requests'],
   fetcher: async () => {
-    const response = await client.get<ApprovalRequest[]>('/inventory/approval-requests');
+    const response = await client.get<ApiResponse<'/api/v1/inventory/approval-requests', 'get', 200>>('/inventory/approval-requests');
     return response.data;
   },
   staleTime: 30 * 1000,
@@ -110,7 +107,7 @@ export const useReviewApprovalRequest = createMutation<
   Error
 >({
   mutationFn: async ({ id, patch }) => {
-    const response = await client.patch<ApprovalRequest>(`/inventory/approval-requests/${id}`, patch);
+    const response = await client.patch<ApiResponse<'/api/v1/inventory/approval-requests/{id}', 'patch', 200>>(`/inventory/approval-requests/${id}`, patch);
     return response.data;
   },
   onSuccess: refreshInventory,
@@ -119,7 +116,7 @@ export const useReviewApprovalRequest = createMutation<
 export const useInventoryMovements = createQuery<StockMovement[], void, Error>({
   queryKey: ['inventory', 'movements'],
   fetcher: async () => {
-    const response = await client.get<StockMovement[]>('/inventory/movements');
+    const response = await client.get<ApiResponse<'/api/v1/inventory/movements', 'get', 200>>('/inventory/movements');
     return response.data;
   },
   staleTime: 30 * 1000,
@@ -128,14 +125,14 @@ export const useInventoryMovements = createQuery<StockMovement[], void, Error>({
 export const useInventoryLocations = createQuery<InventoryLocation[], void, Error>({
   queryKey: ['inventory', 'locations'],
   fetcher: async () => {
-    const response = await client.get<InventoryLocation[]>('/inventory/locations');
+    const response = await client.get<ApiResponse<'/api/v1/inventory/locations', 'get', 200>>('/inventory/locations');
     return response.data;
   },
   staleTime: 60 * 1000,
 });
 
 export async function lookupInventory(q: string): Promise<InventoryLookupItem[]> {
-  const response = await client.get<InventoryLookupItem[]>('/inventory/lookup', {
+  const response = await client.get<ApiResponse<'/api/v1/inventory/lookup', 'get', 200>>('/inventory/lookup', {
     params: { q },
   });
   return response.data;
@@ -160,7 +157,7 @@ export const useCustomerEquipment = createQuery<
 >({
   queryKey: ['inventory', 'customer-equipment'],
   fetcher: async (variables) => {
-    const response = await client.get<CustomerEquipmentRecord[]>('/inventory/customer-equipment', {
+    const response = await client.get<ApiResponse<'/api/v1/inventory/customer-equipment', 'get', 200>>('/inventory/customer-equipment', {
       params: variables || {},
     });
     return response.data;
@@ -169,24 +166,24 @@ export const useCustomerEquipment = createQuery<
 });
 
 export const useInwardStock = createMutation<
-  { success: boolean; quantity: number; movementId?: string },
+  ApiResponse<'/api/v1/inventory/inward', 'post', 201>,
   { payload: InwardStockPayload },
   Error
 >({
   mutationFn: async ({ payload }) => {
-    const response = await client.post<{ success: boolean; quantity: number; movementId?: string }>('/inventory/inward', payload);
+    const response = await client.post<ApiResponse<'/api/v1/inventory/inward', 'post', 201>>('/inventory/inward', payload);
     return response.data;
   },
   onSuccess: refreshInventory,
 });
 
 export const useTransferStock = createMutation<
-  { success: boolean; equipmentId: string; movementId: string },
+  ApiResponse<'/api/v1/inventory/transfer', 'post', 201>,
   { payload: TransferStockPayload },
   Error
 >({
   mutationFn: async ({ payload }) => {
-    const response = await client.post<{ success: boolean; equipmentId: string; movementId: string }>('/inventory/transfer', payload);
+    const response = await client.post<ApiResponse<'/api/v1/inventory/transfer', 'post', 201>>('/inventory/transfer', payload);
     return response.data;
   },
   onSuccess: refreshInventory,

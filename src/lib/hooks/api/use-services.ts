@@ -1,11 +1,12 @@
-import type { CreateServiceInput, QueryOptions, Service, UpdateServiceInput } from '@/lib/api/types';
+import type { ApiQuery, ApiResponse } from '@/lib/api/contracts';
+import type { CreateServiceInput, Service, UpdateServiceInput } from '@/lib/api/types';
 import { createMutation, createQuery } from 'react-query-kit';
 import { client } from '@/lib/api/client';
 
-export const useServices = createQuery<Service[], QueryOptions | void, Error>({
+export const useServices = createQuery<Service[], ApiQuery<'/api/v1/services'> | void, Error>({
   queryKey: ['services'],
   fetcher: async (variables) => {
-    const response = await client.get<Service[]>('/services', { params: variables || {} });
+    const response = await client.get<ApiResponse<'/api/v1/services', 'get', 200>>('/services', { params: variables || {} });
     return response.data;
   },
   staleTime: 5 * 60 * 1000,
@@ -14,7 +15,7 @@ export const useServices = createQuery<Service[], QueryOptions | void, Error>({
 export const useService = createQuery<Service, { id: string }, Error>({
   queryKey: ['services', 'detail'],
   fetcher: async ({ id }) => {
-    const response = await client.get<Service>(`/services/${id}`);
+    const response = await client.get<ApiResponse<'/api/v1/services/{id}', 'get', 200>>(`/services/${id}`);
     return response.data;
   },
   staleTime: 5 * 60 * 1000,
@@ -22,14 +23,14 @@ export const useService = createQuery<Service, { id: string }, Error>({
 
 export const useCreateService = createMutation<Service, { payload: CreateServiceInput }, Error>({
   mutationFn: async ({ payload }) => {
-    const response = await client.post<Service>('/services', payload);
+    const response = await client.post<ApiResponse<'/api/v1/services', 'post', 201>>('/services', payload);
     return response.data;
   },
 });
 
 export const useUpdateService = createMutation<Service, { id: string; patch: UpdateServiceInput }, Error>({
   mutationFn: async ({ id, patch }) => {
-    const response = await client.patch<Service>(`/services/${id}`, patch);
+    const response = await client.patch<ApiResponse<'/api/v1/services/{id}', 'patch', 200>>(`/services/${id}`, patch);
     return response.data;
   },
 });

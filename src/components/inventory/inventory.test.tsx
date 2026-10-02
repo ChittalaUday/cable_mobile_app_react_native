@@ -32,7 +32,7 @@ function renderWithQueryClient(ui: React.ReactElement) {
 
 // Mock expo-camera
 jest.mock('expo-camera', () => {
-  const { View } = require<typeof ReactNativeModule>('react-native');
+  const { View } = require('react-native') as typeof ReactNativeModule;
   return {
     CameraView: (props: ViewProps) => <View testID="mock-camera-view" {...props} />,
     useCameraPermissions: () => [{ granted: true, canAskAgain: true, status: 'granted' }, jest.fn()],
@@ -241,7 +241,7 @@ describe('inventory Screens', () => {
   });
 
   it('renders InventoryLocationModal with locations wired from locations table', () => {
-    const { InventoryLocationModal } = require<typeof InventoryLocationModalModule>('./inventory-location-modal');
+    const { InventoryLocationModal } = require('./inventory-location-modal') as typeof InventoryLocationModalModule;
     const onSelect = jest.fn();
     const onClose = jest.fn();
 
@@ -260,7 +260,7 @@ describe('inventory Screens', () => {
   });
 
   it('renders IssueScanSearchScreen with camera scan UI and search toggle', () => {
-    const { IssueScanSearchScreen } = require<typeof IssueScanSearchModule>('./issue-scan-search');
+    const { IssueScanSearchScreen } = require('./issue-scan-search') as typeof IssueScanSearchModule;
     renderWithQueryClient(<IssueScanSearchScreen basePath="/admin/inventory" />);
 
     expect(screen.getByText('Issue to Customer')).toBeTruthy();
@@ -288,7 +288,7 @@ describe('inventory Screens', () => {
       availableStock: 0,
     }]);
 
-    const { IssueScanSearchScreen } = require<typeof IssueScanSearchModule>('./issue-scan-search');
+    const { IssueScanSearchScreen } = require('./issue-scan-search') as typeof IssueScanSearchModule;
     renderWithQueryClient(<IssueScanSearchScreen basePath="/admin/inventory" />);
 
     fireEvent.changeText(screen.getByPlaceholderText('Enter serial code (or barcode)...'), 'STB-ASSIGNED');
@@ -299,7 +299,7 @@ describe('inventory Screens', () => {
   });
 
   it('renders IssueSelectCustomerScreen and shows customer list or empty state', () => {
-    const { IssueSelectCustomerScreen } = require<typeof IssueSelectCustomerModule>('./issue-select-customer');
+    const { IssueSelectCustomerScreen } = require('./issue-select-customer') as typeof IssueSelectCustomerModule;
     renderWithQueryClient(
       <IssueSelectCustomerScreen
         catalogId="cat-1"
@@ -313,7 +313,7 @@ describe('inventory Screens', () => {
   });
 
   it('renders InventoryCustomerEquipmentScreen with active hardware assignments', () => {
-    const { InventoryCustomerEquipmentScreen } = require<typeof InventoryCustomerEquipmentModule>('./inventory-customer-equipment');
+    const { InventoryCustomerEquipmentScreen } = require('./inventory-customer-equipment') as typeof InventoryCustomerEquipmentModule;
     renderWithQueryClient(<InventoryCustomerEquipmentScreen />);
 
     expect(screen.getByText('Customer Equipment')).toBeTruthy();
@@ -323,7 +323,7 @@ describe('inventory Screens', () => {
   });
 
   it('renders InventoryReceiveScreen with item and location inputs', () => {
-    const { InventoryReceiveScreen } = require<typeof InventoryReceiveModule>('./inventory-receive');
+    const { InventoryReceiveScreen } = require('./inventory-receive') as typeof InventoryReceiveModule;
     renderWithQueryClient(<InventoryReceiveScreen basePath="/admin/inventory" />);
 
     expect(screen.getByText('Receive Stock')).toBeTruthy();
@@ -333,7 +333,7 @@ describe('inventory Screens', () => {
   });
 
   it('renders InventoryTransferScreen with destination options', () => {
-    const { InventoryTransferScreen } = require<typeof InventoryTransferModule>('./inventory-transfer');
+    const { InventoryTransferScreen } = require('./inventory-transfer') as typeof InventoryTransferModule;
     renderWithQueryClient(<InventoryTransferScreen basePath="/admin/inventory" />);
 
     expect(screen.getByText('Transfer Stock')).toBeTruthy();

@@ -1,12 +1,10 @@
+import type { ApiQuery, ApiResponse } from '@/lib/api/contracts';
 import type {
   CreateStaffInput,
   CreateTeamInput,
   LocationRef,
-  MembershipStatus,
   Page,
-  QueryOptions,
   StaffMember,
-  StaffRole,
   Team,
   TeamMember,
   UpdateStaffInput,
@@ -57,20 +55,12 @@ export function teamCoverageLabel(member: Pick<TeamMember, 'teamAreas'>): string
   return member.teamAreas.map(area => area.name).join(', ');
 }
 
-export type StaffQueryVariables = (QueryOptions & {
-  q?: string;
-  roleId?: StaffRole;
-  status?: MembershipStatus;
-  /** A team id, or the literal `'null'` for people on no crew. */
-  teamId?: string;
-  /** Who serves this node — a grant on it or on any ancestor counts. */
-  locationId?: string;
-}) | void;
+export type StaffQueryVariables = ApiQuery<'/api/v1/staff'> | void;
 
 export const useStaff = createQuery<Page<StaffMember>, StaffQueryVariables, Error>({
   queryKey: ['staff'],
   fetcher: async (variables) => {
-    const response = await client.get<Page<StaffMember>>('/staff', {
+    const response = await client.get<ApiResponse<'/api/v1/staff', 'get', 200>>('/staff', {
       params: { limit: MAX_PAGE_SIZE, ...variables },
     });
     return response.data;
@@ -81,21 +71,21 @@ export const useStaff = createQuery<Page<StaffMember>, StaffQueryVariables, Erro
 export const useStaffMember = createQuery<StaffMember, { id: string }, Error>({
   queryKey: ['staff', 'detail'],
   fetcher: async ({ id }) => {
-    const response = await client.get<StaffMember>(`/staff/${id}`);
+    const response = await client.get<ApiResponse<'/api/v1/staff/{id}', 'get', 200>>(`/staff/${id}`);
     return response.data;
   },
 });
 
 export const useCreateStaff = createMutation<StaffMember, { payload: CreateStaffInput }, Error>({
   mutationFn: async ({ payload }) => {
-    const response = await client.post<StaffMember>('/staff', payload);
+    const response = await client.post<ApiResponse<'/api/v1/staff', 'post', 201>>('/staff', payload);
     return response.data;
   },
 });
 
 export const useUpdateStaff = createMutation<StaffMember, { id: string; patch: UpdateStaffInput }, Error>({
   mutationFn: async ({ id, patch }) => {
-    const response = await client.patch<StaffMember>(`/staff/${id}`, patch);
+    const response = await client.patch<ApiResponse<'/api/v1/staff/{id}', 'patch', 200>>(`/staff/${id}`, patch);
     return response.data;
   },
 });
@@ -109,7 +99,7 @@ export const useDeleteStaff = createMutation<void, { id: string }, Error>({
 /** A set, not a diff: send the whole list of areas every time. */
 export const useSetStaffLocations = createMutation<StaffMember, { id: string; locationIds: string[] }, Error>({
   mutationFn: async ({ id, locationIds }) => {
-    const response = await client.put<StaffMember>(`/staff/${id}/locations`, { locationIds });
+    const response = await client.put<ApiResponse<'/api/v1/staff/{id}/locations', 'put', 200>>(`/staff/${id}/locations`, { locationIds });
     return response.data;
   },
 });
@@ -123,7 +113,7 @@ export const useSetStaffLocations = createMutation<StaffMember, { id: string; lo
  */
 export const useSetStaffTeamAreas = createMutation<StaffMember, { id: string; locationIds: string[] }, Error>({
   mutationFn: async ({ id, locationIds }) => {
-    const response = await client.put<StaffMember>(`/staff/${id}/team-areas`, { locationIds });
+    const response = await client.put<ApiResponse<'/api/v1/staff/{id}/team-areas', 'put', 200>>(`/staff/${id}/team-areas`, { locationIds });
     return response.data;
   },
 });
@@ -131,15 +121,15 @@ export const useSetStaffTeamAreas = createMutation<StaffMember, { id: string; lo
 export const useTeamMembers = createQuery<TeamMember[], { id: string }, Error>({
   queryKey: ['teams', 'members'],
   fetcher: async ({ id }) => {
-    const response = await client.get<TeamMember[]>(`/teams/${id}/members`);
+    const response = await client.get<ApiResponse<'/api/v1/teams/{id}/members', 'get', 200>>(`/teams/${id}/members`);
     return response.data;
   },
 });
 
-export const useTeams = createQuery<Page<Team>, (QueryOptions & { q?: string }) | void, Error>({
+export const useTeams = createQuery<Page<Team>, ApiQuery<'/api/v1/teams'> | void, Error>({
   queryKey: ['teams'],
   fetcher: async (variables) => {
-    const response = await client.get<Page<Team>>('/teams', {
+    const response = await client.get<ApiResponse<'/api/v1/teams', 'get', 200>>('/teams', {
       params: { limit: MAX_PAGE_SIZE, ...variables },
     });
     return response.data;
@@ -150,21 +140,21 @@ export const useTeams = createQuery<Page<Team>, (QueryOptions & { q?: string }) 
 export const useTeam = createQuery<Team, { id: string }, Error>({
   queryKey: ['teams', 'detail'],
   fetcher: async ({ id }) => {
-    const response = await client.get<Team>(`/teams/${id}`);
+    const response = await client.get<ApiResponse<'/api/v1/teams/{id}', 'get', 200>>(`/teams/${id}`);
     return response.data;
   },
 });
 
 export const useCreateTeam = createMutation<Team, { payload: CreateTeamInput }, Error>({
   mutationFn: async ({ payload }) => {
-    const response = await client.post<Team>('/teams', payload);
+    const response = await client.post<ApiResponse<'/api/v1/teams', 'post', 201>>('/teams', payload);
     return response.data;
   },
 });
 
 export const useUpdateTeam = createMutation<Team, { id: string; patch: UpdateTeamInput }, Error>({
   mutationFn: async ({ id, patch }) => {
-    const response = await client.patch<Team>(`/teams/${id}`, patch);
+    const response = await client.patch<ApiResponse<'/api/v1/teams/{id}', 'patch', 200>>(`/teams/${id}`, patch);
     return response.data;
   },
 });
@@ -178,7 +168,7 @@ export const useDeleteTeam = createMutation<void, { id: string }, Error>({
 /** Grants the whole crew an area at once — every member reaches it immediately. */
 export const useSetTeamLocations = createMutation<Team, { id: string; locationIds: string[] }, Error>({
   mutationFn: async ({ id, locationIds }) => {
-    const response = await client.put<Team>(`/teams/${id}/locations`, { locationIds });
+    const response = await client.put<ApiResponse<'/api/v1/teams/{id}/locations', 'put', 200>>(`/teams/${id}/locations`, { locationIds });
     return response.data;
   },
 });

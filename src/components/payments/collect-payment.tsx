@@ -23,12 +23,17 @@ import {
   Text,
   View,
 } from '@/components/ui';
-import { PAYMENT_METHOD_LABELS, PAYMENT_METHODS } from '@/lib/constants/billing';
+import { MAX_COLLECTION_AMOUNT, PAYMENT_METHOD_LABELS, PAYMENT_METHODS } from '@/lib/constants/billing';
 import { useCustomer } from '@/lib/hooks/api/use-customers';
 import { useInventoryStock } from '@/lib/hooks/api/use-inventory';
-import { newCollectionReference, useRecordCollection } from '@/lib/hooks/api/use-payments';
+import { useRecordCollection } from '@/lib/hooks/api/use-payments';
 import { fixPayload, useCollectionFix } from '@/lib/hooks/common/use-collection-fix';
+import { translate } from '@/lib/i18n/utils';
+import { isPaymentReferenceConflict, isPaymentResultUnknown } from '@/lib/payments/payment-errors';
+import { clear as clearPendingReference, get as getPendingReference, metadata as pendingMetadata } from '@/lib/payments/pending-reference';
 import { rupeesExact as rupees } from '@/lib/utils/admin-format';
+import { apiErrorMessage } from '@/lib/utils/api-error';
+import { isPaymentAmount } from '@/lib/utils/payment-amount';
 
 /**
  * The three outcomes a collector reports. `amount` is what changes between
@@ -82,11 +87,7 @@ export function CollectPaymentScreen({ customerId, basePath }: {
   const [notes, setNotes] = React.useState('');
   const [showCatalog, setShowCatalog] = React.useState(false);
 
-  /**
-   * Generated once per visit and kept across retries, so a tap that times out
-   * and is tapped again records one payment rather than two.
-   */
-  const reference = React.useRef(newCollectionReference());
+  const pendingReference = React.useMemo(() => getPendingReference(customerId, 'dues'), [customerId]);
 
   const lines = customer?.subscriptions ?? [];
   const line = lines[subscriptionIndex] ?? null;
@@ -118,6 +119,10 @@ export function CollectPaymentScreen({ customerId, basePath }: {
   };
 
   const submit = () => {
+    if (!isPaymentAmount(amount) || !Number.isFinite(takings) || takings < 0 || Math.round(takings * 100) > Number(MAX_COLLECTION_AMOUNT) * 100) {
+      void dialogs.notify(translate('payment_errors.invalid_amount_title'), translate('payment_errors.invalid_amount_message'));
+      return;
+    }
     if (outcome === 'none' && reason.trim() === '') {
       void dialogs.notify('Reason needed', 'Say why nothing was collected — it is the part of the round an operator actually reads.');
       return;
@@ -126,7 +131,7 @@ export function CollectPaymentScreen({ customerId, basePath }: {
     const payload: RecordCollectionPayload = {
       customerId,
       amount: outcome === 'none' ? '0' : Number(amount || 0).toFixed(2),
-      reference: reference.current,
+      reference: pendingReference.reference,
       ...(line !== null ? { subscriptionId: line.id } : {}),
       ...(outcome === 'none' ? { reason: reason.trim() } : { method }),
       ...(accessories.length > 0
@@ -134,15 +139,48 @@ export function CollectPaymentScreen({ customerId, basePath }: {
         : {}),
       ...(notes.trim() === '' ? {} : { notes: notes.trim() }),
       // Sent when the phone had one. A receipt is never held up waiting for it.
-      ...fixPayload(fix),
+      ...pendingMetadata(customerId, 'dues', fixPayload(fix)),
     };
 
     record({ payload }, {
       onSuccess: (receipt) => {
+        clearPendingReference(customerId, 'dues');
         router.replace(`${basePath}/receipts/${receipt.id}`);
       },
       onError: (failure) => {
-        void dialogs.notify('Not recorded', failure.message || 'The payment was not recorded. Nothing was taken off the account.');
+        const viewReceipts = () => router.replace(`${basePath}/receipts`);
+
+        if (isPaymentReferenceConflict(failure)) {
+          void dialogs.confirm({
+            title: translate('payment_errors.reference_conflict_title'),
+            message: translate('payment_errors.reference_conflict_message'),
+            tone: 'default',
+            confirmLabel: translate('payment_errors.view_receipts'),
+            cancelLabel: translate('payment_errors.close'),
+          }).then((shouldViewReceipts) => {
+            if (shouldViewReceipts)
+              viewReceipts();
+          });
+          return;
+        }
+
+        if (isPaymentResultUnknown(failure)) {
+          void dialogs.confirm({
+            title: translate('payment_errors.unknown_result_title'),
+            message: translate('payment_errors.unknown_result_message'),
+            tone: 'default',
+            confirmLabel: translate('payment_errors.retry'),
+            cancelLabel: translate('payment_errors.view_receipts'),
+          }).then((shouldRetry) => {
+            if (shouldRetry)
+              submit();
+            else
+              viewReceipts();
+          });
+          return;
+        }
+
+        void dialogs.notify('Not recorded', apiErrorMessage(failure, 'The payment was not recorded. Nothing was taken off the account.'));
       },
     });
   };

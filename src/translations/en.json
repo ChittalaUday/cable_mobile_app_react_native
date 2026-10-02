@@ -134,6 +134,10 @@
     "top_level": "Top level",
     "total_customers": "Total Customers"
   },
+  "inventory_validation": {
+    "receive_quantity": "Enter a whole-number quantity from 1 to 1,000.",
+    "transfer_quantity": "Transfer one equipment unit at a time."
+  },
   "login": {
     "already_have_account": "Already have an account? Sign in",
     "auth_failed": "Sign in failed",
@@ -200,6 +204,18 @@
   },
   "onboarding": {
     "message": "Welcome to Satya Cable & Broadband"
+  },
+  "payment_errors": {
+    "close": "Close",
+    "invalid_amount_message": "The total payment must be between ₹0 and ₹99,000.",
+    "invalid_amount_title": "Invalid amount",
+    "leave_message": "Discard the entered details? If you already submitted a payment, check receipts before starting another payment.",
+    "reference_conflict_message": "This payment reference was already used for a different request. The earlier payment may have been recorded. Check Receipts before trying again.",
+    "reference_conflict_title": "Payment reference already used",
+    "retry": "Retry",
+    "unknown_result_message": "We couldn't confirm this payment. It may already be recorded — check Receipts before collecting again.",
+    "unknown_result_title": "Payment status unknown",
+    "view_receipts": "View receipts"
   },
   "profile": {
     "cancel": "Cancel",

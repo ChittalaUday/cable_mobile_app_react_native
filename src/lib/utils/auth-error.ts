@@ -16,7 +16,7 @@ export function authErrorMessageKey(code: string): TxKeyPath {
 }
 
 export function authErrorMessage(error: unknown): string {
-  if (isAxiosError<{ message?: string }>(error) && error.response?.data.message)
+  if (isAxiosError<{ message?: string }>(error) && typeof error.response?.data?.message === 'string' && error.response.data.message.trim() !== '')
     return error.response.data.message;
   if (error && typeof error === 'object' && 'code' in error && typeof error.code === 'string')
     return translate(authErrorMessageKey(error.code));

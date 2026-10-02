@@ -3,14 +3,25 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@env": ["env.ts"]
+      "@/*": [
+        "./src/*"
+      ],
+      "@env": [
+        "env.ts"
+      ]
     },
     "checkJs": true,
     "strict": true,
     "esModuleInterop": true,
-    "customConditions": ["react-native"],
-    "types": ["jest", "@hugeicons/core-free-icons", "@hugeicons/react-native"]
+    "customConditions": [
+      "react-native"
+    ],
+    "types": [
+      "jest",
+      "@hugeicons/core-free-icons",
+      "@hugeicons/react-native",
+      "node"
+    ]
   },
   "include": [
     "**/*.ts",

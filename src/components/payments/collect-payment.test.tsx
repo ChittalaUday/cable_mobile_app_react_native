@@ -1,4 +1,4 @@
-import type { CustomerDetail } from '@/lib/api/types';
+import type { CustomerDetail, CustomerSubscription } from '@/lib/api/types';
 import type { RecordCollectionPayload } from '@/lib/hooks/api/use-payments';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import * as React from 'react';
@@ -16,6 +16,8 @@ const mockRequestPermission = jest.fn();
 const mockGetPosition = jest.fn();
 const mockPush = jest.fn();
 const mockReplace = jest.fn();
+const mockPendingValues = new Map<string, string>();
+let mockReferenceCounter = 0;
 
 jest.mock('expo-location', () => ({
   requestForegroundPermissionsAsync: async () => mockRequestPermission() as Promise<{ granted: boolean }>,
@@ -25,6 +27,26 @@ jest.mock('expo-location', () => ({
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush, replace: mockReplace, back: jest.fn() }),
+}));
+
+jest.mock('@react-navigation/native', () => ({ useIsFocused: () => true }));
+
+jest.mock('@/lib/storage', () => ({
+  storage: {
+    getString: () => undefined,
+    set: () => undefined,
+    remove: () => undefined,
+  },
+  getItem: (key: string) => {
+    const value = mockPendingValues.get(key);
+    return value === undefined ? null : JSON.parse(value) as unknown;
+  },
+  setItem: async (key: string, value: unknown) => {
+    mockPendingValues.set(key, JSON.stringify(value));
+  },
+  removeItem: async (key: string) => {
+    mockPendingValues.delete(key);
+  },
 }));
 
 jest.mock('@/lib/hooks/api/use-customers', () => ({
@@ -38,15 +60,16 @@ jest.mock('@/lib/hooks/api/use-inventory', () => ({
 }));
 
 jest.mock('@/lib/hooks/api/use-payments', () => ({
-  newCollectionReference: () => 'ref-fixed',
+  newCollectionReference: () => `ref-${++mockReferenceCounter}`,
   useRecordCollection: () => ({ mutate: mockRecord, isPending: false }),
 }));
 
 const { useCustomer } = jest.requireMock<{ useCustomer: jest.Mock }>('@/lib/hooks/api/use-customers');
 
-function line(id: string, account: string, due: string) {
+function line(id: string, account: string, due: string): CustomerSubscription {
   return {
     id,
+    locationId: 'location-1',
     serviceAccountNumber: account,
     status: 'active' as const,
     startDate: '2026-01-01T00:00:00.000Z',
@@ -114,6 +137,8 @@ function handlersOf(call = 0): RecordArgs[1] {
 }
 
 beforeEach(() => {
+  mockPendingValues.clear();
+  mockReferenceCounter = 0;
   mockRecord.mockReset();
   mockRequestPermission.mockReset().mockResolvedValue({ granted: true });
   mockGetPosition.mockReset().mockResolvedValue({
@@ -124,6 +149,21 @@ beforeEach(() => {
 });
 
 describe('collecting a payment', () => {
+  it('accepts 99000 and blocks any payment above the limit', async () => {
+    const alert = jest.spyOn(dialogs, 'notify').mockResolvedValue();
+    await mount();
+    fireEvent.press(screen.getByText('Part'));
+    fireEvent.changeText(screen.getByTestId('collect-amount'), '99000');
+    fireEvent.press(screen.getByTestId('collect-submit'));
+    expect(payloadOf().amount).toBe('99000.00');
+    mockRecord.mockClear();
+    fireEvent.changeText(screen.getByTestId('collect-amount'), '99000.01');
+    fireEvent.press(screen.getByTestId('collect-submit'));
+    expect(mockRecord).not.toHaveBeenCalled();
+    expect(alert).toHaveBeenCalledWith('Invalid amount', 'The total payment must be between ₹0 and ₹99,000.');
+    alert.mockRestore();
+  });
+
   it('pre-fills the whole balance and sends it with a method', async () => {
     await mount();
 
@@ -137,7 +177,7 @@ describe('collecting a payment', () => {
       subscriptionId: 'sub-1',
       amount: '500.00',
       method: 'upi',
-      reference: 'ref-fixed',
+      reference: 'ref-1',
     });
   });
 
@@ -205,6 +245,36 @@ describe('collecting a payment', () => {
     expect(payloadOf(0).reference).toBe(payloadOf(1).reference);
   });
 
+  it('reuses the pending reference after the screen is closed and reopened', async () => {
+    const firstView = await mount();
+    fireEvent.press(screen.getByText('Part'));
+    fireEvent.changeText(screen.getByTestId('collect-amount'), '200');
+    fireEvent.press(screen.getByTestId('collect-submit'));
+    const firstPayload = payloadOf();
+    firstView.unmount();
+
+    await mount();
+    fireEvent.press(screen.getByText('Part'));
+    fireEvent.changeText(screen.getByTestId('collect-amount'), '300');
+    fireEvent.press(screen.getByTestId('collect-submit'));
+
+    expect(payloadOf(1).reference).toBe(firstPayload.reference);
+    expect(payloadOf(1).amount).not.toBe(firstPayload.amount);
+  });
+
+  it('starts a fresh attempt after a receipt is confirmed', async () => {
+    const firstView = await mount();
+    fireEvent.press(screen.getByTestId('collect-submit'));
+    const firstReference = payloadOf().reference;
+    handlersOf().onSuccess({ id: 'receipt-9' });
+    firstView.unmount();
+
+    await mount();
+    fireEvent.press(screen.getByTestId('collect-submit'));
+
+    expect(payloadOf(1).reference).not.toBe(firstReference);
+  });
+
   it('attaches where the collector is standing, with its accuracy', async () => {
     await mount();
 
@@ -257,16 +327,67 @@ describe('collecting a payment', () => {
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/staff/receipts/receipt-9'));
   });
 
-  it('says plainly that nothing was taken when the write fails', async () => {
+  it('offers retry and receipt lookup when the server response is unknown', async () => {
+    const confirm = jest.spyOn(dialogs, 'confirm').mockResolvedValue(true);
+    await mount();
+
+    fireEvent.press(screen.getByTestId('collect-submit'));
+    handlersOf().onError(new Error('Network Error'));
+
+    await waitFor(() => expect(mockRecord).toHaveBeenCalledTimes(2));
+    expect(payloadOf(1).reference).toBe(payloadOf(0).reference);
+    expect(confirm).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Payment status unknown',
+      message: 'We couldn\'t confirm this payment. It may already be recorded — check Receipts before collecting again.',
+      confirmLabel: 'Retry',
+      cancelLabel: 'View receipts',
+    }));
+    confirm.mockRestore();
+  });
+
+  it('opens receipts when the collector chooses View receipts after an unknown result', async () => {
+    const confirm = jest.spyOn(dialogs, 'confirm').mockResolvedValue(false);
+    await mount();
+
+    fireEvent.press(screen.getByTestId('collect-submit'));
+    handlersOf().onError(new Error('Network Error'));
+
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/staff/receipts'));
+    confirm.mockRestore();
+  });
+
+  it('keeps the server error for a response-backed client error', async () => {
     const alert = jest.spyOn(dialogs, 'notify').mockResolvedValue();
     await mount();
 
     fireEvent.press(screen.getByTestId('collect-submit'));
-    handlersOf().onError(new Error('Customer not found'));
+    const failure = Object.assign(new Error('Customer not found'), {
+      response: { status: 400, data: { message: 'Customer not found' } },
+    });
+    handlersOf().onError(failure);
 
     expect(alert).toHaveBeenCalledWith('Not recorded', 'Customer not found');
     expect(mockReplace).not.toHaveBeenCalled();
 
     alert.mockRestore();
+  });
+
+  it('explains a reused reference conflict and links to receipts', async () => {
+    const confirm = jest.spyOn(dialogs, 'confirm').mockResolvedValue(true);
+    await mount();
+
+    fireEvent.press(screen.getByTestId('collect-submit'));
+    const failure = Object.assign(new Error('That reference was already used for a different payment request'), {
+      response: { status: 409, data: { message: 'That reference was already used for a different payment request' } },
+    });
+    handlersOf().onError(failure);
+
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/staff/receipts'));
+    expect(confirm).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Payment reference already used',
+      message: 'This payment reference was already used for a different request. The earlier payment may have been recorded. Check Receipts before trying again.',
+      confirmLabel: 'View receipts',
+    }));
+    confirm.mockRestore();
   });
 });

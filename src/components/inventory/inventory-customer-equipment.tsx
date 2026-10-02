@@ -204,16 +204,7 @@ export function InventoryCustomerEquipmentScreen() {
                         <Text className="text-xs font-bold text-primary-600 capitalize">
                           {item.ownershipType ? item.ownershipType.replace('_', ' ') : 'Loan'}
                         </Text>
-                        {Number(item.depositAmount) > 0 && (
-                          <View className="rounded-md bg-orange-50 px-2 py-0.5">
-                            <Text className="text-[11px] font-semibold text-primary-700">
-                              ₹
-                              {item.depositAmount}
-                              {' '}
-                              Deposit
-                            </Text>
-                          </View>
-                        )}
+
                       </View>
                     </View>
 

@@ -11,6 +11,9 @@ describe('usePermissions', () => {
       tenantId: 'tenant-1',
       memberships: [{
         tenantId: 'tenant-1',
+        membershipId: 'membership-1',
+        status: 'active',
+        permissionVersion: 1,
         tenantName: 'Satya Cable',
         roleId: 'admin',
         teamId: 'team-1',

@@ -55,7 +55,7 @@ function toAuthUser(user: ApiUser): AuthUser {
     photoURL: user.photoUrl,
     phone: user.phone,
     phoneNumber: user.phone,
-    isSuperAdmin: Boolean(user.isSuperAdmin),
+    isSuperAdmin: false,
     isAnonymous: false,
   };
 }
@@ -138,7 +138,7 @@ function sessionState(user: ApiUser, memberships: Membership[], tenantId: string
   return {
     error: null,
     memberships,
-    role: roleFor(Boolean(user.isSuperAdmin), memberships.find(item => item.tenantId === tenantId)),
+    role: roleFor(false, memberships.find(item => item.tenantId === tenantId)),
     status: 'signIn' as const,
     tenantId,
     tenantIds: memberships.map(item => item.tenantId),

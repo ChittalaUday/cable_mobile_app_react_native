@@ -65,6 +65,7 @@ const { useCustomer } = jest.requireMock<{ useCustomer: jest.Mock }>('@/lib/hook
 function line(id: string, packageName: string, due: string) {
   return {
     id,
+    locationId: 'location-1',
     serviceAccountNumber: `ACT-${id}`,
     status: 'active' as const,
     startDate: '2026-01-01T00:00:00.000Z',
@@ -124,6 +125,10 @@ function toAmount(lines?: CustomerDetail['subscriptions'], subscriptionId?: stri
 
 function duesPayload(call = 0): RecordCollectionPayload {
   return mockRecordDues.mock.calls[call]![0].payload;
+}
+
+function duesHandlers(call = 0): DuesArgs[1] {
+  return mockRecordDues.mock.calls[call]![1];
 }
 
 beforeEach(() => {
@@ -188,6 +193,36 @@ describe('the recharge flow', () => {
       method: 'upi',
       reference: 'ref-fixed',
     });
+  });
+
+  it('retries an unknown result with the same reference', async () => {
+    const confirm = jest.spyOn(dialogs, 'confirm').mockResolvedValue(true);
+    toAmount();
+    fireEvent.changeText(screen.getByTestId('recharge-amount'), '200');
+    fireEvent.press(screen.getByTestId('recharge-submit'));
+    const firstReference = duesPayload().reference;
+
+    duesHandlers().onError(new Error('Network Error'));
+
+    await waitFor(() => expect(mockRecordDues).toHaveBeenCalledTimes(2));
+    expect(duesPayload(1).reference).toBe(firstReference);
+    expect(confirm).toHaveBeenCalledWith(expect.objectContaining({
+      confirmLabel: 'Retry',
+      cancelLabel: 'View receipts',
+    }));
+    confirm.mockRestore();
+  });
+
+  it('takes the collector to receipts when they choose to check the result', async () => {
+    const confirm = jest.spyOn(dialogs, 'confirm').mockResolvedValue(false);
+    toAmount();
+    fireEvent.changeText(screen.getByTestId('recharge-amount'), '200');
+    fireEvent.press(screen.getByTestId('recharge-submit'));
+
+    duesHandlers().onError(new Error('Network Error'));
+
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/admin/receipts'));
+    confirm.mockRestore();
   });
 
   it('shows the UPI QR the moment UPI is the method', () => {
@@ -355,4 +390,14 @@ describe('the recharge flow', () => {
     await waitFor(() => expect(useRechargeStore.getState().step).toBe('done'));
     expect(useRechargeStore.getState().receiptId).toBe('rcpt-9');
   });
+});
+
+it('honors a newly selected connection when reopening the same customer', () => {
+  const lines = [line('sub-1', 'Gold HD', '500.00'), line('sub-2', 'Fibre', '199.00')];
+  const view = mount(lines, 'sub-1');
+  view.unmount();
+  toAmount(lines, 'sub-2');
+  fireEvent.changeText(screen.getByTestId('recharge-amount'), '100');
+  fireEvent.press(screen.getByTestId('recharge-submit'));
+  expect(duesPayload().subscriptionId).toBe('sub-2');
 });

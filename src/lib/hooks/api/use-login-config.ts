@@ -1,3 +1,4 @@
+import type { ApiResponse } from '@/lib/api/contracts';
 import type { LoginConfig } from '@/lib/api/types';
 import { createQuery } from 'react-query-kit';
 import { client } from '@/lib/api/client';
@@ -20,7 +21,7 @@ export const OFFLINE_LOGIN_CONFIG: LoginConfig = {
 export const useLoginConfig = createQuery<LoginConfig, void, Error>({
   queryKey: ['auth', 'config'],
   fetcher: async () => {
-    const response = await client.get<LoginConfig>('/auth/config');
+    const response = await client.get<ApiResponse<'/api/v1/auth/config', 'get', 200>>('/auth/config');
     return response.data;
   },
   // Channels come and go with their providers, so this is worth re-reading —

@@ -17,7 +17,7 @@ import {
   useModal,
   View,
 } from '@/components/ui';
-import { useSetStaffTeamAreas, useUpdateStaff } from '@/lib/hooks/api/use-staff';
+import { useSetStaffTeamAreas, useUpdateStaff, useUpdateTeam } from '@/lib/hooks/api/use-staff';
 import { apiErrorMessage } from '@/lib/utils/api-error';
 
 /**
@@ -37,8 +37,9 @@ const SNAP_POINTS = ['70%'];
  * copy of the form.
  */
 
-export function TeamMemberSheet({ member, teamAreas, onClose, onSaved }: {
+export function TeamMemberSheet({ member, teamId, teamAreas, onClose, onSaved }: {
   member: TeamMember | null;
+  teamId: string;
   /** The crew's patch — the boundary on what can be chosen. */
   teamAreas: LocationRef[];
   onClose: () => void;
@@ -86,8 +87,9 @@ export function TeamMemberSheet({ member, teamAreas, onClose, onSaved }: {
   }, [memberId, sheet]);
 
   const updateStaff = useUpdateStaff();
+  const updateTeam = useUpdateTeam();
   const setTeamAreas = useSetStaffTeamAreas();
-  const saving = updateStaff.isPending || setTeamAreas.isPending;
+  const saving = updateStaff.isPending || updateTeam.isPending || setTeamAreas.isPending;
 
   const toggle = (node: LocationRef) => setAreas(current => toggleArea(current, node));
 
@@ -97,7 +99,7 @@ export function TeamMemberSheet({ member, teamAreas, onClose, onSaved }: {
 
     try {
       if (leader !== member.isTeamLeader)
-        await updateStaff.mutateAsync({ id: member.id, patch: { isTeamLeader: leader } });
+        await updateTeam.mutateAsync({ id: teamId, patch: { leaderMembershipId: leader ? member.id : null } });
 
       if (!sameIds(areas, member.teamAreas))
         await setTeamAreas.mutateAsync({ id: member.id, locationIds: areas.map(area => area.id) });

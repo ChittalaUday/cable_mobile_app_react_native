@@ -13,8 +13,8 @@ jest.mock('react-native-worklets', () => ({
 
 // Mock @hugeicons/react-native
 jest.mock('@hugeicons/react-native', () => {
-  const React = require<typeof ReactModule>('react');
-  const { View } = require<typeof ReactNativeModule>('react-native');
+  const React = require('react') as typeof ReactModule;
+  const { View } = require('react-native') as typeof ReactNativeModule;
   return {
     __esModule: true,
     HugeiconsIcon: (props: ViewProps) => React.createElement(View, props),
@@ -23,7 +23,7 @@ jest.mock('@hugeicons/react-native', () => {
 
 // Mock react-native-reanimated
 jest.mock('react-native-reanimated', () => {
-  const { View } = require<typeof ReactNativeModule>('react-native');
+  const { View } = require('react-native') as typeof ReactNativeModule;
 
   return {
     __esModule: true,
@@ -71,8 +71,8 @@ jest.mock('react-native-reanimated', () => {
 // under the test renderer is just an unavoidable act() warning. Rows render the
 // same either way, so tests exercise a FlatList.
 jest.mock('@shopify/flash-list', () => {
-  const React = require<typeof ReactModule>('react');
-  const { FlatList } = require<typeof ReactNativeModule>('react-native');
+  const React = require('react') as typeof ReactModule;
+  const { FlatList } = require('react-native') as typeof ReactNativeModule;
 
   return {
     __esModule: true,
@@ -105,6 +105,7 @@ jest.mock('react-native-mmkv', () => ({
     getNumber: jest.fn(),
     getBoolean: jest.fn(),
     delete: jest.fn(),
+    remove: jest.fn(),
     clearAll: jest.fn(),
     getAllKeys: jest.fn(() => []),
   })),
@@ -118,6 +119,7 @@ jest.mock('react-native-mmkv', () => ({
     getNumber: jest.fn(),
     getBoolean: jest.fn(),
     delete: jest.fn(),
+    remove: jest.fn(),
     clearAll: jest.fn(),
     getAllKeys: jest.fn(() => []),
   })),

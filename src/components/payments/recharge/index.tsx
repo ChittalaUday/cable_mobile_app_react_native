@@ -7,6 +7,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { dialogs } from '@/components/common/dialogs';
 import { LoadError, Loading, ScreenHeader } from '@/components/common/shell';
 import { Button, View } from '@/components/ui';
+import { MAX_COLLECTION_AMOUNT } from '@/lib/constants/billing';
 import { useCustomer } from '@/lib/hooks/api/use-customers';
 import {
   useCollection,
@@ -20,7 +21,11 @@ import {
   stepsFor,
   useRechargeStore,
 } from '@/lib/hooks/stores/use-recharge-store';
+import { translate } from '@/lib/i18n/utils';
+import { isPaymentReferenceConflict, isPaymentResultUnknown } from '@/lib/payments/payment-errors';
 import { rupeesExact } from '@/lib/utils/admin-format';
+import { apiErrorMessage } from '@/lib/utils/api-error';
+import { isPaymentAmount } from '@/lib/utils/payment-amount';
 import { ChargePicker, StepTrail } from './parts';
 import { StepAmount } from './step-amount';
 import { StepDone } from './step-done';
@@ -78,8 +83,13 @@ export function RechargeFlowScreen({ customerId, subscriptionId, basePath }: {
   // A visit is one customer. Arriving at a different one — or coming back to
   // the same one after finishing — starts the flow over rather than resuming
   // somebody else's half-typed amount.
+  const openedRoute = React.useRef<string | null>(null);
   React.useEffect(() => {
-    if (storedCustomerId !== customerId)
+    const routeKey = `${customerId}:${subscriptionId ?? ''}`;
+    if (openedRoute.current === routeKey && storedCustomerId === customerId)
+      return;
+    openedRoute.current = routeKey;
+    if (storedCustomerId !== customerId || (subscriptionId !== undefined && useRechargeStore.getState().subscriptionId !== subscriptionId))
       begin({ customerId, subscriptionId });
   }, [begin, customerId, storedCustomerId, subscriptionId]);
 
@@ -91,19 +101,21 @@ export function RechargeFlowScreen({ customerId, subscriptionId, basePath }: {
   const leave = React.useCallback(async () => {
     const state = useRechargeStore.getState();
 
+    let discard = false;
     if (hasUnsavedWork(state)) {
       const agreed = await dialogs.confirm({
         title: 'Leave this recharge?',
-        message: 'The amount, the notes and anything picked here are cleared. Nothing has been recorded yet.',
+        message: translate('payment_errors.leave_message'),
         confirmLabel: 'Discard',
         cancelLabel: 'Keep going',
       });
 
       if (!agreed)
         return;
+      discard = true;
     }
 
-    reset();
+    reset(discard);
     router.back();
   }, [reset, router]);
 
@@ -148,6 +160,10 @@ export function RechargeFlowScreen({ customerId, subscriptionId, basePath }: {
 
   const record = () => {
     const state = useRechargeStore.getState();
+    if (state.amount.trim() !== '' && (!isPaymentAmount(state.amount) || !Number.isFinite(paise(state.amount)) || paise(state.amount) > paise(MAX_COLLECTION_AMOUNT))) {
+      void dialogs.notify(translate('payment_errors.invalid_amount_title'), translate('payment_errors.invalid_amount_message'));
+      return;
+    }
 
     if (!canRecord(state)) {
       void dialogs.notify(
@@ -159,7 +175,7 @@ export function RechargeFlowScreen({ customerId, subscriptionId, basePath }: {
       return;
     }
 
-    const common = {
+    const common: RecordCollectionPayload = {
       customerId,
       amount: (paise(state.amount) / 100).toFixed(2),
       method: state.method,
@@ -170,14 +186,48 @@ export function RechargeFlowScreen({ customerId, subscriptionId, basePath }: {
       ...(state.notes.trim() === '' ? {} : { notes: state.notes.trim() }),
     };
 
-    const onError = (failure: Error) => void dialogs.notify(
-      'Not recorded',
-      failure.message || 'The payment was not recorded. Nothing was taken off the account.',
-    );
+    const onError = (failure: Error) => {
+      const viewReceipts = () => router.replace(`${basePath}/receipts`);
+
+      if (isPaymentReferenceConflict(failure)) {
+        void dialogs.confirm({
+          title: translate('payment_errors.reference_conflict_title'),
+          message: translate('payment_errors.reference_conflict_message'),
+          tone: 'default',
+          confirmLabel: translate('payment_errors.view_receipts'),
+          cancelLabel: translate('payment_errors.close'),
+        }).then((shouldViewReceipts) => {
+          if (shouldViewReceipts)
+            viewReceipts();
+        });
+        return;
+      }
+
+      if (isPaymentResultUnknown(failure)) {
+        void dialogs.confirm({
+          title: translate('payment_errors.unknown_result_title'),
+          message: translate('payment_errors.unknown_result_message'),
+          tone: 'default',
+          confirmLabel: translate('payment_errors.retry'),
+          cancelLabel: translate('payment_errors.view_receipts'),
+        }).then((shouldRetry) => {
+          if (shouldRetry)
+            record();
+          else
+            viewReceipts();
+        });
+        return;
+      }
+
+      void dialogs.notify(
+        'Not recorded',
+        apiErrorMessage(failure, 'The payment was not recorded. Nothing was taken off the account.'),
+      );
+    };
 
     if (state.charge === 'subscription') {
-      recordDues({ payload: common as RecordCollectionPayload }, {
-        onSuccess: made => recorded(made.id),
+      recordDues({ payload: common }, {
+        onSuccess: made => recorded(made.id, { customerId, charge: state.charge }),
         onError,
       });
       return;
@@ -194,7 +244,7 @@ export function RechargeFlowScreen({ customerId, subscriptionId, basePath }: {
           }),
     };
 
-    recordEquipment({ payload }, { onSuccess: made => recorded(made.id), onError });
+    recordEquipment({ payload }, { onSuccess: made => recorded(made.id, { customerId, charge: state.charge }), onError });
   };
 
   if (isPending)
@@ -225,7 +275,15 @@ export function RechargeFlowScreen({ customerId, subscriptionId, basePath }: {
         bottomOffset={24}
         showsVerticalScrollIndicator={false}
       >
-        {step !== 'done' && <ChargePicker charge={charge} onChange={setCharge} />}
+        {step !== 'done' && (
+          <ChargePicker
+            charge={charge}
+            onChange={(nextCharge) => {
+              if (!isSaving)
+                setCharge(nextCharge);
+            }}
+          />
+        )}
 
         {step === 'plan' && <StepPlan customer={customer} line={line} basePath={basePath} />}
         {step === 'amount' && <StepAmount customer={customer} line={line} />}

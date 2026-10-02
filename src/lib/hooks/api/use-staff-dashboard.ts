@@ -1,23 +1,11 @@
+import type { ApiResponse } from '@/lib/api/contracts';
 import { createQuery } from 'react-query-kit';
 import { client } from '@/lib/api/client';
 import { relativeTime } from '@/lib/utils/admin-stats';
 
-type ApiMetrics = {
-  today: string;
-  week: string;
-  month: string;
-  todayReceipts: number;
-  weekReceipts: number;
-  monthReceipts: number;
-};
+type ApiMetrics = StaffDashboardResponse['personal'];
 
-export type StaffDashboardResponse = {
-  personal: ApiMetrics;
-  team: ApiMetrics | null;
-  workload: { customers: number; dueCustomers: number; outstanding: string; activeConnections: number; inactiveConnections: number };
-  recentCollections: { id: string; customerId: string | null; customerName: string | null; accountNumber: string; amount: string; collectedAt: string }[];
-  generatedAt: string;
-};
+export type StaffDashboardResponse = ApiResponse<'/api/v1/analytics/dashboard/staff', 'get', 200>;
 
 export type StaffCollectionMetrics = Omit<ApiMetrics, 'today' | 'week' | 'month'> & { today: number; week: number; month: number };
 export type StaffDashboard = {
@@ -52,6 +40,6 @@ export function mapStaffDashboard(dto: StaffDashboardResponse): StaffDashboard {
 
 export const useStaffDashboard = createQuery<StaffDashboard, void, Error>({
   queryKey: ['staff-dashboard'],
-  fetcher: async () => mapStaffDashboard((await client.get<StaffDashboardResponse>('/analytics/dashboard/staff')).data),
+  fetcher: async () => mapStaffDashboard((await client.get<ApiResponse<'/api/v1/analytics/dashboard/staff', 'get', 200>>('/analytics/dashboard/staff')).data),
   staleTime: 5 * 60 * 1000,
 });

@@ -1,6 +1,9 @@
 import type { PaymentEntryMethod } from '@/lib/api/types';
 import { create } from 'zustand';
+import { MAX_COLLECTION_AMOUNT } from '@/lib/constants/billing';
 import { newCollectionReference } from '@/lib/hooks/api/use-payments';
+import { clear as clearPendingReference, get as getPendingReference } from '@/lib/payments/pending-reference';
+import { isPaymentAmount } from '@/lib/utils/payment-amount';
 
 /**
  * Where the collector is in the flow.
@@ -68,9 +71,9 @@ export type RechargeState = {
     key: K,
     value: RechargeState[K],
   ) => void;
-  recorded: (receiptId: string) => void;
+  recorded: (receiptId: string, submitted?: { customerId: string; charge: ChargeKind }) => void;
   markPrinted: () => void;
-  reset: () => void;
+  reset: (discard?: boolean) => void;
 };
 
 const BLANK = {
@@ -109,9 +112,7 @@ export const useRechargeStore = create<RechargeState>(set => ({
     ...BLANK,
     customerId,
     subscriptionId: subscriptionId ?? null,
-    // A new visit is a new payment, so it gets its own key. Reusing the last
-    // one would have the server replay the previous receipt instead.
-    reference: newCollectionReference(),
+    reference: getPendingReference(customerId, 'dues').reference,
   }),
 
   goTo: step => set({ step }),
@@ -132,23 +133,45 @@ export const useRechargeStore = create<RechargeState>(set => ({
 
   // Switching to equipment off the plan step leaves the collector standing on a
   // step that flow no longer has, so it moves them to the one it starts on.
-  setCharge: charge => set(state => ({
-    charge,
-    step: stepsFor(charge).includes(state.step) ? state.step : stepsFor(charge)[0]!,
-  })),
+  setCharge: charge => set((state) => {
+    const kind = charge === 'equipment' ? 'equipment' : 'dues';
+
+    return {
+      charge,
+      reference: state.customerId === null ? state.reference : getPendingReference(state.customerId, kind).reference,
+      step: stepsFor(charge).includes(state.step) ? state.step : stepsFor(charge)[0]!,
+    };
+  }),
   setSubscription: subscriptionId => set({ subscriptionId }),
   setTarget: target => set({ target }),
   setField: (key, value) => set({ [key]: value } as Pick<RechargeState, typeof key>),
 
-  recorded: receiptId => set({ receiptId, step: 'done' }),
+  recorded: (receiptId, submitted) => set((state) => {
+    const customerId = submitted?.customerId ?? state.customerId;
+    const charge = submitted?.charge ?? state.charge;
+    if (customerId !== null) {
+      const kind = charge === 'equipment' ? 'equipment' : 'dues';
+      clearPendingReference(customerId, kind);
+    }
+
+    return { receiptId, step: 'done' };
+  }),
   markPrinted: () => set({ printed: true }),
 
-  reset: () => set({ ...BLANK, reference: newCollectionReference() }),
+  reset: (discard = false) => set((state) => {
+    if (discard && state.customerId !== null) {
+      const kind = state.charge === 'equipment' ? 'equipment' : 'dues';
+      clearPendingReference(state.customerId, kind);
+    }
+
+    return { ...BLANK, reference: newCollectionReference() };
+  }),
 }));
 
 /** True once the flow holds enough to record money. */
 export function canRecord(state: RechargeState): boolean {
-  if (paise(state.amount) <= 0)
+  const amount = paise(state.amount);
+  if (!isPaymentAmount(state.amount) || !Number.isFinite(amount) || amount <= 0 || amount > paise(MAX_COLLECTION_AMOUNT))
     return false;
 
   return state.charge === 'subscription' || state.target !== null;

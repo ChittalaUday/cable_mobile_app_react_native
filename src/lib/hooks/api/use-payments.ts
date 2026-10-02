@@ -1,4 +1,4 @@
-import type { CollectionOutcome, PaymentEntryMethod, PaymentMethod } from '@/lib/api/types';
+import type { ApiBody, ApiQuery, ApiResponse } from '@/lib/api/contracts';
 import * as Crypto from 'expo-crypto';
 import { createInfiniteQuery, createMutation, createQuery } from 'react-query-kit';
 import { client } from '@/lib/api/client';
@@ -6,92 +6,15 @@ import { queryClient } from '@/lib/api/query-client';
 
 const PAGE_SIZE = 30;
 
-export type CollectionAccessory = {
-  catalogId: string;
-  name: string;
-  quantity: number;
-  unitPrice: string;
-  amount: string;
-};
+export type CollectionAccessory = Collection['accessories'][number];
 
-export type Collection = {
-  id: string;
-  customerId: string;
-  customerName: string | null;
-  customerCode: string | null;
-  subscriptionId: string | null;
-  customerEquipmentId: string | null;
-  equipment: {
-    itemName: string;
-    itemCode: string | null;
-    serialNumber: string | null;
-    brand: string | null;
-    model: string | null;
-  } | null;
-  serviceAccountNumber: string | null;
-  locationId: string | null;
-  locationPath: string | null;
-  collectedBy: string;
-  collectorName: string | null;
-  outcome: CollectionOutcome;
-  method: PaymentMethod | null;
-  dueAmount: string;
-  duesPaid: string;
-  accessoryAmount: string;
-  totalCollected: string;
-  balanceAfter: string;
-  accessories: CollectionAccessory[];
-  reversesId: string | null;
-  reversedById: string | null;
-  reason: string | null;
-  notes: string | null;
-  reference: string;
-  collectedAt: string;
-  latitude: string | null;
-  longitude: string | null;
-  gpsAccuracyM: string | null;
-};
+export type Collection = ApiResponse<'/api/v1/payments/{id}', 'get', 200>;
 
-export type CollectionPage = {
-  items: Collection[];
-  total: number | null;
-  limit: number;
-  nextCursor: string | null;
-  /** The takings the whole filter covers, not just the rows on this page. */
-  totals: { duesPaid: string; accessoryAmount: string; totalCollected: string; receipts: number };
-};
+export type CollectionPage = ApiResponse<'/api/v1/payments', 'get', 200>;
 
-export type CollectionQueryVariables = {
-  customerId?: string;
-  /** Receipts recorded within `withinM` metres of this point. */
-  nearLatitude?: number;
-  nearLongitude?: number;
-  withinM?: number;
-  /** That node AND everything under it. */
-  locationId?: string;
-  collectedBy?: string | 'me';
-  outcome?: CollectionOutcome;
-  from?: string;
-  to?: string;
-} | void;
+export type CollectionQueryVariables = ApiQuery<'/api/v1/payments'> | void;
 
-export type RecordCollectionPayload = {
-  customerId: string;
-  subscriptionId?: string;
-  /** Dues taken, as a decimal string. `"0"` records a visit that collected nothing. */
-  amount: string;
-  method?: PaymentEntryMethod;
-  accessories?: { catalogId: string; quantity: number; unitPrice: string }[];
-  reason?: string;
-  notes?: string;
-  reference: string;
-  collectedAt?: string;
-  /** Where the collector was standing. All three or none. */
-  latitude?: number;
-  longitude?: number;
-  /** Metres of horizontal error the handset reported. */
-  gpsAccuracyM?: number;
-};
+export type RecordCollectionPayload = ApiBody<'/api/v1/payments/subscription', 'post'>;
 
 /**
  * A charge for hardware rather than dues: a set-top box sold, a deposit taken,
@@ -102,30 +25,11 @@ export type RecordCollectionPayload = {
  * one payload would invite a screen to show a recharge taking money off a
  * balance it never touches.
  */
-export type RecordEquipmentPaymentPayload = {
-  customerId: string;
-  /** What was charged for the hardware, as a decimal string. */
-  amount: string;
-  method?: PaymentEntryMethod;
-  reason?: string;
-  notes?: string;
-  reference: string;
-  /** Charging against a unit the customer already holds. */
-  customerEquipmentId?: string;
-  /** Issuing a unit from the catalogue instead. One or the other, never both. */
-  catalogId?: string;
-  /** The serial of the unit handed over, when the collector has it to hand. */
-  serialNumber?: string;
-  collectedAt?: string;
-  latitude?: number;
-  longitude?: number;
-  gpsAccuracyM?: number;
-};
+export type RecordEquipmentPaymentPayload = ApiBody<'/api/v1/payments/equipment', 'post'>;
 
 /**
- * The id this device gives a visit, generated once per attempt and kept across
- * retries. Replaying it is what makes a flaky connection, a double tap and a
- * queued offline receipt all land as one payment instead of several.
+ * The id this device gives a visit. Replaying it makes a retry or double tap
+ * return the same receipt instead of recording another payment.
  */
 export function newCollectionReference(): string {
   return Crypto.randomUUID();
@@ -144,7 +48,7 @@ export const useCollections = createInfiniteQuery<
 >({
   queryKey: ['payments'],
   fetcher: async (variables, { pageParam, signal }) => {
-    const response = await client.get<CollectionPage>('/payments', {
+    const response = await client.get<ApiResponse<'/api/v1/payments', 'get', 200>>('/payments', {
       params: { limit: PAGE_SIZE, cursor: pageParam, ...variables },
       signal,
     });
@@ -167,7 +71,7 @@ export const useCollections = createInfiniteQuery<
  */
 export const useCollection = createQuery<Collection, { id: string }, Error>({
   queryKey: ['payment'],
-  fetcher: async ({ id }) => (await client.get<Collection>(`/payments/${id}`)).data,
+  fetcher: async ({ id }) => (await client.get<ApiResponse<'/api/v1/payments/{id}', 'get', 200>>(`/payments/${id}`)).data,
   staleTime: 15 * 1000,
 });
 
@@ -184,7 +88,7 @@ async function refreshAfterCollection(): Promise<void> {
 }
 
 export const useRecordCollection = createMutation<Collection, { payload: RecordCollectionPayload }, Error>({
-  mutationFn: async ({ payload }) => (await client.post<Collection>('/payments/subscription', payload)).data,
+  mutationFn: async ({ payload }) => (await client.post<ApiResponse<'/api/v1/payments/subscription', 'post', 201>>('/payments/subscription', payload)).data,
   onSuccess: refreshAfterCollection,
 });
 
@@ -197,7 +101,7 @@ export const useRecordEquipmentPayment = createMutation<
   { payload: RecordEquipmentPaymentPayload },
   Error
 >({
-  mutationFn: async ({ payload }) => (await client.post<Collection>('/payments/equipment', payload)).data,
+  mutationFn: async ({ payload }) => (await client.post<ApiResponse<'/api/v1/payments/equipment', 'post', 201>>('/payments/equipment', payload)).data,
   onSuccess: async () => {
     await Promise.all([
       refreshAfterCollection(),
@@ -215,7 +119,7 @@ export const useReverseCollection = createMutation<
   { id: string; reason: string },
   Error
 >({
-  mutationFn: async ({ id, reason }) => (await client.post<Collection>(
+  mutationFn: async ({ id, reason }) => (await client.post<ApiResponse<'/api/v1/payments/{id}/reverse', 'post', 201>>(
     `/payments/${id}/reverse`,
     { reason, reference: newCollectionReference() },
   )).data,

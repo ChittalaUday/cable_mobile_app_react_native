@@ -8,7 +8,7 @@
 export function apiErrorMessage(error: unknown, fallback: string) {
   if (typeof error === 'object' && error && 'response' in error) {
     const response = (error as { response?: { data?: { message?: string } } }).response;
-    if (response?.data?.message)
+    if (typeof response?.data?.message === 'string' && response.data.message.trim() !== '')
       return response.data.message;
   }
   return error instanceof Error ? error.message : fallback;

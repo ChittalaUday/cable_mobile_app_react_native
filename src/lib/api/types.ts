@@ -1,26 +1,7 @@
-import type { PermissionScope } from '@/constants/permissions';
-import type { OtpChannel, StaffRole } from '@/lib/constants/auth';
+import type { ApiBody, ApiResponse } from '@/lib/api/contracts';
 import type {
-  BillingCycle,
-  ChannelResolution,
-  CustomerLocationSource,
-  CustomerStatus,
   EntityStatus,
-  PackageType,
-  SubscriptionStatus,
 } from '@/lib/constants/crm';
-import type { LocationSource, LocationStatus, LocationWritableStatus } from '@/lib/constants/geo';
-import type {
-  EquipmentOwnership,
-  InventoryLookupType,
-  InventoryRequestStatus,
-  InventoryRequestType,
-  InventoryStatus,
-  StockMovementType,
-} from '@/lib/constants/inventory';
-import type { RemoteDeviceType, RemoteSource } from '@/lib/constants/remotes';
-import type { MembershipSettableStatus, MembershipStatus } from '@/lib/constants/tenancy';
-import type { IrCommand } from '@/lib/ir-blaster';
 
 export type Status = EntityStatus;
 
@@ -41,144 +22,35 @@ export type ServiceIcon = string;
  */
 export const MAX_PAGE_SIZE = 100;
 
-export type Page<T> = {
-  items: T[];
-  total: number;
-  page: number;
-  limit: number;
-};
+export type Page<T> = Omit<ApiResponse<'/api/v1/packages'>, 'items'> & { items: T[] };
 
-export type QueryOptions = Record<string, boolean | number | string | null | undefined>;
+export type ApiUser = MeResponse['user'];
 
-export type ApiUser = {
-  id: string;
-  email: string | null;
-  phone: string | null;
-  name: string | null;
-  photoUrl: string | null;
-  isSuperAdmin: boolean;
-};
+export type AuthTokens = Pick<AuthResponse, 'accessToken' | 'refreshToken' | 'expiresIn' | 'tokenType'>;
 
-export type AuthTokens = {
-  accessToken: string;
-  refreshToken: string;
-  expiresIn: number;
-  tokenType: 'Bearer';
-};
+export type Membership = MeResponse['memberships'][number];
 
-export type Membership = {
-  tenantId: string;
-  /** What the tenant picker shows — the id on its own is an unreadable UUID. */
-  tenantName: string;
-  roleId: string;
-  membershipId?: string;
-  permissionVersion?: number;
-  permissions?: { key: string; scope: PermissionScope }[];
-  status?: string;
-  teamId?: string | null;
-};
+export type AuthResponse = ApiResponse<'/api/v1/auth/otp/verify', 'post', 200>;
 
-export type AuthResponse = AuthTokens & {
-  user: ApiUser;
-  memberships: Membership[];
-};
+export type LoginRequest = ApiBody<'/api/v1/auth/login', 'post'>;
 
-export type LoginRequest = {
-  identifier: string;
-  password?: string;
-};
-
-export type OtpRequest = {
-  phone: string;
-  channel?: OtpChannel;
-};
+export type OtpRequest = ApiBody<'/api/v1/auth/otp/request', 'post'>;
 
 /** What GET /auth/config says this deployment allows. */
-export type LoginConfig = {
-  password: boolean;
-  /** A password sign-in is finished with a code emailed to the account. */
-  passwordNeedsEmailOtp: boolean;
-  phoneOtp: boolean;
-  /**
-   * The phone channels answering right now, best first — live state, not
-   * configuration. A provider that is failing drops out until it recovers.
-   */
-  phoneOtpChannels: OtpChannel[];
-  defaultPhoneOtpChannel: OtpChannel | null;
-  google: boolean;
-};
+export type LoginConfig = ApiResponse<'/api/v1/auth/config', 'get', 200>;
 
 /** A password was accepted, but an emailed code has to finish the sign-in. */
-export type OtpChallengeResponse = {
-  status: 'otp_required';
-  challengeToken: string;
-  channel: string;
-  expiresInSeconds: number;
-  nextCooldownSeconds: number;
-};
+export type OtpChallengeResponse = Extract<ApiResponse<'/api/v1/auth/login', 'post', 200>, { status: 'otp_required' }>;
 
-export type OtpRequestResponse = {
-  status: 'accepted';
-  channel: string;
-  expiresInSeconds: number;
-  /** Absent on a server older than the escalating resend ladder. */
-  nextCooldownSeconds?: number;
-};
+export type OtpRequestResponse = ApiResponse<'/api/v1/auth/otp/request', 'post', 202>;
 
-export type OtpVerifyRequest = {
-  phone: string;
-  code: string;
-};
+export type OtpVerifyRequest = ApiBody<'/api/v1/auth/otp/verify', 'post'>;
 
-export type CustomerAddress = {
-  id: string;
-  addressType: string;
-  locationId: string | null;
-  flatOrDoorNo: string | null;
-  buildingOrApartment: string | null;
-  streetOrRoad: string | null;
-  landmark: string | null;
-  area: string | null;
-  city: string | null;
-  district: string | null;
-  state: string | null;
-  pincode: string | null;
-};
+export type CustomerAddress = NonNullable<CustomerProfile['address']>;
 
-export type CustomerSubscription = {
-  id: string;
-  serviceAccountNumber: string;
-  status: SubscriptionStatus;
-  startDate: string;
-  endDate: string | null;
-  billingCycle: BillingCycle;
-  price: string;
-  /** What this line owes right now; the customer total is the sum of its lines. */
-  outstandingBalance: string;
-  installationAddress: string | null;
-  service: { id: string; name: string; slug: string; icon: ServiceIcon | null };
-  provider: { id: string; name: string; slug: string };
-  package: { id: string; name: string; slug: string; packageType: string };
-};
+export type CustomerSubscription = CustomerDetail['subscriptions'][number];
 
-export type CustomerProfile = {
-  id: string;
-  customerCode: string | null;
-  status: CustomerStatus;
-  outstandingBalance: string;
-  alternatePhone: string | null;
-  whatsappNumber: string | null;
-  areaId: string | null;
-  locationId: string | null;
-  address: CustomerAddress | null;
-  subscriptions: CustomerSubscription[];
-  summary: {
-    subscriptions: number;
-    activeSubscriptions: number;
-    services: string[];
-    outstandingBalance: string;
-  };
-};
+export type CustomerProfile = NonNullable<MeResponse['customer']>;
 
 /**
  * One row of the staff customer list.
@@ -186,52 +58,7 @@ export type CustomerProfile = {
  * The breadcrumb and the service rollup arrive already resolved, so a row needs
  * no follow-up call to `/locations/:id` or `/packages/:id` to render.
  */
-export type CustomerListItem = {
-  id: string;
-  customerCode: string | null;
-  name: string | null;
-  phone: string | null;
-  status: CustomerStatus;
-  outstandingBalance: string;
-  locationId: string | null;
-  /** `Mandapeta / TIDCO Apartments / Group C / C59 / Ground Floor / 6`. */
-  locationPath: string | null;
-  subscriptions: number;
-  activeSubscriptions: number;
-  services: string[];
-  createdAt: string;
-  alternatePhone: string | null;
-  whatsappNumber: string | null;
-  address: string | null;
-  locations: {
-    locationId: string;
-    path: string;
-    codes: string[];
-    source: CustomerLocationSource;
-  }[];
-  serviceAccounts: {
-    subscriptionId: string;
-    accountNumber: string;
-    installationAddress: string | null;
-    locationId: string;
-    locationPath: string | null;
-    service?: string;
-  }[];
-  equipment: {
-    id: string;
-    subscriptionId: string;
-    type: string;
-    brand: string | null;
-    model: string | null;
-    serialNumber: string | null;
-    vcNumber: string | null;
-    macAddress: string | null;
-    barcode: string | null;
-    status: string;
-  }[];
-  matchedFields?: string[];
-  score?: number;
-};
+export type CustomerListItem = CustomerPage['items'][number];
 
 /**
  * A page of customers.
@@ -240,34 +67,11 @@ export type CustomerListItem = {
  * arrives on the first page only — it cannot usefully change while one operator
  * scrolls, and the server will not pay for it twice.
  */
-export type CustomerPage = {
-  items: CustomerListItem[];
-  total: number | null;
-  limit: number;
-  nextCursor: string | null;
-};
+export type CustomerPage = ApiResponse<'/api/v1/customers', 'get', 200>;
 
-export type CustomerEquipment = {
-  id: string;
-  subscriptionId: string;
-  name: string;
-  serialNumber: string | null;
-  status: string;
-  assignedAt: string;
-  returnedAt: string | null;
-};
+export type CustomerEquipment = CustomerDetail['equipment'][number];
 
-export type CustomerTransaction = {
-  id: string;
-  transactionNo: string;
-  transactionDate: string;
-  transactionType: string;
-  serviceAccountNumber: string;
-  debit: string;
-  credit: string;
-  closingBalance: string;
-  remarks: string | null;
-};
+export type CustomerTransaction = CustomerDetail['recentTransactions'][number];
 
 /**
  * Everything a customer details page draws, from ONE request.
@@ -275,238 +79,40 @@ export type CustomerTransaction = {
  * Each subscription already carries its service, provider and package, so the
  * screen never fans out to `/packages/:id` or `/service-providers/:id`.
  */
-export type CustomerDetail = {
-  id: string;
-  customerCode: string | null;
-  name: string | null;
-  phone: string | null;
-  alternatePhone: string | null;
-  whatsappNumber: string | null;
-  status: CustomerStatus;
-  outstandingBalance: string;
-  userId: string | null;
-  locationId: string | null;
-  locationPath: string | null;
-  address: string | null;
-  notes: string | null;
-  subscriptions: CustomerSubscription[];
-  equipment: CustomerEquipment[];
-  recentTransactions: CustomerTransaction[];
-  summary: {
-    subscriptions: number;
-    activeSubscriptions: number;
-    services: string[];
-    monthlyValue: string;
-    outstandingBalance: string;
-  };
-  createdAt: string;
-  updatedAt: string;
-};
+export type CustomerDetail = ApiResponse<'/api/v1/customers/{id}', 'get', 200>;
 
-export type MeResponse = {
-  user: ApiUser;
-  sessionId: string;
-  deviceId: string;
-  memberships: Membership[];
-  customer: CustomerProfile | null;
-};
+export type MeResponse = ApiResponse<'/api/v1/auth/me', 'get', 200>;
 
-export type Service = {
-  id: string;
-  name: string;
-  slug: string;
-  icon: ServiceIcon | null;
-  description: string | null;
-  status: Status;
-  metadata: Record<string, unknown> | null;
-  providerCount: number;
-  providers?: ServiceProvider[];
-  createdAt: string;
-  updatedAt: string;
-};
+export type Service = ApiResponse<'/api/v1/services/{id}', 'get', 200>;
 
-export type CreateServiceInput = {
-  name: string;
-  icon?: ServiceIcon | null;
-  /** Omit it: the API derives one from `name`. */
-  slug?: string;
-  description?: string;
-  metadata?: Record<string, unknown>;
-};
+export type CreateServiceInput = ApiBody<'/api/v1/services', 'post'>;
 
-export type UpdateServiceInput = Omit<Partial<CreateServiceInput>, 'slug' | 'description'> & {
-  description?: string | null;
-  status?: Status;
-};
+export type UpdateServiceInput = ApiBody<'/api/v1/services/{id}', 'patch'>;
 
-export type ServiceProvider = {
-  id: string;
-  serviceId: string;
-  serviceName: string;
-  /** The icon of the service it supplies, so a provider list reads the same. */
-  serviceIcon: ServiceIcon | null;
-  packageCount?: number;
-  name: string;
-  slug: string;
-  code: string | null;
-  description: string | null;
-  contact: Record<string, unknown> | null;
-  metadata: Record<string, unknown> | null;
-  status: Status;
-  isDefault: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
+export type ServiceProvider = ApiResponse<'/api/v1/service-providers/{id}', 'get', 200>;
 
-export type CreateServiceProviderInput = {
-  serviceId: string;
-  name: string;
-  /** Omit it: the API derives one from `name`. */
-  slug?: string;
-  code?: string;
-  description?: string;
-  contact?: Record<string, unknown>;
-  metadata?: Record<string, unknown>;
-  isDefault?: boolean;
-};
+export type CreateServiceProviderInput = ApiBody<'/api/v1/service-providers', 'post'>;
 
-export type UpdateServiceProviderInput = Omit<
-  Partial<CreateServiceProviderInput>,
-  'serviceId' | 'slug' | 'description' | 'code' | 'contact' | 'metadata'
-> & {
-  /** `null` clears the field; `undefined` leaves it alone. */
-  code?: string | null;
-  description?: string | null;
-  contact?: Record<string, unknown> | null;
-  metadata?: Record<string, unknown> | null;
-  status?: Status;
-};
+export type UpdateServiceProviderInput = ApiBody<'/api/v1/service-providers/{id}', 'patch'>;
 
-export type Package = {
-  id: string;
-  serviceProviderId: string;
-  serviceProviderName: string;
-  serviceId: string;
-  serviceName: string;
-  serviceIcon: ServiceIcon | null;
-  name: string;
-  slug: string;
-  packageType: PackageType;
-  price: string;
-  discount: string;
-  msoShare: string;
-  taxRate: string;
-  billingCycle: BillingCycle;
-  description: string | null;
-  metadata: Record<string, unknown> | null;
-  status: Status;
-  channelCount: number;
-  /**
-   * The breadcrumbs this package is sold in, when it is narrower than its
-   * provider. Empty — the normal case — means it goes wherever the provider
-   * does. One provider may sell the same package name twice for two areas at
-   * two prices, and this is what tells the two rows apart.
-   */
-  coverageAreas: string[];
-  createdAt: string;
-  updatedAt: string;
-};
+export type Package = ApiResponse<'/api/v1/packages', 'post', 201>;
 
 /** The `channel_resolution` enum — a channel is one of exactly these three. */
 
-export type Channel = {
-  id: string;
-  serviceProviderId: string;
-  channelNumber: number;
-  name: string;
-  slug: string;
-  genre: string;
-  languages: string[];
-  resolution: ChannelResolution;
-  isFta: boolean;
-  broadcaster: string | null;
-  price: string;
-  logoUrl: string | null;
-  status: Status;
-};
+export type Channel = ApiResponse<'/api/v1/channels', 'get', 200>['items'][number];
 
-export type PackageDetail = Package & {
-  channels: (Pick<Channel, 'id' | 'channelNumber' | 'name' | 'slug' | 'genre' | 'resolution' | 'isFta'> & {
-    isMandatory: boolean;
-  })[];
-};
+export type PackageDetail = ApiResponse<'/api/v1/packages/{id}', 'get', 200>;
 
-export type CreatePackageInput = {
-  serviceProviderId: string;
-  name: string;
-  /** Omit it: the API derives one from `name`. */
-  slug?: string;
-  packageType?: PackageType;
-  /** Money crosses the wire as a decimal string — never a JSON number. */
-  price?: string;
-  billingCycle?: BillingCycle;
-  discount?: string;
-  description?: string;
-  metadata?: Record<string, unknown>;
-};
+export type CreatePackageInput = ApiBody<'/api/v1/packages', 'post'>;
 
 /** `serviceProviderId` is absent on purpose — the API refuses to re-point a package. */
-export type UpdatePackageInput = Omit<Partial<CreatePackageInput>, 'serviceProviderId' | 'slug' | 'description'> & {
-  /** `null` clears it. */
-  description?: string | null;
-  status?: Status;
-};
+export type UpdatePackageInput = ApiBody<'/api/v1/packages/{id}', 'patch'>;
 
-export type LocationCategory = {
-  id: string;
-  name: string;
-  slug: string;
-  config: Record<string, unknown>;
-  createdAt: string;
-  updatedAt: string;
-};
+export type LocationCategory = ApiResponse<'/api/v1/location-categories', 'get', 200>[number];
 
-export type LocationSchema = {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  isActive: boolean;
-  levels: {
-    id: string;
-    categoryId: string;
-    categorySlug: string;
-    categoryName: string;
-    depth: number;
-    isTerminal: boolean;
-    config: Record<string, unknown>;
-  }[];
-  createdAt: string;
-  updatedAt: string;
-};
+export type LocationSchema = ApiResponse<'/api/v1/location-schemas', 'get', 200>[number];
 
-export type Location = {
-  id: string;
-  schemaId: string;
-  categoryId: string;
-  parentId: string | null;
-  name: string;
-  code: string | null;
-  source: LocationSource;
-  status: LocationStatus;
-  isActive: boolean;
-  latitude: string | null;
-  longitude: string | null;
-  metadata: Record<string, unknown> | null;
-  aliases: string[];
-  depth: number;
-  path: string;
-  pathIds: string[];
-  /** Direct children — what a row means by "5 sub-locations". */
-  childCount: number;
-  createdAt: string;
-  updatedAt: string;
-};
+export type Location = ApiResponse<'/api/v1/locations/{id}', 'get', 200>;
 
 /**
  * One step from the root down to a node.
@@ -514,53 +120,20 @@ export type Location = {
  * `siblingIndex` is what makes a deep node reachable in a paged tree: it says
  * which page of its own level the step sits on.
  */
-export type LocationAncestor = Location & { siblingIndex: number };
+export type LocationAncestor = ApiResponse<'/api/v1/locations/{id}/ancestors', 'get', 200>[number];
 
-export type CreateLocationInput = {
-  name: string;
-  categoryId?: string;
-  schemaId?: string;
-  parentId?: string | null;
-  code?: string;
-  status?: LocationWritableStatus;
-  metadata?: Record<string, unknown> | null;
-  aliases?: string[];
-};
+export type CreateLocationInput = ApiBody<'/api/v1/locations', 'post'>;
 
-export type Coverage = {
-  id: string;
-  serviceId: string;
-  serviceProviderId: string | null;
-  /** Set on the narrowest kind of row: this one package, here. */
-  packageId: string | null;
-  locationId: string;
-  locationPath: string;
-  isAvailable: boolean;
-  note: string | null;
-};
+export type Coverage = ApiResponse<'/api/v1/services/{id}/coverage', 'get', 200>[number];
 
-export type Availability = {
-  locationId: string;
-  services: (Pick<Service, 'id' | 'name' | 'slug' | 'icon'> & {
-    providers: (Pick<ServiceProvider, 'id' | 'name' | 'slug' | 'isDefault'> & {
-      packages: Pick<Package, 'id' | 'name' | 'slug' | 'packageType' | 'price' | 'billingCycle'>[];
-    })[];
-  })[];
-};
+export type Availability = ApiResponse<'/api/v1/locations/{id}/available-services', 'get', 200>;
 
 /* ── Staff, teams and area grants (backend §6.4) ──────────────────────────── */
 
 /** `customer` is absent on purpose: a subscriber is not made from these screens. */
 
 /** Enough of a node to render a grant without a follow-up call to `/locations`. */
-export type LocationRef = {
-  id: string;
-  name: string;
-  /** Root-first breadcrumb, e.g. "Mandapeta / Sai Nagar". */
-  path: string;
-  /** Root-first ids, ending with this node. */
-  pathIds: string[];
-};
+export type LocationRef = StaffMember['locations'][number];
 
 /**
  * One person's job at this operator — a membership, not an account.
@@ -569,319 +142,60 @@ export type LocationRef = {
  * inside a tenant: identity is global, so the same person may work here and
  * subscribe somewhere else. Deleting one ends the job, not the login.
  */
-export type StaffMember = {
-  id: string;
-  userId: string;
-  name: string | null;
-  email: string | null;
-  phone: string | null;
-  photoUrl: string | null;
-  roleId: StaffRole;
-  status: MembershipStatus;
-  team: { id: string; name: string; slug: string } | null;
-  /** Runs their crew. Optional, and only meaningful while they are on one. */
-  isTeamLeader: boolean;
-  /** Areas granted to this person directly — the crew never limits these. */
-  locations: LocationRef[];
-  /** What they actually reach through the crew: its whole patch, or their share. */
-  inheritedLocations: LocationRef[];
-  /**
-   * Which parts of the crew's patch this person covers.
-   *
-   * **Empty means all of it, not none.** The narrowing table subtracts, so
-   * absence is the permissive case — the one thing to get right when rendering
-   * this.
-   */
-  teamAreas: LocationRef[];
-  createdAt: string;
-  updatedAt: string;
-};
+export type StaffMember = ApiResponse<'/api/v1/staff/{id}', 'get', 200>;
 
-export type Team = {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  status: Status;
-  memberCount: number;
-  locations: LocationRef[];
-  createdAt: string;
-  updatedAt: string;
-};
+export type Team = ApiResponse<'/api/v1/teams/{id}', 'get', 200>;
 
-export type CreateStaffInput = {
-  name: string;
-  /** One of `email` or `phone` is required — it is how they sign in. */
-  email?: string;
-  phone?: string;
-  /** Only for a brand new account; an existing one sets its own. */
-  password?: string;
-  roleId?: StaffRole;
-  status?: MembershipSettableStatus;
-  teamId?: string | null;
-  locationIds?: string[];
-};
+export type CreateStaffInput = ApiBody<'/api/v1/staff', 'post'>;
 
-export type UpdateStaffInput = Partial<{
-  name: string;
-  roleId: StaffRole;
-  status: MembershipStatus;
-  teamId: string | null;
-  /** Cleared automatically when they leave the crew. */
-  isTeamLeader: boolean;
-}>;
+export type UpdateStaffInput = ApiBody<'/api/v1/staff/{id}', 'patch'>;
 
 /** A crew member as the team screen lists them. */
-export type TeamMember = {
-  id: string;
-  userId: string;
-  name: string | null;
-  phone: string | null;
-  email: string | null;
-  roleId: StaffRole;
-  status: MembershipStatus;
-  isTeamLeader: boolean;
-  locations: LocationRef[];
-  /** Their share of the crew's patch — empty means all of it. */
-  teamAreas: LocationRef[];
-};
+export type TeamMember = ApiResponse<'/api/v1/teams/{id}/members', 'get', 200>[number];
 
-export type CreateTeamInput = {
-  name: string;
-  slug?: string;
-  description?: string | null;
-  status?: Status;
-  locationIds?: string[];
-};
+export type CreateTeamInput = ApiBody<'/api/v1/teams', 'post'>;
 
-export type UpdateTeamInput = Partial<{
-  name: string;
-  description: string | null;
-  status: Status;
-}>;
+export type UpdateTeamInput = ApiBody<'/api/v1/teams/{id}', 'patch'>;
 
 // ==========================================
 // INVENTORY TYPES
 // ==========================================
 
-export type LowStockItem = {
-  id: string;
-  name: string;
-  code: string | null;
-  availableStock: number;
-  totalStock: number;
-};
+export type LowStockItem = InventoryDashboard['lowStockItems'][number];
 
-export type RecentMovement = {
-  id: string;
-  movementType: StockMovementType;
-  itemName: string;
-  itemCode: string | null;
-  targetName: string | null;
-  fromLocationName?: string | null;
-  toLocationName?: string | null;
-  quantity: number;
-  performedByName: string | null;
-  createdAt: string;
-};
+export type RecentMovement = InventoryDashboard['recentMovements'][number];
 
-export type InventoryLocation = {
-  id: string;
-  name: string;
-  code: string | null;
-  itemCount?: number;
-};
+export type InventoryLocation = ApiResponse<'/api/v1/inventory/locations', 'get', 200>[number];
 
-export type InventoryDashboard = {
-  locationId?: string | null;
-  locationName?: string | null;
-  totalItems: number;
-  inStock: number;
-  issued: number;
-  inTransit: number;
-  lowStockItems: LowStockItem[];
-  recentMovements: RecentMovement[];
-};
+export type InventoryDashboard = ApiResponse<'/api/v1/inventory/dashboard', 'get', 200>;
 
-export type StockItem = {
-  id: string;
-  name: string;
-  code: string | null;
-  brand: string | null;
-  model: string | null;
-  itemType: string;
-  isBundle: boolean;
-  /** What a bundle holds. Empty for anything that is not one. */
-  bundleContents: BundleComponent[];
-  defaultOwnership: EquipmentOwnership;
-  defaultSalePrice: string;
-  defaultDepositAmount: string;
-  defaultRentalPrice: string;
-  isReturnable: boolean;
-  icon: string | null;
-  description: string | null;
-  totalStock: number;
-  availableStock: number;
-  issuedStock: number;
-  inTransitStock: number;
-  locationId: string | null;
-  locationName: string | null;
-};
+export type StockItem = ApiResponse<'/api/v1/inventory/stock', 'get', 200>[number];
 
-export type CatalogItemPayload = Pick<StockItem, 'name'>
-  & Partial<Pick<StockItem, 'code' | 'brand' | 'model' | 'defaultSalePrice' | 'defaultDepositAmount'>>;
+export type CatalogItemPayload = ApiBody<'/api/v1/inventory/catalog', 'post'>;
 
-export type ApprovalRequestPayload = {
-  requestType: string;
-  targetItemId?: string;
-  proposedData?: Partial<CatalogItemPayload>;
-  reason: string;
-};
+export type ApprovalRequestPayload = ApiBody<'/api/v1/inventory/approval-requests', 'post'>;
 
-export type SerializedUnit = {
-  id: string;
-  serialNumber: string | null;
-  vcNumber: string | null;
-  macAddress: string | null;
-  barcode: string | null;
-  inventoryStatus: InventoryStatus;
-  locationName: string | null;
-  staffName: string | null;
-};
+export type SerializedUnit = ItemDetails['units'][number];
 
-export type BundleComponent = {
-  componentId: string;
-  name: string;
-  code: string | null;
-  quantity: number;
-  isOptional: boolean;
-};
+export type BundleComponent = ItemDetails['bundleComponents'][number];
 
-export type ItemDetails = StockItem & {
-  units: SerializedUnit[];
-  bundleComponents: BundleComponent[];
-};
+export type ItemDetails = ApiResponse<'/api/v1/inventory/stock/{id}', 'get', 200>;
 
-export type IssueEquipmentPayload = {
-  customerId: string;
-  subscriptionId?: string;
-  catalogId: string;
-  equipmentId?: string;
-  serialNumber?: string;
-  ownershipType?: EquipmentOwnership;
-  chargedAmount?: string;
-  depositAmount?: string;
-  notes?: string;
-};
+export type IssueEquipmentPayload = ApiBody<'/api/v1/inventory/issue', 'post'>;
 
-export type IssueEquipmentResponse = {
-  id: string;
-  equipmentId: string;
-  customerId: string;
-  customerName: string;
-  customerCode: string | null;
-  subscriptionId: string | null;
-  itemName: string;
-  itemCode: string | null;
-  serialNumber: string | null;
-  status: string;
-  ownershipType: EquipmentOwnership;
-  assignedAt: string;
-};
+export type IssueEquipmentResponse = ApiResponse<'/api/v1/inventory/issue', 'post', 201>;
 
-export type ApprovalRequest = {
-  id: string;
-  requestedBy: string;
-  requestedByName: string | null;
-  requestType: InventoryRequestType;
-  targetItemId: string | null;
-  targetItemName: string | null;
-  proposedData: Record<string, unknown> | null;
-  reason: string;
-  status: InventoryRequestStatus;
-  reviewedBy: string | null;
-  reviewedByName: string | null;
-  reviewedAt: string | null;
-  reviewNotes: string | null;
-  createdAt: string;
-};
+export type ApprovalRequest = ApiResponse<'/api/v1/inventory/approval-requests', 'get', 200>[number];
 
-export type StockMovement = {
-  id: string;
-  equipmentId: string;
-  movementType: string;
-  itemName: string;
-  itemCode: string | null;
-  serialNumber: string | null;
-  fromLocationName: string | null;
-  toLocationName: string | null;
-  fromStaffName: string | null;
-  toStaffName: string | null;
-  performedByName: string | null;
-  quantity: number;
-  notes: string | null;
-  createdAt: string;
-};
+export type StockMovement = ApiResponse<'/api/v1/inventory/movements', 'get', 200>[number];
 
-export type InventoryLookupItem = {
-  type: InventoryLookupType;
-  id: string;
-  catalogId: string;
-  itemName: string;
-  itemCode: string | null;
-  brand: string | null;
-  model: string | null;
-  serialNumber: string | null;
-  barcode: string | null;
-  vcNumber: string | null;
-  macAddress: string | null;
-  inventoryStatus: string | null;
-  locationId: string | null;
-  locationName: string | null;
-  defaultSalePrice: string;
-  defaultDepositAmount: string;
-  availableStock: number;
-};
+export type InventoryLookupItem = ApiResponse<'/api/v1/inventory/lookup', 'get', 200>[number];
 
-export type CustomerEquipmentRecord = {
-  id: string;
-  customerId: string;
-  customerName: string;
-  customerCode: string | null;
-  subscriptionId: string | null;
-  equipmentId: string;
-  itemName: string;
-  itemCode: string | null;
-  serialNumber: string | null;
-  barcode: string | null;
-  vcNumber: string | null;
-  macAddress: string | null;
-  status: string;
-  ownershipType: string;
-  chargedAmount: string;
-  depositAmount: string;
-  assignedAt: string;
-};
+export type CustomerEquipmentRecord = ApiResponse<'/api/v1/inventory/customer-equipment', 'get', 200>[number];
 
-export type InwardStockPayload = {
-  catalogId: string;
-  locationId?: string;
-  quantity?: number;
-  serialNumbers?: string[];
-  costPrice?: string;
-  depositAmount?: string;
-  notes?: string;
-};
+export type InwardStockPayload = ApiBody<'/api/v1/inventory/inward', 'post'>;
 
-export type TransferStockPayload = {
-  equipmentId?: string;
-  catalogId?: string;
-  fromLocationId?: string;
-  toLocationId?: string;
-  toStaffId?: string;
-  quantity?: number;
-  notes?: string;
-};
+export type TransferStockPayload = ApiBody<'/api/v1/inventory/transfer', 'post'>;
 
 // ── IR remotes ────────────────────────────────────────────────────────────────
 
@@ -898,48 +212,14 @@ export type TransferStockPayload = {
  * backend stores what the encoder accepts, so a button press passes `command`
  * straight through.
  */
-export type RemoteButton = {
-  key: string;
-  label: string;
-  command: IrCommand;
-};
+export type RemoteButton = RemoteDetail['buttons'][number];
 
 /** A row in the remote picker. The code set is left out until one is opened. */
-export type RemoteSummary = {
-  id: string;
-  deviceType: RemoteDeviceType;
-  brand: string;
-  model: string;
-  source: RemoteSource;
-  /** False until somebody has fired these codes at the real appliance. */
-  verified: boolean;
-  notes: string | null;
-  /** False for the shared library, true for a handset this tenant captured. */
-  isTenantOwned: boolean;
-  buttonCount: number;
-};
+export type RemoteSummary = ApiResponse<'/api/v1/remotes', 'get', 200>[number];
 
-export type RemoteCapture = {
-  id: string;
-  remoteId: string | null;
-  buttonName: string;
-  buttonKey: string;
-  protocol: string;
-  address: string;
-  command: string;
-  commandNumber: number;
-  rawData: string;
-  bits: number;
-  bitOrder: string;
-  repeat: boolean;
-  rawTimings: number[];
-  capturedAt: string | null;
-};
+export type RemoteCapture = ApiResponse<'/api/v1/remotes/{id}/captures', 'get', 200>[number];
 
-export type RemoteDetail = Omit<RemoteSummary, 'buttonCount'> & {
-  buttons: RemoteButton[];
-  captures?: RemoteCapture[];
-};
+export type RemoteDetail = ApiResponse<'/api/v1/remotes/{id}', 'get', 200>;
 
 export type { OtpChannel, StaffRole } from '@/lib/constants/auth';
 /**

@@ -1,53 +1,30 @@
-import type { NotificationCategory, NotificationDelivery } from '@/lib/api/types';
+import type { ApiBody, ApiQuery, ApiResponse } from '@/lib/api/contracts';
 import { createMutation, createQuery } from 'react-query-kit';
 import { client, queryClient } from '@/lib/api';
 
-export type AppNotification = {
-  id: string;
-  category: NotificationCategory;
-  delivery: NotificationDelivery;
-  channel: string;
-  type: string;
-  title: string | null;
-  body: string;
-  data: Record<string, unknown> | null;
-  imageUrl: string | null;
-  readAt: string | null;
-  createdAt: string;
-};
+export type AppNotification = ApiResponse<'/api/v1/notifications', 'get', 200>['items'][number];
 
-type InboxPage = {
-  items: AppNotification[];
-  total: number;
-  page: number;
-  limit: number;
-};
+type InboxPage = ApiResponse<'/api/v1/notifications', 'get', 200>;
 
-type InboxVariables = {
-  page?: number;
-  limit?: number;
-  unreadOnly?: boolean;
-  category?: NotificationCategory;
-  delivery?: NotificationDelivery;
-};
+type InboxVariables = ApiQuery<'/api/v1/notifications'>;
 
 /** Everything addressed to the signed-in person, newest first. */
 export const useNotifications = createQuery<InboxPage, InboxVariables | void, Error>({
   queryKey: ['notifications'],
   fetcher: async (variables) => {
-    const response = await client.get<InboxPage>('/notifications', { params: variables || {} });
+    const response = await client.get<ApiResponse<'/api/v1/notifications', 'get', 200>>('/notifications', { params: variables || {} });
     return response.data;
   },
 });
 
 export const useUnreadCount = createQuery<
-  { total: number; byCategory: Record<string, number> },
+  ApiResponse<'/api/v1/notifications/unread-count'>,
   void,
   Error
 >({
   queryKey: ['notifications', 'unread-count'],
   fetcher: async () => {
-    const response = await client.get<{ total: number; byCategory: Record<string, number> }>(
+    const response = await client.get<ApiResponse<'/api/v1/notifications/unread-count', 'get', 200>>(
       '/notifications/unread-count',
     );
     return response.data;
@@ -61,7 +38,7 @@ export const useUnreadCount = createQuery<
 export const usePendingInApp = createQuery<InboxPage, { deliveries: string }, Error>({
   queryKey: ['notifications', 'pending-in-app'],
   fetcher: async ({ deliveries }) => {
-    const response = await client.get<InboxPage>('/notifications', {
+    const response = await client.get<ApiResponse<'/api/v1/notifications', 'get', 200>>('/notifications', {
       params: { delivery: deliveries, unreadOnly: true, limit: 1 },
     });
     return response.data;
@@ -74,42 +51,33 @@ function refreshInbox() {
 
 export const useMarkRead = createMutation<AppNotification, { id: string }, Error>({
   mutationFn: async ({ id }) => {
-    const response = await client.patch<AppNotification>(`/notifications/${id}/read`);
+    const response = await client.patch<ApiResponse<'/api/v1/notifications/{id}/read', 'patch', 200>>(`/notifications/${id}/read`);
     return response.data;
   },
   onSuccess: refreshInbox,
 });
 
 export const useMarkAllRead = createMutation<
-  { updated: number },
-  { category?: NotificationCategory } | void,
+  ApiResponse<'/api/v1/notifications/read-all', 'patch'>,
+  ApiBody<'/api/v1/notifications/read-all', 'patch'> | void,
   Error
 >({
   mutationFn: async (variables) => {
-    const response = await client.patch<{ updated: number }>('/notifications/read-all', variables || {});
+    const response = await client.patch<ApiResponse<'/api/v1/notifications/read-all', 'patch', 200>>('/notifications/read-all', variables || {});
     return response.data;
   },
   onSuccess: refreshInbox,
 });
 
-export type SendNotificationVariables = {
-  audience: 'user' | 'role' | 'tenant';
-  userIds?: string[];
-  roleId?: 'admin' | 'staff' | 'customer';
-  category: NotificationCategory;
-  delivery?: NotificationDelivery;
-  type: string;
-  title: string;
-  body: string;
-};
+export type SendNotificationVariables = ApiBody<'/api/v1/notifications/send', 'post'>;
 
 export const useSendNotification = createMutation<
-  { notified: number; pushed: number; failed: number },
+  ApiResponse<'/api/v1/notifications/send', 'post'>,
   SendNotificationVariables,
   Error
 >({
   mutationFn: async (variables) => {
-    const response = await client.post<{ notified: number; pushed: number; failed: number }>(
+    const response = await client.post<ApiResponse<'/api/v1/notifications/send', 'post', 200>>(
       '/notifications/send',
       variables,
     );

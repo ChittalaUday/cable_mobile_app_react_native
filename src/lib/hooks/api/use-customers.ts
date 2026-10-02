@@ -1,3 +1,4 @@
+import type { ApiBody, ApiQuery, ApiResponse } from '@/lib/api/contracts';
 import type {
   CustomerDetail,
   CustomerListItem,
@@ -11,18 +12,7 @@ import { queryClient } from '@/lib/api/query-client';
 const PAGE_SIZE = 30;
 
 /** What `GET /customers` narrows on. Everything is server-side — nothing is filtered locally. */
-export type CustomerQueryVariables = {
-  /** Matches the account name and phone, the imported name and phone, and the code. */
-  q?: string;
-  status?: 'active' | 'inactive' | 'pending';
-  /** That node AND everything under it. */
-  locationId?: string;
-  serviceProviderId?: string;
-  packageId?: string;
-  createdFrom?: string;
-  createdTo?: string;
-  multiBox?: boolean;
-} | void;
+export type CustomerQueryVariables = ApiQuery<'/api/v1/customers'> | void;
 
 /**
  * The staff customer list, paged by cursor.
@@ -40,7 +30,7 @@ export const useCustomers = createInfiniteQuery<
 >({
   queryKey: ['customers'],
   fetcher: async (variables, { pageParam, signal }) => {
-    const response = await client.get<CustomerPage>('/customers', {
+    const response = await client.get<ApiResponse<'/api/v1/customers', 'get', 200>>('/customers', {
       params: { limit: PAGE_SIZE, cursor: pageParam, ...variables },
       signal,
     });
@@ -59,22 +49,13 @@ export const useCustomers = createInfiniteQuery<
  */
 export const useCustomer = createQuery<CustomerDetail, { id: string }, Error>({
   queryKey: ['customer'],
-  fetcher: async ({ id }) => (await client.get<CustomerDetail>(`/customers/${id}`)).data,
+  fetcher: async ({ id }) => (await client.get<ApiResponse<'/api/v1/customers/{id}', 'get', 200>>(`/customers/${id}`)).data,
   staleTime: 60 * 1000,
 });
 
-export type ChangePlanPayload = {
-  packageId: string;
-  /** What this customer actually pays, when it is not the package list price. */
-  price?: string;
-};
+export type ChangePlanPayload = ApiBody<'/api/v1/customers/{id}/subscriptions/{subscriptionId}', 'patch'>;
 
-export type AddSubscriptionPayload = {
-  packageId: string;
-  /** The line the new one sits beside; it inherits the provider and the address. */
-  basedOn: string;
-  price?: string;
-};
+export type AddSubscriptionPayload = ApiBody<'/api/v1/customers/{id}/subscriptions', 'post'>;
 
 /** Everything a written subscription changes, in one place so no caller forgets one. */
 async function refreshAfterSubscriptionWrite(): Promise<void> {
@@ -87,28 +68,7 @@ async function refreshAfterSubscriptionWrite(): Promise<void> {
 }
 
 /** What `POST /customers` takes. The subscriber code is minted by the server. */
-export type CreateCustomerPayload = {
-  name: string;
-  /** Ten digits, no country code — the server rejects anything else. */
-  phone: string;
-  alternatePhone?: string;
-  whatsappNumber?: string;
-  status?: 'active' | 'inactive' | 'pending';
-  address?: string;
-  notes?: string;
-  /**
-   * The first connection, fitted with the subscriber in one transaction. An
-   * area-scoped collector must send it: without a line there is no location,
-   * and without a location the customer they just registered is one they can
-   * no longer open.
-   */
-  connection?: {
-    packageId: string;
-    locationId: string;
-    installationAddress?: string;
-    price?: string;
-  };
-};
+export type CreateCustomerPayload = ApiBody<'/api/v1/customers', 'post'>;
 
 /**
  * Register a subscriber, and their first connection with them.
@@ -121,7 +81,7 @@ export const useCreateCustomer = createMutation<
   { payload: CreateCustomerPayload },
   Error
 >({
-  mutationFn: async ({ payload }) => (await client.post<CustomerDetail>('/customers', payload)).data,
+  mutationFn: async ({ payload }) => (await client.post<ApiResponse<'/api/v1/customers', 'post', 201>>('/customers', payload)).data,
   onSuccess: refreshAfterSubscriptionWrite,
 });
 
@@ -138,7 +98,7 @@ export const useChangePlan = createMutation<
   Error
 >({
   mutationFn: async ({ customerId, subscriptionId, payload }) => (
-    await client.patch<CustomerSubscription>(`/customers/${customerId}/subscriptions/${subscriptionId}`, payload)
+    await client.patch<ApiResponse<'/api/v1/customers/{id}/subscriptions/{subscriptionId}', 'patch', 200>>(`/customers/${customerId}/subscriptions/${subscriptionId}`, payload)
   ).data,
   onSuccess: refreshAfterSubscriptionWrite,
 });
@@ -154,7 +114,7 @@ export const useAddSubscription = createMutation<
   Error
 >({
   mutationFn: async ({ customerId, payload }) => (
-    await client.post<CustomerSubscription>(`/customers/${customerId}/subscriptions`, payload)
+    await client.post<ApiResponse<'/api/v1/customers/{id}/subscriptions', 'post', 201>>(`/customers/${customerId}/subscriptions`, payload)
   ).data,
   onSuccess: refreshAfterSubscriptionWrite,
 });

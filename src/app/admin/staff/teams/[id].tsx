@@ -100,6 +100,7 @@ export function TeamDetailScreen() {
 
       <TeamMemberSheet
         member={editing}
+        teamId={id}
         teamAreas={areas}
         onClose={() => setEditing(null)}
         onSaved={() => void refresh()}

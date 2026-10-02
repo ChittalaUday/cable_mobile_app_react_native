@@ -29,6 +29,8 @@ import {
 } from '@/lib/hooks/api/use-inventory';
 import { useStaff } from '@/lib/hooks/api/use-staff';
 import { usePermissions } from '@/lib/hooks/common/use-permissions';
+import { translate } from '@/lib/i18n';
+import { inventoryQuantity } from '@/lib/utils/inventory-quantity';
 
 export function InventoryTransferScreen({ basePath }: { basePath: '/admin/inventory' | '/staff/inventory' }) {
   const router = useRouter();
@@ -69,6 +71,7 @@ export function InventoryTransferScreen({ basePath }: { basePath: '/admin/invent
       if (results && results.length > 0) {
         const match = results[0]!;
         setSelectedCatalogId(match.catalogId);
+        setEquipmentId(match.type === 'equipment' ? match.id : undefined);
         if (match.type === 'equipment') {
           setEquipmentId(match.id);
           if (match.locationId)
@@ -101,9 +104,9 @@ export function InventoryTransferScreen({ basePath }: { basePath: '/admin/invent
       return;
     }
 
-    const qty = Number.parseInt(quantity, 10);
-    if (Number.isNaN(qty) || qty <= 0) {
-      void dialogs.notify('Validation Error', 'Please specify a valid quantity.');
+    const qty = inventoryQuantity(quantity, 1);
+    if (qty === null || qty < 1 || qty > 1) {
+      void dialogs.notify('Validation Error', translate('inventory_validation.transfer_quantity'));
       return;
     }
 
@@ -205,6 +208,8 @@ export function InventoryTransferScreen({ basePath }: { basePath: '/admin/invent
                         accessibilityRole="button"
                         onPress={() => {
                           setSelectedCatalogId(item.id);
+                          setEquipmentId(undefined);
+                          setSerialNumber('');
                           setItemPickerOpen(false);
                         }}
                         className={`flex-row items-center justify-between rounded-lg p-2.5 active:bg-muted/40 ${
@@ -372,6 +377,7 @@ export function InventoryTransferScreen({ basePath }: { basePath: '/admin/invent
             <Input
               value={quantity}
               onChangeText={setQuantity}
+              editable={false}
               keyboardType="numeric"
               className="text-sm text-foreground"
             />

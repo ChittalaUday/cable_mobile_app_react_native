@@ -1,3 +1,4 @@
+import type { ApiBody, ApiQuery, ApiResponse } from '@/lib/api/contracts';
 import type { Page } from '@/lib/api/types';
 import type { TicketCategory, TicketPriority, TicketStatus } from '@/lib/constants/crm';
 import { createMutation, createQuery } from 'react-query-kit';
@@ -45,44 +46,14 @@ export const TICKET_STATUS_LABELS: Record<TicketStatus, string> = {
   cancelled: 'Cancelled',
 };
 
-export type Ticket = {
-  id: string;
-  ticketNo: string;
-  category: TicketCategory;
-  priority: TicketPriority;
-  status: TicketStatus;
-  subject: string;
-  description: string | null;
-  customer: { id: string; name: string | null; phone: string | null; customerCode: string | null };
-  subscription: { id: string; serviceAccountNumber: string; packageName: string } | null;
-  locationId: string | null;
-  locationPath: string | null;
-  assignedTo: { id: string; name: string | null } | null;
-  resolution: string | null;
-  resolvedAt: string | null;
-  createdBy: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
+export type Ticket = ApiResponse<'/api/v1/tickets/{id}', 'get', 200>;
 
-export type TicketQueryVariables = {
-  status?: TicketStatus;
-  /** Everything still on somebody's plate, which is what "open" means out loud. */
-  openOnly?: boolean;
-  priority?: TicketPriority;
-  category?: TicketCategory;
-  customerId?: string;
-  /** `'me'` resolves server-side, so the handset needs no user id of its own. */
-  assignedTo?: string | 'me';
-  q?: string;
-  page?: number;
-  limit?: number;
-} | void;
+export type TicketQueryVariables = ApiQuery<'/api/v1/tickets'> | void;
 
 export const useTickets = createQuery<Page<Ticket>, TicketQueryVariables, Error>({
   queryKey: [QUERY_KEYS.TICKETS],
   fetcher: async (variables) => {
-    const response = await client.get<Page<Ticket>>('/tickets', {
+    const response = await client.get<ApiResponse<'/api/v1/tickets', 'get', 200>>('/tickets', {
       params: { limit: MAX_PAGE_SIZE, ...variables },
     });
     return response.data;
@@ -95,47 +66,30 @@ export const useTickets = createQuery<Page<Ticket>, TicketQueryVariables, Error>
 
 export const useTicket = createQuery<Ticket, { id: string }, Error>({
   queryKey: [QUERY_KEYS.TICKETS, 'detail'],
-  fetcher: async ({ id }) => (await client.get<Ticket>(`/tickets/${id}`)).data,
+  fetcher: async ({ id }) => (await client.get<ApiResponse<'/api/v1/tickets/{id}', 'get', 200>>(`/tickets/${id}`)).data,
   staleTime: 30 * 1000,
 });
 
-export type CreateTicketPayload = {
-  customerId: string;
-  subscriptionId?: string;
-  category?: TicketCategory;
-  priority?: TicketPriority;
-  subject: string;
-  description?: string;
-  /** Needs `tickets.assign` as well as `tickets.create`. */
-  assignedTo?: string;
-};
+export type CreateTicketPayload = ApiBody<'/api/v1/tickets', 'post'>;
 
 async function refreshTickets(): Promise<void> {
   await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TICKETS] });
 }
 
 export const useRaiseTicket = createMutation<Ticket, { payload: CreateTicketPayload }, Error>({
-  mutationFn: async ({ payload }) => (await client.post<Ticket>('/tickets', payload)).data,
+  mutationFn: async ({ payload }) => (await client.post<ApiResponse<'/api/v1/tickets', 'post', 201>>('/tickets', payload)).data,
   onSuccess: refreshTickets,
 });
 
-export type UpdateTicketPayload = {
-  status?: TicketStatus;
-  priority?: TicketPriority;
-  category?: TicketCategory;
-  subject?: string;
-  description?: string;
-  /** Required by the server to move a ticket to `resolved`. */
-  resolution?: string;
-};
+export type UpdateTicketPayload = ApiBody<'/api/v1/tickets/{id}', 'patch'>;
 
 export const useUpdateTicket = createMutation<Ticket, { id: string; payload: UpdateTicketPayload }, Error>({
-  mutationFn: async ({ id, payload }) => (await client.patch<Ticket>(`/tickets/${id}`, payload)).data,
+  mutationFn: async ({ id, payload }) => (await client.patch<ApiResponse<'/api/v1/tickets/{id}', 'patch', 200>>(`/tickets/${id}`, payload)).data,
   onSuccess: refreshTickets,
 });
 
 /** Hand a ticket to somebody, or pass `null` to put it back in the pool. */
 export const useAssignTicket = createMutation<Ticket, { id: string; assignedTo: string | null }, Error>({
-  mutationFn: async ({ id, assignedTo }) => (await client.post<Ticket>(`/tickets/${id}/assign`, { assignedTo })).data,
+  mutationFn: async ({ id, assignedTo }) => (await client.post<ApiResponse<'/api/v1/tickets/{id}/assign', 'post', 200>>(`/tickets/${id}/assign`, { assignedTo })).data,
   onSuccess: refreshTickets,
 });

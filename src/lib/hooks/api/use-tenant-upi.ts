@@ -1,24 +1,12 @@
+import type { ApiBody, ApiQuery, ApiResponse } from '@/lib/api/contracts';
 import { createMutation, createQuery } from 'react-query-kit';
 import { client } from '@/lib/api/client';
 import { queryClient } from '@/lib/api/query-client';
 
 /** One handle the operator collects into. Mirrors `UpiAccountResponse`. */
-export type UpiAccount = {
-  id: string;
-  upiId: string;
-  payeeName: string;
-  label: string | null;
-  isDefault: boolean;
-  status: 'active' | 'inactive';
-  createdAt: string;
-};
+export type UpiAccount = ApiResponse<'/api/v1/tenants/me/upi-accounts', 'get', 200>[number];
 
-export type UpiAccountPayload = {
-  upiId: string;
-  payeeName: string;
-  label?: string;
-  isDefault?: boolean;
-};
+export type UpiAccountPayload = ApiBody<'/api/v1/tenants/me/upi-accounts', 'post'>;
 
 /**
  * The tenant's UPI handles, default first.
@@ -27,10 +15,10 @@ export type UpiAccountPayload = {
  * collector standing at the door can read the handle they have to show without
  * being handed the rest of the tenant record.
  */
-export const useTenantUpiAccounts = createQuery<UpiAccount[], { includeInactive?: boolean } | void, Error>({
+export const useTenantUpiAccounts = createQuery<UpiAccount[], ApiQuery<'/api/v1/tenants/me/upi-accounts'> | void, Error>({
   queryKey: ['tenant-upi'],
   fetcher: async (variables) => {
-    const response = await client.get<UpiAccount[]>('/tenants/me/upi-accounts', {
+    const response = await client.get<ApiResponse<'/api/v1/tenants/me/upi-accounts', 'get', 200>>('/tenants/me/upi-accounts', {
       params: variables || {},
     });
     return response.data;
@@ -45,17 +33,17 @@ async function refreshUpiAccounts(): Promise<void> {
 }
 
 export const useAddUpiAccount = createMutation<UpiAccount, { payload: UpiAccountPayload }, Error>({
-  mutationFn: async ({ payload }) => (await client.post<UpiAccount>('/tenants/me/upi-accounts', payload)).data,
+  mutationFn: async ({ payload }) => (await client.post<ApiResponse<'/api/v1/tenants/me/upi-accounts', 'post', 201>>('/tenants/me/upi-accounts', payload)).data,
   onSuccess: refreshUpiAccounts,
 });
 
 export const useUpdateUpiAccount = createMutation<
   UpiAccount,
-  { id: string; patch: Partial<UpiAccountPayload> & { status?: 'active' | 'inactive' } },
+  { id: string; patch: ApiBody<'/api/v1/tenants/me/upi-accounts/{upiAccountId}', 'patch'> },
   Error
 >({
   mutationFn: async ({ id, patch }) => (
-    await client.patch<UpiAccount>(`/tenants/me/upi-accounts/${id}`, patch)
+    await client.patch<ApiResponse<'/api/v1/tenants/me/upi-accounts/{upiAccountId}', 'patch', 200>>(`/tenants/me/upi-accounts/${id}`, patch)
   ).data,
   onSuccess: refreshUpiAccounts,
 });

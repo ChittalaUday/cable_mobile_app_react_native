@@ -25,7 +25,7 @@ jest.mock('expo-router', () => {
   };
 });
 
-const membership = (tenantId: string, tenantName: string, roleId: string) => ({ tenantId, tenantName, roleId });
+const membership = (tenantId: string, tenantName: string, roleId: string) => ({ tenantId, tenantName, roleId, membershipId: tenantId, status: 'active' as const, permissionVersion: 1, teamId: null, permissions: [] });
 
 function signedIn(memberships: ReturnType<typeof membership>[], tenantId: string | null, role: 'admin' | 'staff' | 'customer' | 'super_admin' | null = null) {
   useAuthStore.setState({ status: 'signIn', error: null, memberships, tenantId, role, user: null });

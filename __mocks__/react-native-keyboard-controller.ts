@@ -1,1 +1,1 @@
-module.exports = require<unknown>('react-native-keyboard-controller/jest');
+module.exports = (require('react-native-keyboard-controller/jest') as unknown);

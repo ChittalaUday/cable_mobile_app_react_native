@@ -25,6 +25,8 @@ import {
   useInventoryStock,
   useInwardStock,
 } from '@/lib/hooks/api/use-inventory';
+import { translate } from '@/lib/i18n';
+import { inventoryQuantity } from '@/lib/utils/inventory-quantity';
 
 export function InventoryReceiveScreen({ basePath }: { basePath: '/admin/inventory' | '/staff/inventory' }) {
   const router = useRouter();
@@ -68,9 +70,9 @@ export function InventoryReceiveScreen({ basePath }: { basePath: '/admin/invento
       return;
     }
 
-    const qty = serials.length > 0 ? serials.length : Number.parseInt(quantity, 10);
-    if (Number.isNaN(qty) || qty <= 0) {
-      void dialogs.notify('Validation Error', 'Please specify a valid quantity greater than zero.');
+    const qty = serials.length > 0 ? serials.length : inventoryQuantity(quantity, 1000);
+    if (qty === null || qty < 1 || qty > 1000) {
+      void dialogs.notify('Validation Error', translate('inventory_validation.receive_quantity'));
       return;
     }
 

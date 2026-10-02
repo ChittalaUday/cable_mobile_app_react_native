@@ -71,6 +71,7 @@ function collection(overrides: Partial<Collection> = {}): Collection {
     accessoryAmount: '0.00',
     totalCollected: '500.00',
     balanceAfter: '0.00',
+    transactionId: null,
     accessories: [],
     reversesId: null,
     reversedById: null,

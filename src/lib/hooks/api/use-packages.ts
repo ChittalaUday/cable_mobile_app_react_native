@@ -1,8 +1,8 @@
+import type { ApiQuery, ApiResponse } from '@/lib/api/contracts';
 import type {
   CreatePackageInput,
   Package,
   PackageDetail,
-  Page,
   UpdatePackageInput,
 } from '@/lib/api/types';
 import { createMutation, createQuery } from 'react-query-kit';
@@ -61,21 +61,12 @@ export function coverageLabel(pkg: { coverageAreas?: string[] }): string | null 
 }
 
 /** What `GET /packages` filters on. Anything else is filtered in the list. */
-export type PackageVariables = {
-  serviceProviderId?: string;
-  serviceId?: string;
-  packageType?: 'base' | 'bouquet' | 'addon' | 'ala_carte' | 'combo';
-  status?: 'active' | 'inactive';
-  /** Free-text search; the API calls it `q`. */
-  q?: string;
-  limit?: number;
-  page?: number;
-} | void;
+export type PackageVariables = ApiQuery<'/api/v1/packages'> | void;
 
 export const usePackages = createQuery<NormalizedPackage[], PackageVariables, Error>({
   queryKey: [QUERY_KEYS.PACKAGES],
   fetcher: async (variables) => {
-    const response = await client.get<Page<Package>>('/packages', {
+    const response = await client.get<ApiResponse<'/api/v1/packages', 'get', 200>>('/packages', {
       params: { limit: MAX_PAGE_SIZE, ...variables },
     });
     return (response.data.items ?? []).map(toNormalizedPackage);
@@ -86,7 +77,7 @@ export const usePackages = createQuery<NormalizedPackage[], PackageVariables, Er
 export const usePackageDetail = createQuery<PackageDetail, { id: string }, Error>({
   queryKey: [QUERY_KEYS.PACKAGES, 'detail'],
   fetcher: async ({ id }) => {
-    const response = await client.get<PackageDetail>(`/packages/${id}`);
+    const response = await client.get<ApiResponse<'/api/v1/packages/{id}', 'get', 200>>(`/packages/${id}`);
     return response.data;
   },
   staleTime: 5 * 60 * 1000,
@@ -94,14 +85,14 @@ export const usePackageDetail = createQuery<PackageDetail, { id: string }, Error
 
 export const useCreatePackage = createMutation<Package, { payload: CreatePackageInput }, Error>({
   mutationFn: async ({ payload }) => {
-    const response = await client.post<Package>('/packages', payload);
+    const response = await client.post<ApiResponse<'/api/v1/packages', 'post', 201>>('/packages', payload);
     return response.data;
   },
 });
 
 export const useUpdatePackage = createMutation<Package, { id: string; patch: UpdatePackageInput }, Error>({
   mutationFn: async ({ id, patch }) => {
-    const response = await client.patch<Package>(`/packages/${id}`, patch);
+    const response = await client.patch<ApiResponse<'/api/v1/packages/{id}', 'patch', 200>>(`/packages/${id}`, patch);
     return response.data;
   },
 });
@@ -118,7 +109,7 @@ export const useSetPackageChannels = createMutation<
   Error
 >({
   mutationFn: async ({ id, channelIds }) => {
-    const response = await client.put<PackageDetail>(`/packages/${id}/channels`, {
+    const response = await client.put<ApiResponse<'/api/v1/packages/{id}/channels', 'put', 200>>(`/packages/${id}/channels`, {
       channels: channelIds.map(channelId => ({ channelId })),
     });
     return response.data;

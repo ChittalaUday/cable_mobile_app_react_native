@@ -69,7 +69,7 @@ describe('api client refresh', () => {
   });
 
   it('refreshes once for a burst of expired requests, and retries them all', async () => {
-    const { client } = require<typeof ClientModule>('./client');
+    const { client } = require('./client') as typeof ClientModule;
     const { adapter, calls } = expiredThenOk();
     client.defaults.adapter = adapter;
 
@@ -94,7 +94,7 @@ describe('api client refresh', () => {
   });
 
   it('stores both halves of the rotated pair', async () => {
-    const { client } = require<typeof ClientModule>('./client');
+    const { client } = require('./client') as typeof ClientModule;
     const { adapter } = expiredThenOk();
     client.defaults.adapter = adapter;
 
@@ -104,7 +104,7 @@ describe('api client refresh', () => {
   });
 
   it('signs out once when the refresh itself is rejected', async () => {
-    const { client, setSessionExpiredHandler } = require<typeof ClientModule>('./client');
+    const { client, setSessionExpiredHandler } = require('./client') as typeof ClientModule;
     const expired = jest.fn();
     setSessionExpiredHandler(expired);
 
@@ -124,7 +124,7 @@ describe('api client refresh', () => {
   it('does not try to refresh when there is no refresh token', async () => {
     mockStore.set('token', JSON.stringify({ access: 'access-1', refresh: '' }));
 
-    const { client } = require<typeof ClientModule>('./client');
+    const { client } = require('./client') as typeof ClientModule;
     const { adapter } = expiredThenOk();
     client.defaults.adapter = adapter;
 
@@ -133,7 +133,7 @@ describe('api client refresh', () => {
   });
 
   it('leaves a non-auth failure alone', async () => {
-    const { client } = require<typeof ClientModule>('./client');
+    const { client } = require('./client') as typeof ClientModule;
 
     client.defaults.adapter = (async (config) => {
       const error = new Error('boom') as Error & { response?: unknown; config?: unknown };
@@ -152,7 +152,7 @@ describe('api client refresh', () => {
 
 describe('devHostUrl', () => {
   it('points a loopback address at the machine Metro is served from', () => {
-    const { devHostUrl } = require<typeof ClientModule>('./client');
+    const { devHostUrl } = require('./client') as typeof ClientModule;
 
     // Without this, every request from a real device fails as "Network Error":
     // localhost on the phone is the phone.
@@ -161,7 +161,7 @@ describe('devHostUrl', () => {
   });
 
   it('leaves a real host alone', () => {
-    const { devHostUrl } = require<typeof ClientModule>('./client');
+    const { devHostUrl } = require('./client') as typeof ClientModule;
 
     expect(devHostUrl('https://api.example.com/api/v1')).toBe('https://api.example.com/api/v1');
     // Only the host is matched, never a path that happens to say localhost.
