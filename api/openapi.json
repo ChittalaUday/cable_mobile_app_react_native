@@ -5898,7 +5898,8 @@
           },
           {
             "schema": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 120
             },
             "in": "query",
             "name": "search",
@@ -6616,11 +6617,10 @@
                   },
                   "itemType": {
                     "type": "string",
-                    "default": "other"
+                    "maxLength": 50
                   },
                   "isBundle": {
-                    "type": "boolean",
-                    "default": false
+                    "type": "boolean"
                   },
                   "defaultOwnership": {
                     "type": "string",
@@ -6629,27 +6629,22 @@
                       "customer_owned",
                       "rental",
                       "deposit"
-                    ],
-                    "default": "tenant_provided"
+                    ]
                   },
                   "defaultSalePrice": {
                     "type": "string",
-                    "pattern": "^\\d{1,10}(\\.\\d{1,2})?$",
-                    "default": "0"
+                    "pattern": "^\\d{1,10}(\\.\\d{1,2})?$"
                   },
                   "defaultDepositAmount": {
                     "type": "string",
-                    "pattern": "^\\d{1,10}(\\.\\d{1,2})?$",
-                    "default": "0"
+                    "pattern": "^\\d{1,10}(\\.\\d{1,2})?$"
                   },
                   "defaultRentalPrice": {
                     "type": "string",
-                    "pattern": "^\\d{1,10}(\\.\\d{1,2})?$",
-                    "default": "0"
+                    "pattern": "^\\d{1,10}(\\.\\d{1,2})?$"
                   },
                   "isReturnable": {
-                    "type": "boolean",
-                    "default": true
+                    "type": "boolean"
                   },
                   "description": {
                     "type": "string",
@@ -6869,11 +6864,10 @@
                   },
                   "itemType": {
                     "type": "string",
-                    "default": "other"
+                    "maxLength": 50
                   },
                   "isBundle": {
-                    "type": "boolean",
-                    "default": false
+                    "type": "boolean"
                   },
                   "defaultOwnership": {
                     "type": "string",
@@ -6882,27 +6876,22 @@
                       "customer_owned",
                       "rental",
                       "deposit"
-                    ],
-                    "default": "tenant_provided"
+                    ]
                   },
                   "defaultSalePrice": {
                     "type": "string",
-                    "pattern": "^\\d{1,10}(\\.\\d{1,2})?$",
-                    "default": "0"
+                    "pattern": "^\\d{1,10}(\\.\\d{1,2})?$"
                   },
                   "defaultDepositAmount": {
                     "type": "string",
-                    "pattern": "^\\d{1,10}(\\.\\d{1,2})?$",
-                    "default": "0"
+                    "pattern": "^\\d{1,10}(\\.\\d{1,2})?$"
                   },
                   "defaultRentalPrice": {
                     "type": "string",
-                    "pattern": "^\\d{1,10}(\\.\\d{1,2})?$",
-                    "default": "0"
+                    "pattern": "^\\d{1,10}(\\.\\d{1,2})?$"
                   },
                   "isReturnable": {
-                    "type": "boolean",
-                    "default": true
+                    "type": "boolean"
                   },
                   "description": {
                     "type": "string",
@@ -7225,7 +7214,8 @@
                     "format": "uuid"
                   },
                   "serialNumber": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 128
                   },
                   "ownershipType": {
                     "type": "string",
@@ -7248,7 +7238,8 @@
                     "default": "0"
                   },
                   "notes": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 500
                   }
                 },
                 "additionalProperties": false
@@ -7450,7 +7441,8 @@
                     ]
                   },
                   "returnRemarks": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 500
                   },
                   "returnedToLocationId": {
                     "type": "string",
@@ -7471,7 +7463,8 @@
                     "pattern": "^\\d{1,10}(\\.\\d{1,2})?$"
                   },
                   "notes": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 500
                   }
                 },
                 "additionalProperties": false
@@ -7604,7 +7597,16 @@
           },
           {
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "active",
+                "standby",
+                "faulty",
+                "returned",
+                "replaced",
+                "lost_unreturned",
+                "written_off"
+              ]
             },
             "in": "query",
             "name": "status",
@@ -7888,7 +7890,8 @@
           {
             "schema": {
               "type": "string",
-              "minLength": 1
+              "minLength": 1,
+              "maxLength": 120
             },
             "in": "query",
             "name": "q",
@@ -8162,7 +8165,8 @@
                     "default": "0"
                   },
                   "notes": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 500
                   }
                 },
                 "additionalProperties": false
@@ -8297,7 +8301,8 @@
                     "default": 1
                   },
                   "notes": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 500
                   }
                 },
                 "additionalProperties": false
@@ -8622,7 +8627,19 @@
                   },
                   "proposedData": {
                     "type": "object",
-                    "additionalProperties": {}
+                    "maxProperties": 50,
+                    "propertyNames": {
+                      "maxLength": 64
+                    },
+                    "additionalProperties": {
+                      "if": {
+                        "type": "string"
+                      },
+                      "then": {
+                        "type": "string",
+                        "maxLength": 1000
+                      }
+                    }
                   },
                   "reason": {
                     "type": "string",
@@ -9333,7 +9350,19 @@
                   },
                   "config": {
                     "type": "object",
-                    "additionalProperties": {}
+                    "maxProperties": 50,
+                    "propertyNames": {
+                      "maxLength": 64
+                    },
+                    "additionalProperties": {
+                      "if": {
+                        "type": "string"
+                      },
+                      "then": {
+                        "type": "string",
+                        "maxLength": 1000
+                      }
+                    }
                   }
                 },
                 "additionalProperties": false
@@ -9462,7 +9491,19 @@
                   },
                   "config": {
                     "type": "object",
-                    "additionalProperties": {}
+                    "maxProperties": 50,
+                    "propertyNames": {
+                      "maxLength": 64
+                    },
+                    "additionalProperties": {
+                      "if": {
+                        "type": "string"
+                      },
+                      "then": {
+                        "type": "string",
+                        "maxLength": 1000
+                      }
+                    }
                   }
                 },
                 "minProperties": 1,
@@ -9865,7 +9906,19 @@
                         },
                         "config": {
                           "type": "object",
-                          "additionalProperties": {}
+                          "maxProperties": 50,
+                          "propertyNames": {
+                            "maxLength": 64
+                          },
+                          "additionalProperties": {
+                            "if": {
+                              "type": "string"
+                            },
+                            "then": {
+                              "type": "string",
+                              "maxLength": 1000
+                            }
+                          }
                         }
                       },
                       "additionalProperties": false
@@ -10896,7 +10949,19 @@
                     "anyOf": [
                       {
                         "type": "object",
-                        "additionalProperties": {}
+                        "maxProperties": 50,
+                        "propertyNames": {
+                          "maxLength": 64
+                        },
+                        "additionalProperties": {
+                          "if": {
+                            "type": "string"
+                          },
+                          "then": {
+                            "type": "string",
+                            "maxLength": 1000
+                          }
+                        }
                       },
                       {
                         "type": "null"
@@ -11413,7 +11478,19 @@
                     "anyOf": [
                       {
                         "type": "object",
-                        "additionalProperties": {}
+                        "maxProperties": 50,
+                        "propertyNames": {
+                          "maxLength": 64
+                        },
+                        "additionalProperties": {
+                          "if": {
+                            "type": "string"
+                          },
+                          "then": {
+                            "type": "string",
+                            "maxLength": 1000
+                          }
+                        }
                       },
                       {
                         "type": "null"
@@ -12849,7 +12926,14 @@
                   },
                   "data": {
                     "type": "object",
-                    "additionalProperties": {}
+                    "maxProperties": 20,
+                    "propertyNames": {
+                      "maxLength": 64
+                    },
+                    "additionalProperties": {
+                      "type": "string",
+                      "maxLength": 500
+                    }
                   },
                   "imageUrl": {
                     "type": "string",
@@ -13333,7 +13417,19 @@
                     "anyOf": [
                       {
                         "type": "object",
-                        "additionalProperties": {}
+                        "maxProperties": 50,
+                        "propertyNames": {
+                          "maxLength": 64
+                        },
+                        "additionalProperties": {
+                          "if": {
+                            "type": "string"
+                          },
+                          "then": {
+                            "type": "string",
+                            "maxLength": 1000
+                          }
+                        }
                       },
                       {
                         "type": "null"
@@ -13919,7 +14015,19 @@
                     "anyOf": [
                       {
                         "type": "object",
-                        "additionalProperties": {}
+                        "maxProperties": 50,
+                        "propertyNames": {
+                          "maxLength": 64
+                        },
+                        "additionalProperties": {
+                          "if": {
+                            "type": "string"
+                          },
+                          "then": {
+                            "type": "string",
+                            "maxLength": 1000
+                          }
+                        }
                       },
                       {
                         "type": "null"
@@ -14835,7 +14943,9 @@
           },
           {
             "schema": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 200,
+              "pattern": "^[A-Za-z0-9_-]+$"
             },
             "in": "query",
             "name": "cursor",
@@ -17507,7 +17617,8 @@
           },
           {
             "schema": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 60
             },
             "in": "query",
             "name": "brand",
@@ -17515,7 +17626,8 @@
           },
           {
             "schema": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 120
             },
             "in": "query",
             "name": "search",
@@ -19610,7 +19722,19 @@
                     "anyOf": [
                       {
                         "type": "object",
-                        "additionalProperties": {}
+                        "maxProperties": 50,
+                        "propertyNames": {
+                          "maxLength": 64
+                        },
+                        "additionalProperties": {
+                          "if": {
+                            "type": "string"
+                          },
+                          "then": {
+                            "type": "string",
+                            "maxLength": 1000
+                          }
+                        }
                       },
                       {
                         "type": "null"
@@ -20230,7 +20354,19 @@
                     "anyOf": [
                       {
                         "type": "object",
-                        "additionalProperties": {}
+                        "maxProperties": 50,
+                        "propertyNames": {
+                          "maxLength": 64
+                        },
+                        "additionalProperties": {
+                          "if": {
+                            "type": "string"
+                          },
+                          "then": {
+                            "type": "string",
+                            "maxLength": 1000
+                          }
+                        }
                       },
                       {
                         "type": "null"
@@ -20626,7 +20762,8 @@
           },
           {
             "schema": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 120
             },
             "in": "query",
             "name": "search",
@@ -20860,7 +20997,19 @@
                     "anyOf": [
                       {
                         "type": "object",
-                        "additionalProperties": {}
+                        "maxProperties": 50,
+                        "propertyNames": {
+                          "maxLength": 64
+                        },
+                        "additionalProperties": {
+                          "if": {
+                            "type": "string"
+                          },
+                          "then": {
+                            "type": "string",
+                            "maxLength": 1000
+                          }
+                        }
                       },
                       {
                         "type": "null"
@@ -20871,7 +21020,19 @@
                     "anyOf": [
                       {
                         "type": "object",
-                        "additionalProperties": {}
+                        "maxProperties": 50,
+                        "propertyNames": {
+                          "maxLength": 64
+                        },
+                        "additionalProperties": {
+                          "if": {
+                            "type": "string"
+                          },
+                          "then": {
+                            "type": "string",
+                            "maxLength": 1000
+                          }
+                        }
                       },
                       {
                         "type": "null"
@@ -21309,7 +21470,19 @@
                     "anyOf": [
                       {
                         "type": "object",
-                        "additionalProperties": {}
+                        "maxProperties": 50,
+                        "propertyNames": {
+                          "maxLength": 64
+                        },
+                        "additionalProperties": {
+                          "if": {
+                            "type": "string"
+                          },
+                          "then": {
+                            "type": "string",
+                            "maxLength": 1000
+                          }
+                        }
                       },
                       {
                         "type": "null"
@@ -21320,7 +21493,19 @@
                     "anyOf": [
                       {
                         "type": "object",
-                        "additionalProperties": {}
+                        "maxProperties": 50,
+                        "propertyNames": {
+                          "maxLength": 64
+                        },
+                        "additionalProperties": {
+                          "if": {
+                            "type": "string"
+                          },
+                          "then": {
+                            "type": "string",
+                            "maxLength": 1000
+                          }
+                        }
                       },
                       {
                         "type": "null"

@@ -2826,22 +2826,13 @@ export interface paths {
                         code?: string;
                         brand?: string;
                         model?: string;
-                        /** @default other */
                         itemType?: string;
-                        /** @default false */
                         isBundle?: boolean;
-                        /**
-                         * @default tenant_provided
-                         * @enum {string}
-                         */
+                        /** @enum {string} */
                         defaultOwnership?: "tenant_provided" | "customer_owned" | "rental" | "deposit";
-                        /** @default 0 */
                         defaultSalePrice?: string;
-                        /** @default 0 */
                         defaultDepositAmount?: string;
-                        /** @default 0 */
                         defaultRentalPrice?: string;
-                        /** @default true */
                         isReturnable?: boolean;
                         description?: string;
                     };
@@ -2957,22 +2948,13 @@ export interface paths {
                         code?: string;
                         brand?: string;
                         model?: string;
-                        /** @default other */
                         itemType?: string;
-                        /** @default false */
                         isBundle?: boolean;
-                        /**
-                         * @default tenant_provided
-                         * @enum {string}
-                         */
+                        /** @enum {string} */
                         defaultOwnership?: "tenant_provided" | "customer_owned" | "rental" | "deposit";
-                        /** @default 0 */
                         defaultSalePrice?: string;
-                        /** @default 0 */
                         defaultDepositAmount?: string;
-                        /** @default 0 */
                         defaultRentalPrice?: string;
-                        /** @default true */
                         isReturnable?: boolean;
                         description?: string;
                     };
@@ -3379,7 +3361,7 @@ export interface paths {
             parameters: {
                 query?: {
                     customerId?: string;
-                    status?: string;
+                    status?: "active" | "standby" | "faulty" | "returned" | "replaced" | "lost_unreturned" | "written_off";
                     equipmentId?: string;
                     limit?: number;
                 };
@@ -6207,7 +6189,7 @@ export interface paths {
                         title: string;
                         body: string;
                         data?: {
-                            [key: string]: unknown;
+                            [key: string]: string;
                         };
                         /**
                          * Format: uri
