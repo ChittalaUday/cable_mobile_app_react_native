@@ -51,7 +51,7 @@ export function StaffActivity({ rows, onViewAll }: { rows: StaffRow[]; onViewAll
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <View className="flex-row items-baseline gap-1">
-      <Text className="text-[11px] font-bold text-charcoal-900">{value}</Text>
+      <Text className="text-[11px] font-bold text-foreground">{value}</Text>
       <Text className="text-[10px] text-muted-foreground">{label}</Text>
     </View>
   );

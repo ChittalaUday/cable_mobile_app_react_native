@@ -1,0 +1,93 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - staff
+  - inventory
+  - rbac
+---
+# Field staff in Inventory: read and issue, but every catalog change goes
+# through an approval request. Admin-only affordances must be absent:
+# the Approval Requests tile, Add Catalog Item / Create Item, the
+# technician-van transfer target (needs staff.view), and decision buttons.
+- runFlow: ../utils/login-staff.yaml
+- runFlow: ../utils/inventory-open.yaml
+
+# --- Hub: staff variants of the tiles ---------------------------------------
+- assertVisible: My Change Requests
+- assertVisible: View submitted catalog requests
+- assertVisible: View products & kits \(Read-only\)
+- assertNotVisible: Approval Requests
+- assertNotVisible: Review staff change requests
+- assertNotVisible: Manage products & kits
+
+# --- Catalog: read-only banner; + opens a request, not a create -------------
+- tapOn: Item Catalog
+- extendedWaitUntil:
+    visible: 'Staff permissions: Catalog items cannot be modified directly\. Tap \+ to request new items\.'
+    timeout: 20000
+- extendedWaitUntil:
+    visible: ACT HD Installation Kit
+    timeout: 30000
+- tapOn:
+    id: catalog-add-button
+- extendedWaitUntil:
+    visible: Request New Catalog Item
+    timeout: 10000
+- assertVisible: Reason for Approval \*
+- assertVisible: Submit for Approval
+- assertNotVisible: Add Catalog Item
+- assertNotVisible: Create Item
+# A name alone is not enough: the reason is required.
+- tapOn:
+    id: catalog-name-input
+- inputText: E2E staff no reason
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: catalog-submit-button
+- assertVisible: Please provide a reason for requesting this item\.
+- tapOn: OK
+# Dismiss the sheet without submitting.
+- back
+- assertNotVisible: Request New Catalog Item
+
+# --- Item details: staff banner; the menu raises a change request -----------
+- tapOn: ACT HD Installation Kit
+- extendedWaitUntil:
+    visible: Item Details
+    timeout: 20000
+- assertVisible: 'Staff access: You can issue this item\. Catalog modifications require administrator approval\.'
+- assertVisible: Issue Item
+- tapOn:
+    id: item-details-menu-button
+- extendedWaitUntil:
+    visible: Request Catalog Change
+    timeout: 10000
+- assertNotVisible: Admin direct editing is available in the item catalog\.
+- assertVisible: ACT HD Installation Kit
+- tapOn: Submit to Admin for Approval
+- assertVisible: Please enter a reason for this modification request\.
+- tapOn: OK
+- back
+- back
+- back
+
+# --- Transfer: no technician-van target for staff ---------------------------
+- tapOn: Transfer Stock
+- extendedWaitUntil:
+    visible: Move equipment between locations or to staff
+    timeout: 20000
+- assertVisible: Warehouse / Sub-Store
+- assertNotVisible: Technician / Staff Van
+- back
+
+# --- Own requests: no Approve / Reject ---------------------------------------
+- tapOn: My Change Requests
+- extendedWaitUntil:
+    visible: Review item modification & creation requests
+    timeout: 20000
+# Wait for the list (or its empty copy) before asserting absences.
+- extendedWaitUntil:
+    visible: '(Requested by:.*|No pending approval requests)'
+    timeout: 30000
+- assertNotVisible: Approve
+- assertNotVisible: Reject

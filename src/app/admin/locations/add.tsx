@@ -280,6 +280,7 @@ export function AddLocationScreen() {
             value={name}
             onChangeText={setName}
             placeholder="e.g. Mandapeta"
+            testID="location-name-input"
             placeholderTextColor={colors.neutral[400]}
             className="rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
           />

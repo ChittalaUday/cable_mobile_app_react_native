@@ -1,107 +1,145 @@
 appId: ${APP_ID}
 env:
-  PKG: E2E Fiber Pack
-  PRICE: '749'
-  NEW_PRICE: '899'
+  PROVIDER: Satya Fiber
 tags:
   - e2e
+  - admin
   - packages
 ---
-# Full create -> read -> update -> delete cycle against the packages API.
-# collection, signed in as an admin holding all four packages.* permissions.
-- runFlow:
-    file: ../utils/fresh-login.yaml
-    env:
-      EMAIL: admin@sscn.com
-      PASSWORD: Admin@123456
-- assertVisible: Operator Panel
+# Provider Packages, the full cycle on a uniquely named plan:
+# create -> find by search -> filter by status -> edit (price, deactivate)
+# -> delete, where Cancel keeps it and Delete package removes it.
+- evalScript: ${output.stamp = String(Date.now()).slice(-6)}
+- runFlow: ../utils/login-admin.yaml
+- openLink: ${DEV_SCHEME}://admin/packages
+- extendedWaitUntil:
+    visible: Provider Packages
+    timeout: 30000
 
-# Reach the screen the way an operator does: through the global search registry.
-- runFlow: ../utils/open-packages.yaml
-- assertVisible: 'Packages & Plans'
+# --- Renders ------------------------------------------------------------------
+- assertVisible: Provider rates behind your plans — not shown to customers
 - assertVisible:
     id: add-package-button
+- assertVisible:
+    id: package-search-input
+- assertVisible: 'Filter: All'
+- assertVisible: 'Filter: Active'
+- assertVisible: 'Filter: Inactive'
+- extendedWaitUntil:
+    notVisible: Loading package catalogue…
+    timeout: 30000
 
-# ---------------------------------------------------------------- CREATE
+# --- CREATE -------------------------------------------------------------------
 - tapOn:
     id: add-package-button
-- assertVisible: New Package
-- assertVisible: Plans defined here appear as services on customer connections
-
+- extendedWaitUntil:
+    visible: Create a new package
+    timeout: 10000
 - tapOn:
     id: package-name-input
-- inputText: ${PKG}
-
-# Service type drives which numeric field is offered (speed vs channels).
-- tapOn: Fiber
-- assertVisible: Speed (Mbps)
-- assertNotVisible: Channels
-
+- inputText: E2E Pack ${output.stamp}
+- tapOn: Choose provider
+- tapOn: ${PROVIDER}
 - tapOn:
     id: package-price-input
-- inputText: ${PRICE}
+- inputText: '349'
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Monthly
+- tapOn: Quarterly
+- tapOn: Enter package description...
+- inputText: E2E plan ${output.stamp}
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Save Package
+# The confirm step echoes what is about to be saved.
+- extendedWaitUntil:
+    visible: '.*E2E Pack ${output.stamp} — ₹349 quarterly.*'
+    timeout: 10000
+- assertVisible: '.*Provider: ${PROVIDER}.*'
 - tapOn:
-    id: package-speed-input
-- inputText: '300'
+    id: dialog-confirm
+- extendedWaitUntil:
+    visible: Provider Packages
+    timeout: 30000
 
+# --- READ: search narrows to the new plan ---------------------------------------
 - tapOn:
-    id: package-submit-button
-- assertVisible: Package created
-
-# ------------------------------------------------------------------ READ
-- assertVisible: ${PKG}
-- assertVisible:
-    text: '.*${PRICE}.*'
-- assertVisible: 300 Mbps
+    id: package-search-input
+- inputText: E2E Pack ${output.stamp}
+- extendedWaitUntil:
+    visible: E2E Pack ${output.stamp}
+    timeout: 20000
+- assertVisible: '.*349.*'
+- assertVisible: '.* / 3 mo.*'
+- assertVisible: E2E plan ${output.stamp}
 - assertVisible: Active
+- runFlow: ../utils/hide-keyboard.yaml
 
-# Filters: a fiber plan survives the Broadband filter, not the Cable TV one.
-- tapOn: 'Filter: Broadband'
-- assertVisible: ${PKG}
-- tapOn: 'Filter: Cable TV'
-- assertNotVisible: ${PKG}
+# Status filters: an active plan shows under Active, not under Inactive.
+- tapOn: 'Filter: Inactive'
+- assertNotVisible: E2E Pack ${output.stamp}
+- tapOn: 'Filter: Active'
+- assertVisible: E2E Pack ${output.stamp}
 - tapOn: 'Filter: All'
 
-# Search narrows to the new plan.
-- tapOn:
-    id: package-search-input
-- inputText: E2E
-- assertVisible: ${PKG}
-- tapOn:
-    id: package-search-input
-- eraseText: 3
-
-# ---------------------------------------------------------------- UPDATE
-- tapOn: 'Edit ${PKG}'
-- assertVisible: Edit Package
+# --- UPDATE: new price, and take it off sale ------------------------------------
+- tapOn: Edit E2E Pack ${output.stamp}
+- extendedWaitUntil:
+    visible: Update package details
+    timeout: 10000
+- assertVisible: E2E Pack ${output.stamp}
+- assertVisible: Package coverage
 - tapOn:
     id: package-price-input
-- eraseText: 6
-- inputText: ${NEW_PRICE}
-
-# Drop it out of the sale catalogue while we are here.
+- eraseText: 10
+- inputText: '399'
+- runFlow: ../utils/hide-keyboard.yaml
+- scrollUntilVisible:
+    element:
+      id: package-active-toggle
 - tapOn:
     id: package-active-toggle
+- tapOn: Save Changes
+- extendedWaitUntil:
+    visible: Save changes
+    timeout: 10000
+- assertVisible: '.*E2E Pack ${output.stamp} — ₹399.*Inactive.*'
 - tapOn:
-    id: package-submit-button
-- assertVisible: Package updated
-- assertVisible:
-    text: '.*${NEW_PRICE}.*'
+    id: dialog-confirm
+- extendedWaitUntil:
+    visible: Provider Packages
+    timeout: 30000
+- extendedWaitUntil:
+    visible: '.*399.*'
+    timeout: 20000
 - assertVisible: Inactive
-
-# An inactive plan is filtered out of the active list.
+# Now off sale: listed under Inactive, gone from Active.
 - tapOn: 'Filter: Active'
-- assertNotVisible: ${PKG}
+- assertNotVisible: E2E Pack ${output.stamp}
+- tapOn: 'Filter: Inactive'
+- assertVisible: E2E Pack ${output.stamp}
 - tapOn: 'Filter: All'
 
-# ---------------------------------------------------------------- DELETE
-# Cancelling the confirmation must leave the plan untouched.
-- tapOn: 'Delete ${PKG}'
-- assertVisible: Delete package
-- tapOn: Cancel
-- assertVisible: ${PKG}
+# --- DELETE: Cancel keeps it ---------------------------------------------------
+- tapOn: Delete E2E Pack ${output.stamp}
+- extendedWaitUntil:
+    visible: Delete package
+    timeout: 10000
+- assertVisible: '.*Delete "E2E Pack ${output.stamp}"\?.*'
+- tapOn:
+    id: dialog-cancel
+- extendedWaitUntil:
+    notVisible: Delete package
+    timeout: 10000
+- assertVisible: E2E Pack ${output.stamp}
 
-- tapOn: 'Delete ${PKG}'
-- assertVisible: Delete package
-- tapOn: Delete plan
-- assertNotVisible: ${PKG}
+# --- DELETE: confirm removes it -------------------------------------------------
+- tapOn: Delete E2E Pack ${output.stamp}
+- extendedWaitUntil:
+    visible: Delete package
+    timeout: 10000
+- tapOn:
+    id: dialog-confirm
+- extendedWaitUntil:
+    visible: No packages found
+    timeout: 20000
+- assertVisible: 'No plan matched "E2E Pack ${output.stamp}".'

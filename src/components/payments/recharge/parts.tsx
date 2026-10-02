@@ -1,38 +1,70 @@
 /* eslint-disable react-refresh/only-export-components -- STEP_LABELS and cycleLabel belong beside the pieces that use them. */
+import type { IconSvgElement } from '@hugeicons/react-native';
 import type { CustomerSubscription } from '@/lib/api/types';
 import type { ChargeKind, Step } from '@/lib/hooks/stores/use-recharge-store';
+import { CheckListIcon, CheckmarkCircle02Icon, PrinterIcon, Tick02Icon, ViewIcon, Wallet01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as React from 'react';
-import { Pressable, Text, View } from '@/components/ui';
-import { stepsFor } from '@/lib/hooks/stores/use-recharge-store';
+import { colors, Pressable, Text, View } from '@/components/ui';
+import { STEPS } from '@/lib/hooks/stores/use-recharge-store';
 import { rupeesExact } from '@/lib/utils/admin-format';
 
 export const STEP_LABELS: Record<Step, string> = {
-  plan: 'Plan',
-  amount: 'Amount',
-  done: 'Receipt',
+  plan: 'Select',
+  amount: 'Payment',
+  printer: 'Printer',
+  preview: 'Preview',
+  done: 'Done',
+};
+
+const STEP_ICONS: Record<Step, IconSvgElement> = {
+  plan: CheckListIcon,
+  amount: Wallet01Icon,
+  printer: PrinterIcon,
+  preview: ViewIcon,
+  done: CheckmarkCircle02Icon,
 };
 
 /**
- * How far along the flow is. Walked forwards only, so past steps are just marks.
- *
- * It draws the steps this charge actually has, not all three: an equipment
- * charge never visits the plan step, and showing it greyed out would promise a
- * step the collector cannot reach.
+ * How far along the flow is: an icon per step, joined by a line. Past steps
+ * show a tick, the current one is filled, the rest are outlined.
  */
-export function StepTrail({ step, charge }: { step: Step; charge: ChargeKind }) {
-  const walk = stepsFor(charge);
-  const at = walk.indexOf(step);
+export function StepTrail({ step }: { step: Step }) {
+  const at = STEPS.indexOf(step);
 
   return (
-    <View className="flex-row items-center gap-2" accessibilityRole="progressbar">
-      {walk.map((id, index) => (
-        <View key={id} className="flex-1 gap-1.5">
-          <View className={`h-1 rounded-full ${index <= at ? 'bg-primary-500' : 'bg-border'}`} />
-          <Text className={`text-[10px] font-bold uppercase ${index <= at ? 'text-primary-600' : 'text-muted-foreground'}`}>
-            {STEP_LABELS[id]}
-          </Text>
-        </View>
-      ))}
+    <View className="flex-row items-start" accessibilityRole="progressbar" accessibilityValue={{ min: 1, max: STEPS.length, now: at + 1 }}>
+      {STEPS.map((id, index) => {
+        const state = index < at ? 'past' : index === at ? 'current' : 'next';
+
+        return (
+          <View key={id} className="flex-1 items-center gap-1">
+            <View className="w-full flex-row items-center">
+              <View className={`h-0.5 flex-1 ${index === 0 ? 'opacity-0' : index <= at ? 'bg-primary-500' : 'bg-border'}`} />
+              <View
+                testID={`step-${id}-${state}`}
+                className={`size-8 items-center justify-center rounded-full border-2 ${
+                  state === 'next' ? 'border-border bg-card' : 'border-primary-500 bg-primary-500'
+                }`}
+              >
+                <HugeiconsIcon
+                  icon={state === 'past' ? Tick02Icon : STEP_ICONS[id]}
+                  size={16}
+                  strokeWidth={2}
+                  color={state === 'next' ? colors.neutral[400] : '#ffffff'}
+                />
+              </View>
+              <View className={`h-0.5 flex-1 ${index === STEPS.length - 1 ? 'opacity-0' : index < at ? 'bg-primary-500' : 'bg-border'}`} />
+            </View>
+            <Text
+              numberOfLines={1}
+              className={`text-[10px] font-bold ${state === 'next' ? 'text-muted-foreground' : 'text-primary-600'}`}
+            >
+              {STEP_LABELS[id]}
+            </Text>
+          </View>
+        );
+      })}
     </View>
   );
 }
@@ -54,13 +86,17 @@ export function SumRow({ label, value, tone = 'normal', testID }: {
   testID?: string;
 }) {
   return (
-    <View className="flex-row items-center justify-between">
-      <Text className={`text-sm ${tone === 'strong' ? 'font-bold text-foreground' : 'text-muted-foreground'}`}>
+    <View className="flex-row items-center justify-between gap-3">
+      {/* The label gives way (wraps to two lines) so the amount is never pushed off the card. */}
+      <Text
+        numberOfLines={2}
+        className={`min-w-0 flex-1 text-sm ${tone === 'strong' ? 'font-bold text-foreground' : 'text-muted-foreground'}`}
+      >
         {label}
       </Text>
       <Text
         testID={testID}
-        className={`${tone === 'strong' ? 'text-xl font-black' : 'text-sm font-bold'} ${tone === 'credit' ? 'text-green-600' : 'text-foreground'}`}
+        className={`shrink-0 ${tone === 'strong' ? 'text-xl font-black' : 'text-sm font-bold'} ${tone === 'credit' ? 'text-green-600' : 'text-foreground'}`}
       >
         {value}
       </Text>
@@ -68,8 +104,21 @@ export function SumRow({ label, value, tone = 'normal', testID }: {
   );
 }
 
+/** What one cycle of the line's plan charges, and how long a cycle is. */
 export function cycleLabel(subscription: CustomerSubscription): string {
-  return `${rupeesExact(subscription.price)} / ${subscription.billingCycle}`;
+  return `${rupeesExact(subscription.price)} / ${cycleName(subscription.billingCycle)}`;
+}
+
+function cycleName(cycle: string): string {
+  return cycle.replace('_', '-');
+}
+
+/** A plan as a collector reads it: the amount one cycle charges, with the discount it comes from. */
+export function planLabel(plan: { amount: string; billingCycle: string; discount?: string; price?: string }): string {
+  const off = plan.discount !== undefined && Number(plan.discount) > 0 && plan.price !== undefined
+    ? ` (${rupeesExact(plan.price)} − ${rupeesExact(plan.discount)})`
+    : '';
+  return `${rupeesExact(plan.amount)} / ${cycleName(plan.billingCycle)}${off}`;
 }
 
 /**
@@ -102,7 +151,7 @@ export function PlanTable({ lines, selectedId, onSelect }: {
             <View className="flex-row items-start justify-between gap-2">
               <View className="min-w-0 flex-1 gap-0.5">
                 <Text className="text-sm font-extrabold text-foreground" numberOfLines={1}>
-                  {line.package.name}
+                  {line.plan.name}
                 </Text>
                 <Text className="text-xs text-muted-foreground" numberOfLines={1}>
                   {`${line.service.name} • ${line.provider.name}`}
@@ -166,32 +215,29 @@ const CHARGES: { id: ChargeKind; label: string }[] = [
 ];
 
 /**
- * What the money is for, asked before anything else.
- *
- * It sits above the steps rather than inside one, because the answer decides
- * which steps there are: dues are settled against a plan, hardware is not.
+ * What the money is for: the two tabs of the select step. Asked once, before
+ * anything is picked, because each tab lists different things to pick.
  */
 export function ChargePicker({ charge, onChange }: {
   charge: ChargeKind;
   onChange: (charge: ChargeKind) => void;
 }) {
   return (
-    <Field label="What is this payment for">
-      <View className="flex-row gap-2">
-        {CHARGES.map(option => (
-          <Pressable
-            key={option.id}
-            accessibilityRole="radio"
-            accessibilityState={{ selected: charge === option.id }}
-            onPress={() => onChange(option.id)}
-            className={`flex-1 items-center rounded-xl border p-3 ${charge === option.id ? 'border-primary-500 bg-primary-500' : 'border-border bg-card'}`}
-          >
-            <Text className={`text-sm font-bold ${charge === option.id ? 'text-white' : 'text-foreground'}`}>
-              {option.label}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-    </Field>
+    <View className="flex-row rounded-xl border border-border bg-card p-1" accessibilityRole="tablist">
+      {CHARGES.map(option => (
+        <Pressable
+          key={option.id}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: charge === option.id }}
+          onPress={() => onChange(option.id)}
+          testID={`payment-tab-${option.id}`}
+          className={`flex-1 items-center rounded-lg py-2.5 ${charge === option.id ? 'bg-primary-500' : ''}`}
+        >
+          <Text className={`text-sm font-bold ${charge === option.id ? 'text-white' : 'text-foreground'}`}>
+            {option.label}
+          </Text>
+        </Pressable>
+      ))}
+    </View>
   );
 }

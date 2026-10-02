@@ -44,7 +44,7 @@ Tags: `auth`, `admin`, `customer`, `staff`, `search`, `packages`, `customers`,
 | `app/packages-crud`             | Packages create / read / filter / update / delete             |
 | `app/packages-permissions`      | Staff can read the catalogue but not mutate it                |
 | `app/add-customer-flow`         | 3-screen Add Customer wizard + per-step validation            |
-| `app/packages-on-customers`     | A plan becomes a customer's service on their card             |
+| `app/plans-on-customers`        | A plan (price − discount) becomes a customer's line           |
 | `app/customer-dashboard`        | Subscriber view, no operator surface                          |
 | `app/staff-dashboard`           | Field-staff collections view                                  |
 | `app/profile-and-signout`       | Profile screen, sign out, session really cleared              |
@@ -53,6 +53,6 @@ Tags: `auth`, `admin`, `customer`, `staff`, `search`, `packages`, `customers`,
 
 - Flows are self-contained: each starts with `clearState` + login, so they can
   run individually and in any order.
-- `packages-crud` and `packages-on-customers` delete the plans they create.
-  `add-customer-flow` and `packages-on-customers` leave a test **customer**
+- `packages-crud` deletes the packages it creates; `plans-on-customers` retires its plan (a plan with a live line cannot be deleted).
+  `add-customer-flow` and `plans-on-customers` leave a test **customer**
   behind — there is no delete-customer UI yet. Run them against a dev tenant.

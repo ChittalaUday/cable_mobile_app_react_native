@@ -10,11 +10,11 @@ import {
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as React from 'react';
-import { ScrollView } from 'react-native';
+import { Linking, ScrollView } from 'react-native';
 
 import { Card, Divider, StatusPill, TINT } from '@/components/common/shell';
-import { Button, colors, Pressable, Text, View } from '@/components/ui';
-import { initials } from '@/lib/utils/admin-format';
+import { Button, colors, Image, Pressable, Text, ThemedIcon, View } from '@/components/ui';
+import { initials, rupeesExact } from '@/lib/utils/admin-format';
 
 export type CustomerConnectionCardProps = {
   customer: ConsolidatedCustomer;
@@ -86,13 +86,13 @@ function ConnectionHeader({
 
           <View className="flex-row flex-wrap items-center gap-3">
             <View className="flex-row items-center gap-1.5">
-              <HugeiconsIcon icon={Call02Icon} size={13} color={colors.neutral[500]} />
+              <ThemedIcon icon={Call02Icon} size={13} colorClassName="text-muted-foreground" />
               <Text className="text-[11px] font-semibold text-muted-foreground">{customer.phone}</Text>
             </View>
             {customer.address
               ? (
                   <View className="flex-row items-center gap-1.5">
-                    <HugeiconsIcon icon={Location01Icon} size={13} color={colors.neutral[500]} />
+                    <ThemedIcon icon={Location01Icon} size={13} colorClassName="text-muted-foreground" />
                     <Text className="text-[11px] font-medium text-muted-foreground" numberOfLines={1}>
                       {customer.address}
                     </Text>
@@ -152,6 +152,11 @@ function ConnectionPillSwitcher({
   );
 }
 
+/** `https://www.actcorp.in/plans` → `actcorp.in`: enough to recognise the site. */
+function hostOf(url: string): string {
+  return url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0] ?? url;
+}
+
 function ConnectionCardItem({
   connection,
   onPress,
@@ -171,20 +176,49 @@ function ConnectionCardItem({
     >
       <View className="flex-row items-center justify-between">
         <View className="flex-1 flex-row items-center gap-3 pr-2">
-          <View className="rounded-lg bg-neutral-100 p-2 dark:bg-neutral-800">
-            <HugeiconsIcon
-              icon={getServiceIcon(connection.serviceType)}
-              size={18}
-              color={colors.primary[500]}
-            />
-          </View>
+          {connection.providerLogoUrl
+            ? (
+                <Image
+                  source={{ uri: connection.providerLogoUrl }}
+                  contentFit="contain"
+                  accessibilityLabel={`${connection.providerName} logo`}
+                  testID="provider-logo"
+                  className="size-9 rounded-lg bg-white"
+                />
+              )
+            : (
+                <View className="rounded-lg bg-neutral-100 p-2 dark:bg-neutral-800">
+                  <HugeiconsIcon
+                    icon={getServiceIcon(connection.serviceType)}
+                    size={18}
+                    color={colors.primary[500]}
+                  />
+                </View>
+              )}
           <View className="flex-1">
             <Text className="text-sm font-extrabold text-foreground" numberOfLines={1}>
-              {serviceName}
+              {connection.providerName && connection.providerName !== serviceName
+                ? `${connection.providerName} · ${serviceName}`
+                : serviceName}
             </Text>
             <Text className="text-xs font-medium text-muted-foreground" numberOfLines={1}>
               {connection.packageName || connection.locationLabel || 'Standard Pack'}
             </Text>
+            {connection.providerWebsiteUrl
+              ? (
+                  <Pressable
+                    accessibilityRole="link"
+                    accessibilityLabel={`Open ${connection.providerName} website`}
+                    onPress={() => void Linking.openURL(connection.providerWebsiteUrl!)}
+                    hitSlop={6}
+                    testID="provider-website"
+                  >
+                    <Text className="text-[11px] font-bold text-primary-600 dark:text-primary-400" numberOfLines={1}>
+                      {hostOf(connection.providerWebsiteUrl)}
+                    </Text>
+                  </Pressable>
+                )
+              : null}
           </View>
         </View>
 
@@ -215,9 +249,14 @@ function ConnectionCardItem({
           : null}
 
         <View className="min-w-[100px] flex-1 rounded-lg border border-border bg-surface px-2.5 py-1.5">
-          <Text className="text-[11px] font-semibold text-muted-foreground">Due Amount</Text>
-          <Text className="text-sm font-extrabold text-primary-600 dark:text-primary-400" numberOfLines={1}>
-            {`${connection.currency ?? '₹'}${connection.monthlyPrice}`}
+          <Text className="text-[11px] font-semibold text-muted-foreground">
+            {connection.balance < 0 ? 'Advance' : 'Due Amount'}
+          </Text>
+          <Text
+            className={`text-sm font-extrabold ${connection.balance < 0 ? 'text-green-600' : connection.balance > 0 ? 'text-red-600' : 'text-muted-foreground'}`}
+            numberOfLines={1}
+          >
+            {rupeesExact(Math.abs(connection.balance))}
           </Text>
         </View>
 
@@ -268,7 +307,7 @@ function CardActionFooter({
         ? (
             <View className="flex-1">
               <Button
-                label="Recharge"
+                label="Payment"
                 size="sm"
                 onPress={() => onRecharge(activeConnection)}
               />

@@ -1,0 +1,19 @@
+appId: ${APP_ID}
+tags:
+  - util
+---
+# From the Staff list (People tab): remove ${NAME} from the operator, if present.
+- runFlow:
+    when:
+      visible: ${NAME}
+    commands:
+      - tapOn: ${NAME}
+      - extendedWaitUntil:
+          visible: Remove staff member
+          timeout: 20000
+      - tapOn: Remove staff member
+      - tapOn: Remove
+      - extendedWaitUntil:
+          visible:
+            id: staff-search-input
+          timeout: 30000

@@ -10,7 +10,7 @@ import { HugeiconsIcon } from '@hugeicons/react-native';
 import { router } from 'expo-router';
 import * as React from 'react';
 
-import { colors, Modal, Pressable, SafeAreaView, ScrollView, Text, useModal, View } from '@/components/ui';
+import { colors, Modal, Pressable, SafeAreaView, ScrollView, Text, ThemedIcon, useModal, View } from '@/components/ui';
 import { useAuthStore } from '@/lib/hooks/stores/use-auth-store';
 
 /** `roleId` is a raw row id — nobody outside the database reads `super_admin`. */
@@ -36,7 +36,7 @@ function TenantRow({ membership, selected, onPress }: {
       accessibilityState={{ selected }}
       accessibilityLabel={`${membership.tenantName}, ${roleLabel(membership.roleId)}`}
       onPress={onPress}
-      className={`flex-row items-center gap-3 rounded-2xl border p-3.5 ${selected ? 'border-primary-600 bg-primary-50' : 'border-border bg-card'}`}
+      className={`flex-row items-center gap-3 rounded-2xl border p-3.5 ${selected ? 'border-primary-600 bg-primary-50 dark:bg-primary-950/40' : 'border-border bg-card'}`}
     >
       <View className="size-11 items-center justify-center rounded-2xl bg-primary-600">
         <HugeiconsIcon icon={Building03Icon} size={22} color="#fff" strokeWidth={2} />
@@ -136,7 +136,7 @@ export function SelectTenantScreen() {
           onPress={() => void signOut()}
           className="mt-1 flex-row items-center justify-center gap-2 py-2"
         >
-          <HugeiconsIcon icon={Logout03Icon} size={16} color={colors.neutral[500]} strokeWidth={2.2} />
+          <ThemedIcon icon={Logout03Icon} size={16} colorClassName="text-muted-foreground" strokeWidth={2.2} />
           <Text className="text-[13px] font-semibold text-muted-foreground">Sign out</Text>
         </Pressable>
       </ScrollView>
@@ -171,7 +171,7 @@ export function TenantSwitcher({ subtitle }: { subtitle?: string }) {
       <View className="flex-row items-center gap-1">
         <Text className="text-xl font-bold text-foreground" numberOfLines={1}>{title}</Text>
         {canSwitch
-          ? <HugeiconsIcon icon={ArrowDown01Icon} size={16} color={colors.neutral[500]} strokeWidth={2.4} />
+          ? <ThemedIcon icon={ArrowDown01Icon} size={16} colorClassName="text-muted-foreground" strokeWidth={2.4} />
           : null}
       </View>
       <Text className="text-xs text-muted-foreground" numberOfLines={1}>{subtitle ?? roleLabel(active?.roleId ?? '')}</Text>

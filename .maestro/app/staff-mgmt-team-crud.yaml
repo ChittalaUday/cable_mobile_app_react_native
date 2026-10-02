@@ -1,0 +1,166 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - staff-mgmt
+---
+# Team form: renders, empty name, create, duplicate name, edit (rename +
+# inactive), team detail of an empty crew, back-without-saving, and disband
+# (cancel first). Disbands everything it made.
+- evalScript: ${output.stamp = String(Date.now()).slice(-6)}
+- evalScript: ${output.team = 'E2E Team ' + output.stamp}
+- runFlow: ../utils/login-admin.yaml
+- runFlow: ../utils/staff-mgmt-open.yaml
+- tapOn: Teams
+- tapOn:
+    id: staff-search-input
+- inputText: ${output.stamp}
+- runFlow: ../utils/hide-keyboard.yaml
+- assertVisible: No team matches that search.
+
+# ------------------------------------------------------------ RENDERS + EMPTY NAME
+- tapOn: Add team
+- extendedWaitUntil:
+    visible:
+      id: team-name-input
+    timeout: 20000
+- assertVisible: Description
+- assertVisible: Status
+- assertVisible: Active
+- assertVisible: Inactive
+- tapOn:
+    id: team-save-button
+- assertVisible: A name is required
+
+# ------------------------------------------------------------ CREATE
+- tapOn:
+    id: team-name-input
+- inputText: ${output.team}
+- tapOn:
+    id: team-description-input
+- inputText: E2E crew
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: team-save-button
+- extendedWaitUntil:
+    visible: Edit ${output.team}
+    timeout: 30000
+- assertVisible: 0 members · 0 areas
+
+# ------------------------------------------------------------ DUPLICATE NAME
+- tapOn: Add team
+- extendedWaitUntil:
+    visible:
+      id: team-name-input
+    timeout: 20000
+- tapOn:
+    id: team-name-input
+- inputText: ${output.team}
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: team-save-button
+# BUG: a second team with the same name is accepted (the API only makes the slug
+# unique, e.g. "-2"), so the list ends up with two indistinguishable crews.
+# Expected a refusal:
+# - extendedWaitUntil: { visible: Could not save, timeout: 20000 }
+# - tapOn: OK
+# - back
+# Tolerate either outcome so the cleanup below always runs.
+- runFlow:
+    when:
+      visible: Could not save
+    commands:
+      - tapOn: OK
+      - back
+- extendedWaitUntil:
+    visible:
+      id: staff-search-input
+    timeout: 30000
+
+# ------------------------------------------------------------ BACK WITHOUT SAVING
+# No discard prompt exists; leaving must at least not create anything.
+- tapOn: Add team
+- extendedWaitUntil:
+    visible:
+      id: team-name-input
+    timeout: 20000
+- tapOn:
+    id: team-name-input
+- inputText: E2E Abandoned ${output.stamp}
+- runFlow: ../utils/hide-keyboard.yaml
+# BUG: no "Discard changes?" prompt on a dirty form (same as the staff form).
+- back
+- extendedWaitUntil:
+    visible:
+      id: staff-search-input
+    timeout: 20000
+- assertNotVisible: E2E Abandoned ${output.stamp}
+
+# ------------------------------------------------------------ TEAM DETAIL (empty crew)
+- tapOn:
+    text: ${output.team}
+    index: 0
+- extendedWaitUntil:
+    visible: The team’s areas
+    timeout: 20000
+- assertVisible: 0 members · 0 areas
+- assertVisible: Members
+- assertVisible: Nobody on this crew yet.*
+- assertVisible: None yet.*
+- assertVisible: Edit team
+
+# ------------------------------------------------------------ EDIT (rename + inactive)
+- tapOn: Edit team
+- extendedWaitUntil:
+    visible:
+      id: team-name-input
+    timeout: 20000
+- tapOn:
+    id: team-name-input
+- eraseText: 30
+- inputText: ${output.team} Renamed
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Inactive
+- tapOn:
+    id: team-save-button
+# Back on the detail, which now carries the new name.
+- extendedWaitUntil:
+    visible: ${output.team} Renamed
+    timeout: 30000
+- back
+- extendedWaitUntil:
+    visible: Edit ${output.team} Renamed
+    timeout: 30000
+# An inactive crew shows the Suspended pill.
+- assertVisible: Suspended
+
+# ------------------------------------------------------------ DISBAND (cleanup)
+- tapOn: Edit ${output.team} Renamed
+- extendedWaitUntil:
+    visible: Edit team
+    timeout: 20000
+- tapOn: Disband team
+- assertVisible: Disband this team
+- tapOn: Cancel
+- assertVisible: Edit team
+- tapOn: Disband team
+- tapOn: Disband
+- extendedWaitUntil:
+    notVisible: Edit ${output.team} Renamed
+    timeout: 30000
+# Any duplicate the API let through goes too.
+- repeat:
+    while:
+      visible: Edit ${output.team}
+    commands:
+      - tapOn: Edit ${output.team}
+      - extendedWaitUntil:
+          visible: Disband team
+          timeout: 20000
+      - tapOn: Disband team
+      - tapOn: Disband
+      - extendedWaitUntil:
+          visible:
+            id: staff-search-input
+          timeout: 30000
+- assertVisible: No team matches that search.

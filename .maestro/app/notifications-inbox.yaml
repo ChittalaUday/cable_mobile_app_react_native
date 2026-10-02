@@ -1,0 +1,67 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - notifications
+---
+# The bell opens the shared inbox: header, category chips, then either the
+# list or the empty state. With the network dropped the inbox shows its error
+# state, and Try again recovers once it is back.
+- setAirplaneMode: disabled
+- runFlow: ../utils/login-admin.yaml
+- extendedWaitUntil:
+    visible: Operator Panel
+    timeout: 30000
+
+- tapOn: 'Notifications.*'
+- extendedWaitUntil:
+    visible: '\d+ total'
+    timeout: 30000
+- assertVisible: Notifications
+- assertVisible: All
+- assertVisible: General
+- assertVisible: Alerts
+- assertVisible: Offers
+# List or empty state, whichever this inbox has.
+- runFlow:
+    when:
+      visible: '0 total'
+    commands:
+      - assertVisible: Nothing here yet.
+
+# A category with nothing in it shows the empty state.
+- scrollUntilVisible:
+    element: Team
+    direction: RIGHT
+- tapOn: Team
+- extendedWaitUntil:
+    visible: '\d+ total'
+    timeout: 20000
+- tapOn: All
+
+# Back returns to the dashboard.
+- tapOn: Back
+- extendedWaitUntil:
+    visible: Operator Panel
+    timeout: 10000
+
+# --- Network drop: a fresh open fails into the error state --------------------
+- setAirplaneMode: enabled
+- tapOn: 'Notifications.*'
+- extendedWaitUntil:
+    visible: Could not load your network data
+    timeout: 60000
+- assertVisible: Try again
+- setAirplaneMode: disabled
+- repeat:
+    times: 6
+    while:
+      visible: Try again
+    commands:
+      - tapOn: Try again
+      - extendedWaitUntil:
+          visible: '\d+ total'
+          timeout: 10000
+          optional: true
+- assertVisible: '\d+ total'
+- assertNotVisible: Could not load your network data

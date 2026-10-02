@@ -10,29 +10,33 @@ import { isPaymentAmount } from '@/lib/utils/payment-amount';
  *
  * Ordered, and always walked forwards: the plan is settled before an amount is
  * typed, and the amount is settled before money is recorded, because each step
- * decides what the next one is even allowed to show.
+ * decides what the next one is even allowed to show. Everything after `amount`
+ * happens with the money already on the books: get a printer ready, approve the
+ * paper, then the confirmation.
  */
-export const STEPS = ['plan', 'amount', 'done'] as const;
+export const STEPS = ['plan', 'amount', 'printer', 'preview', 'done'] as const;
 export type Step = (typeof STEPS)[number];
 
-/** Which piece of hardware an equipment charge is about. */
+/** A unit picked off the shelf, with what the payment step shows for it. */
+export type PickedUnit = {
+  equipmentId: string;
+  catalogId: string;
+  name: string;
+  serialNumber: string | null;
+  price: string;
+};
+
+/**
+ * Which hardware an equipment charge is about: specific units issued from
+ * stock (each already carries its serial), or a unit the customer already has,
+ * swapped for a fresh one.
+ */
 export type EquipmentTarget
-  = | { kind: 'existing'; customerEquipmentId: string }
-    | { kind: 'issue'; catalogId: string };
+  = | { kind: 'issue'; units: PickedUnit[] }
+    | { kind: 'replace'; customerEquipmentId: string };
 
 /** What the money is for. Each books a different kind of receipt. */
 export type ChargeKind = 'subscription' | 'equipment';
-
-/**
- * The steps a charge actually walks.
- *
- * Equipment is its own flow. A set-top box is charged for whether or not the
- * customer's plan is touched, and the receipt it books never moves the
- * subscription balance, so there is no plan to settle first.
- */
-export function stepsFor(charge: ChargeKind): readonly Step[] {
-  return charge === 'equipment' ? ['amount', 'done'] : STEPS;
-}
 
 export type RechargeState = {
   customerId: string | null;
@@ -42,7 +46,6 @@ export type RechargeState = {
   charge: ChargeKind;
 
   target: EquipmentTarget | null;
-  serialNumber: string;
   amount: string;
   method: PaymentEntryMethod;
   notes: string;
@@ -67,7 +70,7 @@ export type RechargeState = {
   setCharge: (charge: ChargeKind) => void;
   setSubscription: (subscriptionId: string) => void;
   setTarget: (target: EquipmentTarget | null) => void;
-  setField: <K extends 'serialNumber' | 'amount' | 'method' | 'notes' | 'upiAccountId'>(
+  setField: <K extends 'amount' | 'method' | 'notes' | 'upiAccountId'>(
     key: K,
     value: RechargeState[K],
   ) => void;
@@ -82,7 +85,6 @@ const BLANK = {
   step: 'plan' as Step,
   charge: 'subscription' as ChargeKind,
   target: null,
-  serialNumber: '',
   amount: '',
   method: 'cash' as PaymentEntryMethod,
   notes: '',
@@ -118,28 +120,28 @@ export const useRechargeStore = create<RechargeState>(set => ({
   goTo: step => set({ step }),
 
   next: () => set((state) => {
-    const walk = stepsFor(state.charge);
-    const at = walk.indexOf(state.step);
+    const at = STEPS.indexOf(state.step);
 
-    return { step: walk[Math.min(at + 1, walk.length - 1)]! };
+    return { step: STEPS[Math.min(at + 1, STEPS.length - 1)]! };
   }),
 
+  // Once recorded, the amount is history: back stops at the printer step rather
+  // than reopening a form whose money is already on the books.
   back: () => set((state) => {
-    const walk = stepsFor(state.charge);
-    const at = walk.indexOf(state.step);
+    const at = STEPS.indexOf(state.step);
+    const floor = state.receiptId === null ? 0 : STEPS.indexOf('printer');
 
-    return { step: walk[Math.max(at - 1, 0)]! };
+    return { step: STEPS[Math.max(at - 1, floor)]! };
   }),
 
-  // Switching to equipment off the plan step leaves the collector standing on a
-  // step that flow no longer has, so it moves them to the one it starts on.
+  // The tab on the select step. Both charges walk the same steps; only what is
+  // picked on the first one differs.
   setCharge: charge => set((state) => {
     const kind = charge === 'equipment' ? 'equipment' : 'dues';
 
     return {
       charge,
       reference: state.customerId === null ? state.reference : getPendingReference(state.customerId, kind).reference,
-      step: stepsFor(charge).includes(state.step) ? state.step : stepsFor(charge)[0]!,
     };
   }),
   setSubscription: subscriptionId => set({ subscriptionId }),
@@ -154,9 +156,9 @@ export const useRechargeStore = create<RechargeState>(set => ({
       clearPendingReference(customerId, kind);
     }
 
-    return { receiptId, step: 'done' };
+    return { receiptId, step: 'printer' };
   }),
-  markPrinted: () => set({ printed: true }),
+  markPrinted: () => set({ printed: true, step: 'done' }),
 
   reset: (discard = false) => set((state) => {
     if (discard && state.customerId !== null) {
@@ -168,8 +170,24 @@ export const useRechargeStore = create<RechargeState>(set => ({
   }),
 }));
 
+/**
+ * Dues with no amount typed are a visit that collected nothing: recorded as
+ * such, with the whole balance left due, rather than blocked.
+ */
+export function isMarkedDue(state: Pick<RechargeState, 'charge' | 'amount'>): boolean {
+  return state.charge === 'subscription' && (state.amount.trim() === '' || (isPaymentAmount(state.amount) && paise(state.amount) === 0));
+}
+
+/** Swapping a customer's unit with no fee typed: a free replacement, still a receipt. */
+export function isFreeSwap(state: Pick<RechargeState, 'charge' | 'amount' | 'target'>): boolean {
+  return state.charge === 'equipment' && state.target?.kind === 'replace' && paise(state.amount) === 0 && (state.amount.trim() === '' || isPaymentAmount(state.amount));
+}
+
 /** True once the flow holds enough to record money. */
 export function canRecord(state: RechargeState): boolean {
+  if (isMarkedDue(state) || isFreeSwap(state))
+    return true;
+
   const amount = paise(state.amount);
   if (!isPaymentAmount(state.amount) || !Number.isFinite(amount) || amount <= 0 || amount > paise(MAX_COLLECTION_AMOUNT))
     return false;
@@ -184,7 +202,6 @@ export function hasUnsavedWork(state: RechargeState): boolean {
 
   return state.amount.trim() !== ''
     || state.notes.trim() !== ''
-    || state.serialNumber.trim() !== ''
     || state.target !== null
-    || state.step !== stepsFor(state.charge)[0];
+    || state.step !== STEPS[0];
 }

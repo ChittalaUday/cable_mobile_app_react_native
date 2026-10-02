@@ -111,25 +111,42 @@
   --color-destructive-foreground: #ffffff;
 }
 
-/* Dark mode colors */
-/* TODO: dark theme temporarily disabled app-wide - this media query reacts to OS appearance
-   directly regardless of the in-app theme setting, which is why it must be disabled here (not
-   just in JS) to keep the app light-only for now. Uncomment to re-enable. */
-/* @media (prefers-color-scheme: dark) {
-  @theme {
-    --color-background: #0a0a0a;
-    --color-foreground: #fafafa;
+/* Dark mode colors. Scoped to Uniwind's dark theme, so they follow the in-app
+   setting (Dark / Light / System) rather than the phone's appearance alone. */
+@layer theme {
+  :root {
+    /* Uniwind needs every theme to declare the same variables. */
+    @variant light {
+      --color-background: #ffffff;
+      --color-foreground: #0a0a0a;
+      --color-surface: #EDEFF3;
 
-    --color-card: #171717;
-    --color-card-foreground: #fafafa;
+      --color-card: #ffffff;
+      --color-card-foreground: #0a0a0a;
 
-    --color-muted: #262626;
-    --color-muted-foreground: #a3a3a3;
+      --color-muted: #f5f5f5;
+      --color-muted-foreground: #737373;
 
-    --color-border: #404040;
-    --color-input: #404040;
+      --color-border: #e5e5e5;
+      --color-input: #e5e5e5;
+    }
+
+    @variant dark {
+      --color-background: #0a0a0a;
+      --color-foreground: #fafafa;
+      --color-surface: #0f1115;
+
+      --color-card: #171717;
+      --color-card-foreground: #fafafa;
+
+      --color-muted: #262626;
+      --color-muted-foreground: #a3a3a3;
+
+      --color-border: #404040;
+      --color-input: #404040;
+    }
   }
-} */
+}
 
 /* Custom utilities (if needed) */
 @layer utilities {

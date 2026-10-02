@@ -72,6 +72,7 @@ function Field({ label, required, error, ...input }: {
   autoCapitalize?: 'none' | 'words';
   secureTextEntry?: boolean;
   editable?: boolean;
+  testID?: string;
 }) {
   return (
     <View className="gap-1">
@@ -281,7 +282,7 @@ export function AddEditStaffScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="Remove staff member"
                   onPress={confirmDelete}
-                  className="size-9 shrink-0 items-center justify-center rounded-lg border border-danger-200 bg-card"
+                  className="size-9 shrink-0 items-center justify-center rounded-lg border border-danger-200 bg-card dark:border-danger-800"
                 >
                   <HugeiconsIcon icon={Delete02Icon} size={18} color={colors.danger[500]} strokeWidth={2} />
                 </Pressable>
@@ -298,9 +299,10 @@ export function AddEditStaffScreen() {
         bottomOffset={24}
       >
         <Card className="gap-2.5 border border-border p-3">
-          <Field label="Name" required value={name} onChangeText={value => edit({ name: value })} placeholder="Ravi Kumar" autoCapitalize="words" error={errors.name} />
+          <Field testID="staff-name-input" label="Name" required value={name} onChangeText={value => edit({ name: value })} placeholder="Ravi Kumar" autoCapitalize="words" error={errors.name} />
 
           <Field
+            testID="staff-phone-input"
             label="Phone"
             value={phone}
             onChangeText={value => edit({ phone: value })}
@@ -311,6 +313,7 @@ export function AddEditStaffScreen() {
           />
 
           <Field
+            testID="staff-email-input"
             label="Email"
             value={email}
             onChangeText={value => edit({ email: value })}
@@ -329,6 +332,7 @@ export function AddEditStaffScreen() {
               )
             : (
                 <Field
+                  testID="staff-password-input"
                   label="Password"
                   value={password}
                   onChangeText={value => edit({ password: value })}
@@ -385,6 +389,7 @@ export function AddEditStaffScreen() {
       </KeyboardAwareScrollView>
 
       <SaveBar
+        testID="staff-save-button"
         label={isEdit ? 'Save changes' : 'Continue'}
         busyLabel="Saving..."
         busy={saving}

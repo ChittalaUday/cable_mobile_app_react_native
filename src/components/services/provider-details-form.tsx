@@ -43,6 +43,7 @@ export type ProviderDraft = {
   code: string;
   phone: string;
   website: string;
+  logoUrl: string;
   description: string;
   isDefault: boolean;
 };
@@ -87,6 +88,7 @@ export function ProviderDetailsForm({
           value={draft.name}
           onChangeText={value => onChange('name', value)}
           placeholder="e.g. ACT Fibernet"
+          testID="provider-name-input"
           placeholderTextColor={colors.neutral[400]}
           className="rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
         />
@@ -221,6 +223,23 @@ export function ProviderDetailsForm({
           placeholderTextColor={colors.neutral[400]}
           className="rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
         />
+        {errors.website ? <Text className="text-xs text-danger-500">{errors.website}</Text> : null}
+      </View>
+
+      <View className="gap-1.5">
+        <FieldLabel>Logo URL</FieldLabel>
+        <TextInput
+          value={draft.logoUrl}
+          onChangeText={value => onChange('logoUrl', value)}
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="url"
+          placeholder="https://…/logo.png"
+          placeholderTextColor={colors.neutral[400]}
+          testID="provider-logo-url"
+          className="rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+        />
+        {errors.logoUrl ? <Text className="text-xs text-danger-500">{errors.logoUrl}</Text> : null}
       </View>
 
       <View className="gap-1.5">

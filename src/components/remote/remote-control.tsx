@@ -13,7 +13,7 @@ import { AnimatePresence, MotiView } from 'moti';
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { ActivityIndicator, Button, colors, Pressable, Text, View } from '@/components/ui';
+import { ActivityIndicator, Button, colors, Pressable, Text, ThemedIcon, View } from '@/components/ui';
 import { useRemote, useRemotes } from '@/lib/hooks/api/use-remotes';
 import { captureToCommand, getCapabilities, transmit } from '@/lib/ir-blaster';
 
@@ -244,7 +244,7 @@ function StatusBar({ capabilities, ready, selected, status, onRetry, onChange }:
             <Text
               selectable
               numberOfLines={1}
-              className={`min-w-0 flex-1 text-xs ${ready ? 'text-success-700' : 'text-muted-foreground'}`}
+              className={`min-w-0 flex-1 text-xs ${ready ? 'text-success-700 dark:text-success-300' : 'text-muted-foreground'}`}
             >
               {selected ? `${selected.brand} · ${status}` : status}
             </Text>
@@ -261,7 +261,7 @@ function StatusBar({ capabilities, ready, selected, status, onRetry, onChange }:
                 onPress={onChange}
                 className="size-9 items-center justify-center rounded-xl border border-border bg-surface active:bg-muted"
               >
-                <HugeiconsIcon icon={RepeatIcon} size={16} color={colors.neutral[600]} strokeWidth={2.2} />
+                <ThemedIcon icon={RepeatIcon} size={16} colorClassName="text-muted-foreground" strokeWidth={2.2} />
               </Pressable>
             )
           : null}
@@ -285,9 +285,9 @@ function StatusBar({ capabilities, ready, selected, status, onRetry, onChange }:
 function UnverifiedNotice() {
   const { t } = useTranslation();
   return (
-    <View className="flex-row items-start gap-2.5 rounded-2xl border border-warning-200 bg-warning-50 p-3">
+    <View className="flex-row items-start gap-2.5 rounded-2xl border border-warning-200 bg-warning-50 p-3 dark:border-warning-800 dark:bg-warning-900/40">
       <HugeiconsIcon icon={Alert02Icon} size={16} color={colors.warning[700]} strokeWidth={2.4} />
-      <Text className="min-w-0 flex-1 text-xs/5 text-warning-800">
+      <Text className="min-w-0 flex-1 text-xs/5 text-warning-800 dark:text-warning-200">
         {t('remote.unverified_warning')}
       </Text>
     </View>

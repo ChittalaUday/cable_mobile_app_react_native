@@ -28,13 +28,14 @@ export function CustomerDetailScreen({ customerId, role }: {
     refetch,
     isRefetching,
   } = useCustomer({
-    variables: { id: customerId ?? '' },
+    // The Payments tab filters this ledger by period, so carry more than the default 20.
+    variables: { id: customerId ?? '', transactions: 200 },
     enabled: Boolean(customerId),
   });
 
   if (isPending) {
     return (
-      <View className="flex-1 items-center justify-center gap-3 bg-surface px-6">
+      <View className="flex-1 items-center justify-center gap-3 bg-card px-6">
         <FocusAwareStatusBar />
         <ActivityIndicator size="large" color={colors.primary[500]} />
         <Text className="text-sm font-semibold text-muted-foreground">
@@ -47,7 +48,7 @@ export function CustomerDetailScreen({ customerId, role }: {
 
   if (error || !customer) {
     return (
-      <View className="flex-1 items-center justify-center gap-3 bg-surface px-6">
+      <View className="flex-1 items-center justify-center gap-3 bg-card px-6">
         <FocusAwareStatusBar />
         <Text className="text-base font-bold text-foreground">
           {t('customer_details.not_found')}
@@ -76,7 +77,7 @@ export function CustomerDetailScreen({ customerId, role }: {
   }
 
   return (
-    <View className="flex-1 bg-surface">
+    <View className="flex-1 bg-card">
       <FocusAwareStatusBar />
       <CustomerDetailsView
         customer={customer}

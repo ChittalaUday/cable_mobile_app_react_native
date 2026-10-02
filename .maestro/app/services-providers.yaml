@@ -1,0 +1,162 @@
+appId: ${APP_ID}
+env:
+  SERVICE: Broadband
+tags:
+  - e2e
+  - admin
+  - services
+---
+# Service Providers (More > Services): the list, service pills, search and its
+# empty state; Add Provider with validation, create, edit; the provider detail;
+# and delete, where Cancel keeps it and confirm removes it.
+- evalScript: ${output.stamp = String(Date.now()).slice(-6)}
+- runFlow: ../utils/login-admin.yaml
+- tapOn: More
+- extendedWaitUntil:
+    visible: Services
+    timeout: 10000
+- tapOn: Services
+- extendedWaitUntil:
+    visible: Service Providers
+    timeout: 20000
+
+# --- Renders: providers and one pill per service ------------------------------
+- extendedWaitUntil:
+    visible: ACT Digital
+    timeout: 20000
+- assertVisible: Satya Fiber
+- assertVisible: '\d+ across \d+ services'
+- assertVisible: Manage services
+- assertVisible: Add provider
+
+# --- Service pill narrows the list ------------------------------------------------
+- tapOn: ${SERVICE}
+- assertVisible: Satya Fiber
+- assertNotVisible: ACT Digital
+- tapOn: All
+- assertVisible: ACT Digital
+
+# --- Search, and the empty result -------------------------------------------------
+- tapOn: Search providers...
+- inputText: ACT
+- assertVisible: ACT Digital
+- assertNotVisible: Satya Fiber
+- tapOn: Clear
+- tapOn: Search providers...
+- inputText: zzqq-none
+- assertVisible: No Providers Found
+- assertVisible: No providers match your search keyword.
+- tapOn: Clear
+- runFlow: ../utils/hide-keyboard.yaml
+
+# --- Add Provider: required fields ------------------------------------------------
+- tapOn: Add provider
+- extendedWaitUntil:
+    visible: Register a service provider
+    timeout: 10000
+- tapOn: Create Provider
+- assertVisible: Provider name is required
+- assertVisible: Choose the service this provider delivers
+
+# --- Add Provider: create -------------------------------------------------------------
+- tapOn:
+    id: provider-name-input
+- inputText: E2E Provider ${output.stamp}
+- tapOn: Choose service
+- tapOn: ${SERVICE}
+- tapOn: e.g. ACT
+- inputText: E2E${output.stamp}
+- tapOn: e.g. 1800 208 6633
+- inputText: '9000011111'
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Create Provider
+- extendedWaitUntil:
+    visible: '.*Create E2E Provider ${output.stamp}\?.*'
+    timeout: 10000
+- tapOn:
+    id: dialog-confirm
+- extendedWaitUntil:
+    visible: Saved — the rest is optional
+    timeout: 20000
+
+# Coverage is optional: skip it, then the packages step confirms it is saved.
+- tapOn: Skip
+- extendedWaitUntil:
+    visible: E2E Provider ${output.stamp} is set up
+    timeout: 10000
+
+# --- Edit the saved provider from the Details step -------------------------------
+- tapOn: Details, done
+- extendedWaitUntil:
+    visible: Save Changes
+    timeout: 10000
+- tapOn:
+    id: provider-name-input
+- eraseText: 30
+- inputText: E2E Provider ${output.stamp} X
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Save Changes
+- extendedWaitUntil:
+    visible: '.*Update E2E Provider ${output.stamp}\?.*'
+    timeout: 10000
+- tapOn:
+    id: dialog-confirm
+- extendedWaitUntil:
+    visible: E2E Provider ${output.stamp} X
+    timeout: 20000
+- tapOn: Skip
+- extendedWaitUntil:
+    visible: Finish
+    timeout: 10000
+- tapOn: Finish
+- takeScreenshot: .maestro/screenshots/provider-finish
+
+# --- Provider detail (opened from the list) ---------------------------------------
+- runFlow:
+    when:
+      notVisible: Service Providers
+    commands:
+      - back
+- extendedWaitUntil:
+    visible: Service Providers
+    timeout: 20000
+- tapOn: Search providers...
+- inputText: E2E Provider ${output.stamp}
+- extendedWaitUntil:
+    visible: E2E Provider ${output.stamp} X
+    timeout: 20000
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: E2E Provider ${output.stamp} X
+- extendedWaitUntil:
+    visible: Provider Details
+    timeout: 20000
+- assertVisible: ${SERVICE}
+- assertVisible: '9000011111'
+- assertVisible: E2E${output.stamp}
+- assertVisible: Active
+- assertVisible: '0 total'
+- assertVisible: No packages for this provider yet. Tap + above to add one.
+- assertVisible: Edit coverage
+- assertVisible: Add package
+
+# --- Delete: Cancel keeps it, confirm removes it --------------------------------
+- tapOn: Delete provider
+- extendedWaitUntil:
+    visible: '.*Delete E2E Provider ${output.stamp} X\?.*'
+    timeout: 10000
+- tapOn:
+    id: dialog-cancel
+- assertVisible: Provider Details
+- tapOn: Delete provider
+- extendedWaitUntil:
+    visible:
+      id: dialog-confirm
+    timeout: 10000
+- tapOn:
+    id: dialog-confirm
+- extendedWaitUntil:
+    visible: Service Providers
+    timeout: 20000
+- extendedWaitUntil:
+    visible: No Providers Found
+    timeout: 20000

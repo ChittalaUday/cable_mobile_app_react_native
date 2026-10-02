@@ -1,0 +1,150 @@
+appId: ${APP_ID}
+env:
+  # A seeded SSCN subscriber; name, code and phone are fixed in the seed.
+  NAME: Bhadakar Rao Motupalli
+  CODE: SSCN-000066
+  PHONE: '9603078128'
+tags:
+  - e2e
+  - admin
+  - customers
+---
+# Admin customers tab: the live list, search by name / code / phone, the empty
+# result, the 3-character guard, status chips, the filter sheet, scrolling, and
+# opening a customer.
+- runFlow: ../utils/login-admin.yaml
+- runFlow: ../utils/customers-open.yaml
+
+# --- Renders: header, add, search, filters and the first page of cards ------
+- assertVisible:
+    id: customers-add-button
+- assertVisible:
+    id: customer-search-input
+- assertVisible: Open filters
+- assertVisible: All
+- assertVisible: Multi-Box (2+)
+- extendedWaitUntil:
+    visible: View
+    timeout: 30000
+
+# --- Scrolling pulls further cards in (the list pages from the API) --------
+- scroll
+- scroll
+- assertVisible: View
+- scrollUntilVisible:
+    element: Customers & Lines
+    direction: UP
+
+# --- Search by name ---------------------------------------------------------
+- tapOn:
+    id: customer-search-input
+- inputText: Bhadakar
+- extendedWaitUntil:
+    visible: ${NAME}
+    timeout: 20000
+- assertVisible: ${CODE}
+
+# --- Search by customer code ------------------------------------------------
+- eraseText: 20
+- inputText: ${CODE}
+- extendedWaitUntil:
+    visible: ${NAME}
+    timeout: 20000
+
+# --- Search by phone --------------------------------------------------------
+- eraseText: 20
+- inputText: ${PHONE}
+- extendedWaitUntil:
+    visible: ${NAME}
+    timeout: 20000
+
+# --- Fewer than 3 characters does not hit the API, it asks for more ---------
+- eraseText: 20
+- inputText: zq
+- extendedWaitUntil:
+    visible: Enter at least 3 characters to search customers.
+    timeout: 10000
+
+# --- A miss shows the empty state with the query echoed --------------------
+- inputText: xqzv
+- extendedWaitUntil:
+    visible: No customers found
+    timeout: 20000
+- assertVisible: '.*No customer, account, location, or equipment matched "zqxqzv".*'
+- eraseText: 20
+- runFlow: ../utils/hide-keyboard.yaml
+- extendedWaitUntil:
+    visible: View
+    timeout: 20000
+
+# --- Status chips narrow the list and keep cards rendering -----------------
+- tapOn: Inactive
+- extendedWaitUntil:
+    notVisible: Fetching live customer records...
+    timeout: 20000
+- assertNotVisible: ${NAME}
+- tapOn: Multi-Box (2+)
+- extendedWaitUntil:
+    notVisible: Fetching live customer records...
+    timeout: 20000
+- tapOn: Active
+- extendedWaitUntil:
+    visible: View
+    timeout: 20000
+
+# --- Filter sheet: apply a status, see the removable chip, then reset ------
+- tapOn: All
+- tapOn: Open filters
+- extendedWaitUntil:
+    visible: Filter Customers
+    timeout: 10000
+- assertVisible: Created Date
+- assertVisible: Service Provider
+- tapOn: Pending
+- tapOn: Apply Filters
+- extendedWaitUntil:
+    visible: 'Status:pending'
+    timeout: 10000
+- tapOn: 'Status:pending'
+- extendedWaitUntil:
+    notVisible: 'Status:pending'
+    timeout: 10000
+
+- tapOn: Open filters
+- extendedWaitUntil:
+    visible: Filter Customers
+    timeout: 10000
+- tapOn: Last 7 Days
+- tapOn: Apply Filters
+- extendedWaitUntil:
+    visible: 'Created Date:7d'
+    timeout: 10000
+- tapOn: Open filters
+- tapOn: Reset
+- runFlow:
+    when:
+      visible: Filter Customers
+    commands:
+      - tapOn: close modal
+- extendedWaitUntil:
+    notVisible: 'Created Date:7d'
+    timeout: 10000
+
+# --- Opening a customer from the list --------------------------------------
+- tapOn:
+    id: customer-search-input
+- inputText: ${CODE}
+- extendedWaitUntil:
+    visible: ${NAME}
+    timeout: 20000
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: View
+- extendedWaitUntil:
+    visible: Customer Details
+    timeout: 20000
+- assertVisible: ${NAME}
+- assertVisible: ${CODE}
+- back
+- extendedWaitUntil:
+    visible: Customers & Lines
+    timeout: 10000

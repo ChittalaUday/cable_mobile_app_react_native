@@ -1,0 +1,13 @@
+appId: ${APP_ID}
+tags:
+  - util
+---
+# From a signed-in shell (admin or staff), opens the Inventory hub via More.
+- tapOn: More
+- extendedWaitUntil:
+    visible: Inventory
+    timeout: 20000
+- tapOn: Inventory
+- extendedWaitUntil:
+    visible: Search inventory...
+    timeout: 20000

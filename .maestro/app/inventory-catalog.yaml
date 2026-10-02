@@ -1,0 +1,141 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - inventory
+---
+# Item Catalog (admin): list and search, then Add Catalog Item validation
+# (empty name, negative and non-numeric price, over-long name) and a
+# successful create that shows up in the list with its price.
+- evalScript: ${output.stamp = String(Date.now()).slice(-6)}
+- runFlow: ../utils/login-admin.yaml
+- runFlow: ../utils/inventory-open.yaml
+- tapOn: Item Catalog
+- extendedWaitUntil:
+    visible: ACT HD Installation Kit
+    timeout: 30000
+- assertVisible: Manage equipment models and definitions
+# Admins see no staff read-only banner.
+- assertNotVisible: .*Staff permissions.*
+
+# --- Search: hit, then empty ------------------------------------------------
+- tapOn:
+    id: catalog-search-input
+- inputText: ACT-REMOTE
+- assertVisible: ACT Smart Remote
+- assertNotVisible: ACT HD Installation Kit
+- eraseText: 20
+- inputText: zzqq-none
+- assertVisible: No catalog items found
+- eraseText: 20
+- runFlow: ../utils/hide-keyboard.yaml
+
+# --- Add: empty name is refused client-side ---------------------------------
+- tapOn:
+    id: catalog-add-button
+- extendedWaitUntil:
+    visible: Add Catalog Item
+    timeout: 10000
+- assertVisible: Create Item
+- assertNotVisible: Reason for Approval \*
+- tapOn:
+    id: catalog-submit-button
+- assertVisible: Required
+- assertVisible: Item name is required\.
+- tapOn: OK
+
+# --- Negative price: the API rejects it and the sheet keeps the input -------
+- tapOn:
+    id: catalog-name-input
+- inputText: E2E Cat ${output.stamp}
+# SKU must be unique per tenant (and only one item may go without one).
+- tapOn:
+    id: catalog-code-input
+- inputText: E2E-${output.stamp}
+- tapOn:
+    id: catalog-price-input
+- inputText: '-50'
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: catalog-submit-button
+- extendedWaitUntil:
+    visible: Error
+    timeout: 20000
+- tapOn: OK
+- assertVisible: E2E Cat ${output.stamp}
+- assertVisible: '-50'
+# BUG: nothing client-side stops a negative or non-numeric price; the user
+# only gets the raw API validation message after a round trip.
+
+# --- Non-numeric price ------------------------------------------------------
+- tapOn:
+    id: catalog-price-input
+- eraseText: 10
+- inputText: 'abc'
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: catalog-submit-button
+- extendedWaitUntil:
+    visible: Error
+    timeout: 20000
+- tapOn: OK
+
+# --- Over-long name (101 chars; the API allows 100) -------------------------
+- tapOn:
+    id: catalog-price-input
+- eraseText: 10
+- inputText: '150'
+- tapOn:
+    id: catalog-name-input
+- eraseText: 40
+- inputText: E2E-LONG-NAME-0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: catalog-submit-button
+- extendedWaitUntil:
+    visible: Error
+    timeout: 20000
+- tapOn: OK
+
+# --- Valid create -----------------------------------------------------------
+- tapOn:
+    id: catalog-name-input
+- eraseText: 120
+- inputText: E2E Cat ${output.stamp}
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: catalog-submit-button
+- extendedWaitUntil:
+    visible: Item created in catalog successfully\.
+    timeout: 20000
+- tapOn: OK
+- assertNotVisible: Add Catalog Item
+
+# The new item is listed with its price, and the form was reset.
+- tapOn:
+    id: catalog-search-input
+- eraseText: 20
+- inputText: E2E Cat ${output.stamp}
+- runFlow: ../utils/hide-keyboard.yaml
+- extendedWaitUntil:
+    visible: E2E Cat ${output.stamp}
+    timeout: 20000
+- assertVisible: ₹150.*
+- tapOn:
+    id: catalog-add-button
+- extendedWaitUntil:
+    visible: Add Catalog Item
+    timeout: 10000
+- assertNotVisible: E2E Cat ${output.stamp}.*
+- back
+
+# Opening it shows the item page.
+- tapOn: E2E Cat ${output.stamp}
+- extendedWaitUntil:
+    visible: Item Details
+    timeout: 20000
+- assertVisible: Specifications
+
+# NOTE: the catalog has no Edit or Delete action for existing items (admin or
+# staff), so edit-keeps-unsent-fields and delete Cancel/Confirm cannot be
+# exercised from the UI. Created items stay; their E2E names identify them.

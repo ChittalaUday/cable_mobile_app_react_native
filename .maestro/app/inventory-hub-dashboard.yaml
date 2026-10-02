@@ -1,0 +1,129 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - inventory
+---
+# Inventory hub: every tile renders and opens its screen; the hub search
+# filters tiles (including an empty result). Then the dashboard KPIs, the
+# low-stock list and its View All links.
+- runFlow: ../utils/login-admin.yaml
+- runFlow: ../utils/inventory-open.yaml
+
+# --- Hub renders every admin entry ------------------------------------------
+- assertVisible: Manage equipment, stock & customer assignments
+- assertVisible: Dashboard
+- assertVisible: Stock & Locations
+- assertVisible: Scan / Lookup
+- assertVisible: Issue to Customer
+- assertVisible: Receive Stock
+- assertVisible: Transfer Stock
+- assertVisible: Customer Equipment
+- assertVisible: Stock Movements
+- assertVisible: Item Catalog
+- assertVisible: Manage products & kits
+- assertVisible: Approval Requests
+- assertNotVisible: My Change Requests
+
+# --- Each tile navigates, and back returns to the hub -----------------------
+- tapOn: Stock & Locations
+- extendedWaitUntil:
+    visible: Current levels across storage points
+    timeout: 20000
+- back
+- tapOn: Scan / Lookup
+- extendedWaitUntil:
+    visible: Scan serial code or select item
+    timeout: 20000
+- back
+- tapOn: Issue to Customer
+- extendedWaitUntil:
+    visible: Scan serial code or select item
+    timeout: 20000
+- back
+- tapOn: Receive Stock
+- extendedWaitUntil:
+    visible: Inward equipment into warehouse / vehicle
+    timeout: 20000
+- back
+- tapOn: Transfer Stock
+- extendedWaitUntil:
+    visible: Move equipment between locations or to staff
+    timeout: 20000
+- back
+- tapOn: Customer Equipment
+- extendedWaitUntil:
+    visible: Search customer, serial, item, or VC...
+    timeout: 20000
+- back
+- tapOn: Stock Movements
+- extendedWaitUntil:
+    visible: Audit trail of all inventory transactions
+    timeout: 20000
+- back
+- tapOn: Item Catalog
+- extendedWaitUntil:
+    visible: Manage equipment models and definitions
+    timeout: 20000
+- back
+- tapOn: Approval Requests
+- extendedWaitUntil:
+    visible: Review item modification & creation requests
+    timeout: 20000
+- back
+
+# --- Hub search: narrows the tiles, and an unmatched term empties the list --
+- tapOn: Search inventory...
+- inputText: transfer
+- assertVisible: Transfer Stock
+- assertNotVisible: Receive Stock
+- eraseText: 20
+- inputText: zzqqxx
+- assertNotVisible: Dashboard
+- assertNotVisible: Transfer Stock
+- eraseText: 20
+- runFlow: ../utils/hide-keyboard.yaml
+- assertVisible: Dashboard
+
+# --- Dashboard: four KPI cards plus low-stock and recent-movement lists -----
+- tapOn: Dashboard
+- extendedWaitUntil:
+    visible: Total Items
+    timeout: 30000
+- assertVisible: Inventory Dashboard
+- assertVisible: All Locations
+- assertVisible: In Stock
+- assertVisible: Issued
+- assertVisible: In Transit
+- assertVisible: Low Stock Items
+# Seeded catalog has zero-stock items, so the low-stock card lists them
+# with a "0 left" pill rather than the "No low stock alerts" empty copy.
+- assertVisible: 0 left
+- assertNotVisible: No low stock alerts
+- scrollUntilVisible:
+    element: Recent Movements
+# Either movement rows or the empty-state copy; both are valid states here.
+- takeScreenshot: .maestro/screenshots/inventory-dashboard
+
+# A low-stock row opens that item's details.
+- scrollUntilVisible:
+    element: 0 left
+    direction: UP
+- tapOn: 0 left
+- extendedWaitUntil:
+    visible: Item Details
+    timeout: 20000
+- assertVisible: Specifications
+- back
+
+# "View All" next to Low Stock Items opens the stock list.
+- tapOn:
+    text: View All
+    index: 0
+- extendedWaitUntil:
+    visible: Current levels across storage points
+    timeout: 20000
+- back
+- extendedWaitUntil:
+    visible: Total Items
+    timeout: 20000

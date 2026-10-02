@@ -161,7 +161,7 @@ export function DonutLegend({ slices, colors: palette }: { slices: Slice[]; colo
       {slices.map((slice, index) => (
         <View key={slice.id} className="flex-row items-center gap-2">
           <View className="size-2.5 rounded-full" style={{ backgroundColor: palette[index % palette.length] }} />
-          <Text className="flex-1 text-xs text-charcoal-800" numberOfLines={1}>{slice.label}</Text>
+          <Text className="flex-1 text-xs text-foreground" numberOfLines={1}>{slice.label}</Text>
           <Text className="text-xs font-semibold text-foreground">{grouped(slice.count)}</Text>
           <Text className="w-7 text-right text-[11px] text-muted-foreground">
             {slice.share}

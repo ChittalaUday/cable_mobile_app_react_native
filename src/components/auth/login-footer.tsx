@@ -1,10 +1,9 @@
 import { HeadphonesIcon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
 import Constants from 'expo-constants';
 import * as React from 'react';
 import { showMessage } from 'react-native-flash-message';
 
-import { colors, Pressable, SafeAreaView, Text, View } from '@/components/ui';
+import { Pressable, SafeAreaView, Text, ThemedIcon, View } from '@/components/ui';
 import { translate } from '@/lib/i18n';
 
 export function LoginFooter() {
@@ -15,7 +14,7 @@ export function LoginFooter() {
         className="flex-row items-center justify-center gap-2"
         onPress={() => showMessage({ message: translate('login.contact_support_coming'), type: 'info' })}
       >
-        <HugeiconsIcon icon={HeadphonesIcon} size={16} color={colors.neutral[500]} strokeWidth={1.8} />
+        <ThemedIcon icon={HeadphonesIcon} size={16} colorClassName="text-muted-foreground" strokeWidth={1.8} />
         <Text className="text-xs text-muted-foreground">{translate('login.need_help')}</Text>
         <Text className="text-xs font-bold text-primary-600">{translate('login.contact_support')}</Text>
       </Pressable>

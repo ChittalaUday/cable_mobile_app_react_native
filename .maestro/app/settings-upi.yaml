@@ -1,0 +1,108 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - settings
+---
+# UPI handles: format and required-field checks, then a valid handle is added
+# and removed again, leaving the tenant's original default untouched.
+- evalScript: ${output.stamp = String(Date.now()).slice(-6)}
+- runFlow: ../utils/login-admin.yaml
+- extendedWaitUntil:
+    visible: Operator Panel
+    timeout: 30000
+- runFlow: ../utils/account-open-settings.yaml
+- tapOn: UPI handles
+- extendedWaitUntil:
+    visible: Where collected money arrives
+    timeout: 20000
+
+# --- Renders: the existing default and the add form ----------------------------
+- assertVisible: UPI handles
+- assertVisible: Default
+- assertVisible: Add a handle
+- assertVisible:
+    id: upi-id
+- assertVisible:
+    id: upi-payee
+- assertVisible:
+    id: upi-label
+
+# --- Empty UPI id ---------------------------------------------------------------
+- scrollUntilVisible:
+    element:
+      id: upi-add
+- tapOn:
+    id: upi-add
+- extendedWaitUntil:
+    visible: Check the handle
+    timeout: 10000
+- tapOn:
+    id: dialog-confirm
+
+# --- Invalid format (no @bank part) ------------------------------------------
+- tapOn:
+    id: upi-id
+- inputText: e2e${output.stamp}
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: upi-add
+- extendedWaitUntil:
+    visible: Check the handle
+    timeout: 10000
+- assertVisible: 'A UPI handle looks like satyacable@okhdfc.'
+- tapOn:
+    id: dialog-confirm
+
+# --- Valid handle, missing payee -----------------------------------------------
+- tapOn:
+    id: upi-id
+- inputText: '@okaxis'
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: upi-add
+- extendedWaitUntil:
+    visible: Name the payee
+    timeout: 10000
+- tapOn:
+    id: dialog-confirm
+
+# --- Valid save -----------------------------------------------------------------
+- tapOn:
+    id: upi-payee
+- inputText: E2E Payee ${output.stamp}
+- tapOn:
+    id: upi-label
+- inputText: E2E ${output.stamp}
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: upi-add
+- extendedWaitUntil:
+    visible: e2e${output.stamp}@okaxis
+    timeout: 20000
+- assertVisible: E2E ${output.stamp} • E2E Payee ${output.stamp}
+# The form clears after a successful add.
+- assertVisible: satyacable@okhdfc
+
+# --- Restore: remove it. Cancel keeps it, Remove deletes it ---------------------
+- scrollUntilVisible:
+    element: Remove e2e${output.stamp}@okaxis
+    direction: UP
+- tapOn: Remove e2e${output.stamp}@okaxis
+- extendedWaitUntil:
+    visible: Remove this handle?
+    timeout: 10000
+- tapOn:
+    id: dialog-cancel
+- assertVisible: e2e${output.stamp}@okaxis
+- tapOn: Remove e2e${output.stamp}@okaxis
+- extendedWaitUntil:
+    visible: Remove this handle?
+    timeout: 10000
+- tapOn:
+    id: dialog-confirm
+- extendedWaitUntil:
+    notVisible: e2e${output.stamp}@okaxis
+    timeout: 20000
+# The original default is still the default.
+- assertVisible: Default

@@ -14,7 +14,7 @@ import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView } from 'react-native';
 
-import { ActivityIndicator, colors, Pressable, Text, View } from '@/components/ui';
+import { ActivityIndicator, colors, Pressable, Text, ThemedIcon, View } from '@/components/ui';
 import {
   useLocationCategories,
   useLocationLevel,
@@ -301,14 +301,14 @@ export function HierarchicalLocationSelector({
                   onPress={handleClear}
                   className="size-6 items-center justify-center rounded-full bg-muted/80 active:bg-muted"
                 >
-                  <HugeiconsIcon icon={Cancel01Icon} size={13} color={colors.neutral[600]} strokeWidth={2} />
+                  <ThemedIcon icon={Cancel01Icon} size={13} colorClassName="text-muted-foreground" strokeWidth={2} />
                 </Pressable>
               )
             : null}
-          <HugeiconsIcon
+          <ThemedIcon
             icon={isOpen ? ArrowUp01Icon : ArrowDown01Icon}
             size={16}
-            color={colors.neutral[500]}
+            colorClassName="text-muted-foreground"
           />
         </View>
       </Pressable>
@@ -471,7 +471,7 @@ export function HierarchicalLocationSelector({
                                           onPress={() => setTrail([...trail, loc])}
                                           className="size-7 items-center justify-center rounded-lg bg-muted/50 active:bg-muted"
                                         >
-                                          <HugeiconsIcon icon={ArrowRight01Icon} size={14} color={colors.neutral[500]} />
+                                          <ThemedIcon icon={ArrowRight01Icon} size={14} colorClassName="text-muted-foreground" />
                                         </Pressable>
                                       </View>
                                     )

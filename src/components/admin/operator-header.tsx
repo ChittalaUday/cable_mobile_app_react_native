@@ -5,7 +5,7 @@ import * as React from 'react';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 
 import { TenantSwitcher } from '@/components/tenant/tenant-picker';
-import { colors, Pressable, Text, View } from '@/components/ui';
+import { Pressable, Text, ThemedIcon, View } from '@/components/ui';
 
 export function OperatorHeader({ onSearch, subtitle = 'Operator Panel' }: {
   onSearch?: () => void;
@@ -20,7 +20,7 @@ export function OperatorHeader({ onSearch, subtitle = 'Operator Panel' }: {
       {onSearch
         ? (
             <Pressable accessibilityRole="button" accessibilityLabel="Global Search" onPress={onSearch} className="size-10 items-center justify-center rounded-full bg-card">
-              <HugeiconsIcon icon={Search01Icon} size={19} color={colors.charcoal[800]} strokeWidth={2} />
+              <ThemedIcon icon={Search01Icon} size={19} colorClassName="text-foreground" strokeWidth={2} />
             </Pressable>
           )
         : null}

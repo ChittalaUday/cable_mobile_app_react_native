@@ -1,6 +1,7 @@
 import type { ConsolidatedCustomer } from '@/types/customer-connection';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import * as React from 'react';
+import { Linking } from 'react-native';
 
 import { CustomerConnectionCard } from './customer-connection-card';
 
@@ -21,7 +22,7 @@ const singleConnectionCustomer: ConsolidatedCustomer = {
       stbNumber: 'STB10001',
       vcNumber: 'VC50001',
       packageName: 'ACT Family HD',
-      monthlyPrice: 650,
+      balance: 650,
       status: 'active',
       locationLabel: 'Living Room',
     },
@@ -45,7 +46,7 @@ const multiConnectionCustomer: ConsolidatedCustomer = {
       stbNumber: 'STB_HALL_99',
       vcNumber: 'VC_HALL_99',
       packageName: 'ACT Gold HD',
-      monthlyPrice: 500,
+      balance: 500,
       status: 'active',
       locationLabel: 'Living Room TV',
     },
@@ -58,7 +59,7 @@ const multiConnectionCustomer: ConsolidatedCustomer = {
       providerName: 'VBC Fiber',
       speedMbps: 100,
       packageName: 'Fiber 100Mbps Unlimited',
-      monthlyPrice: 799,
+      balance: 799,
       status: 'active',
       locationLabel: 'Home Fiber',
     },
@@ -71,9 +72,38 @@ describe('customerConnectionCard', () => {
 
     expect(screen.getByText('Ramesh Kumar')).toBeTruthy();
     expect(screen.getByText('9876543210')).toBeTruthy();
-    expect(screen.getByText('Cable TV')).toBeTruthy();
+    expect(screen.getByText('ACT Cable · Cable TV')).toBeTruthy();
     expect(screen.getByText('STB10001')).toBeTruthy();
-    expect(screen.getByText('₹650')).toBeTruthy();
+    expect(screen.getByText('₹650.00')).toBeTruthy();
+  });
+
+  it('shows a negative balance as advance, not as due', () => {
+    const inAdvance = { ...singleConnectionCustomer, connections: [{ ...singleConnectionCustomer.connections[0]!, balance: -280 }] };
+    render(<CustomerConnectionCard customer={inAdvance} />);
+
+    expect(screen.getByText('Advance')).toBeTruthy();
+    expect(screen.getByText('₹280.00')).toBeTruthy();
+    expect(screen.queryByText('Due Amount')).toBeNull();
+  });
+
+  it('shows the provider logo, name and website when the provider has them', () => {
+    const withProvider = {
+      ...singleConnectionCustomer,
+      connections: [{
+        ...singleConnectionCustomer.connections[0]!,
+        providerName: 'ACT Fibernet',
+        providerLogoUrl: 'https://cdn.example.com/act.png',
+        providerWebsiteUrl: 'https://www.actcorp.in/plans',
+      }],
+    };
+    const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    render(<CustomerConnectionCard customer={withProvider} />);
+
+    expect(screen.getByTestId('provider-logo')).toBeTruthy();
+    expect(screen.getByText('ACT Fibernet · Cable TV')).toBeTruthy();
+    fireEvent.press(screen.getByText('actcorp.in'));
+    expect(open).toHaveBeenCalledWith('https://www.actcorp.in/plans');
+    open.mockRestore();
   });
 
   it('renders multi-connection customer with connection count badge', () => {
@@ -96,10 +126,10 @@ describe('customerConnectionCard', () => {
 
     // Should now show connection 1 details (100 Mbps, ₹799)
     expect(screen.getByText(/100 Mbps/)).toBeTruthy();
-    expect(screen.getByText('₹799')).toBeTruthy();
+    expect(screen.getByText('₹799.00')).toBeTruthy();
   });
 
-  it('invokes onRecharge callback with active connection when Recharge button is pressed', () => {
+  it('invokes onRecharge callback with active connection when Payment button is pressed', () => {
     const handleRecharge = jest.fn();
     render(
       <CustomerConnectionCard
@@ -108,7 +138,7 @@ describe('customerConnectionCard', () => {
       />,
     );
 
-    fireEvent.press(screen.getByText('Recharge'));
+    fireEvent.press(screen.getByText('Payment'));
 
     expect(handleRecharge).toHaveBeenCalledTimes(1);
     expect(handleRecharge).toHaveBeenCalledWith(singleConnectionCustomer.connections[0]);

@@ -1,0 +1,131 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - inventory
+---
+# Transfer Stock: receives its own unit (serial E2E-<stamp>-T), then moves
+# exactly that unit to a technician's van. Covers the disabled submit, an
+# unknown serial, the read-only quantity of 1, missing-destination
+# validation for both destination types, and the happy path into Movements.
+- evalScript: ${output.stamp = String(Date.now()).slice(-6)}
+- runFlow: ../utils/login-admin.yaml
+- runFlow: ../utils/inventory-open.yaml
+- runFlow: ../utils/inventory-ensure-item.yaml
+- runFlow:
+    file: ../utils/inventory-receive-serial.yaml
+    env:
+      SERIAL: E2E-${output.stamp}-T
+
+- tapOn: Transfer Stock
+- extendedWaitUntil:
+    visible: Move equipment between locations or to staff
+    timeout: 20000
+- assertVisible: Select item to move
+- assertVisible: Warehouse / Sub-Store
+- assertVisible: Technician / Staff Van
+
+# --- Nothing selected: submit is disabled -----------------------------------
+- scrollUntilVisible:
+    element:
+      id: transfer-submit-button
+- tapOn:
+    id: transfer-submit-button
+- assertNotVisible: Validation Error
+- scrollUntilVisible:
+    element:
+      id: transfer-serial-input
+    direction: UP
+
+# --- Unknown serial ---------------------------------------------------------
+- tapOn:
+    id: transfer-serial-input
+- inputText: E2E-NOPE-${output.stamp}
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Lookup Serial
+- extendedWaitUntil:
+    visible: Not Found
+    timeout: 20000
+- assertVisible: 'No equipment found with serial "E2E-NOPE-${output.stamp}"\.'
+- tapOn: OK
+
+# --- Our unit is matched by serial ------------------------------------------
+- tapOn:
+    id: transfer-serial-input
+- eraseText: 40
+- inputText: E2E-${output.stamp}-T
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Lookup Serial
+- extendedWaitUntil:
+    visible: Matched Item
+    timeout: 20000
+- assertVisible: E2E Stock Unit \(E2E-STOCK-UNIT\) found in inventory\.
+- tapOn: OK
+- assertVisible: E2E Stock Unit
+
+# --- Quantity is fixed at 1 and cannot be typed into ------------------------
+- scrollUntilVisible:
+    element:
+      id: transfer-quantity-input
+- assertVisible:
+    id: transfer-quantity-input
+    text: '1'
+- tapOn:
+    id: transfer-quantity-input
+- inputText: '5'
+- runFlow: ../utils/hide-keyboard.yaml
+- assertVisible:
+    id: transfer-quantity-input
+    text: '1'
+- assertNotVisible:
+    id: transfer-quantity-input
+    text: '.*5.*'
+
+# --- Missing destination, for each destination type ------------------------
+- scrollUntilVisible:
+    element:
+      id: transfer-submit-button
+- tapOn:
+    id: transfer-submit-button
+- assertVisible: Please select a destination location\.
+- tapOn: OK
+
+- tapOn: Technician / Staff Van
+- assertVisible: Select technician
+- scrollUntilVisible:
+    element:
+      id: transfer-submit-button
+- tapOn:
+    id: transfer-submit-button
+- assertVisible: Please select a technician for staff van assignment\.
+- tapOn: OK
+
+# --- Happy path: the unit goes to Ramesh's van ------------------------------
+- tapOn: Select technician
+- extendedWaitUntil:
+    visible: Ramesh Varma \(Lead\)
+    timeout: 20000
+- tapOn: Ramesh Varma \(Lead\)
+- assertVisible: Ramesh Varma \(Lead\) \(staff\)
+- tapOn:
+    id: transfer-notes-input
+- inputText: E2E transfer ${output.stamp}
+- runFlow: ../utils/hide-keyboard.yaml
+- scrollUntilVisible:
+    element:
+      id: transfer-submit-button
+- tapOn:
+    id: transfer-submit-button
+- extendedWaitUntil:
+    visible: Transfer Complete
+    timeout: 30000
+- assertVisible: Successfully transferred stock to technician Ramesh Varma \(Lead\)\.
+- tapOn: OK
+
+# Lands on Stock Movements, where this transfer is logged with its note.
+- extendedWaitUntil:
+    visible: Audit trail of all inventory transactions
+    timeout: 20000
+- extendedWaitUntil:
+    visible: E2E transfer ${output.stamp}
+    timeout: 20000

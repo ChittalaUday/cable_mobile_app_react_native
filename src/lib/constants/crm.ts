@@ -17,6 +17,14 @@ export type ChannelResolution = (typeof CHANNEL_RESOLUTIONS)[number];
 export const BILLING_CYCLES = ['monthly', 'quarterly', 'semi_annual', 'annual'] as const;
 export type BillingCycle = (typeof BILLING_CYCLES)[number];
 
+/** Billing cycles as the catalogue forms label them. */
+export const BILLING_OPTIONS: { key: BillingCycle; label: string }[] = [
+  { key: 'monthly', label: 'Monthly' },
+  { key: 'quarterly', label: 'Quarterly' },
+  { key: 'semi_annual', label: 'Semi-Annual' },
+  { key: 'annual', label: 'Annual' },
+];
+
 export const SUBSCRIPTION_STATUSES = ['active', 'inactive', 'suspended', 'cancelled'] as const;
 export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number];
 

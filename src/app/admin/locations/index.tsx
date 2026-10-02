@@ -18,15 +18,7 @@ import { ScreenHeader } from '@/components/common/screen-header';
 import { Card, Loading } from '@/components/common/shell';
 import { LocationActionsSheet } from '@/components/locations/location-actions-sheet';
 import { LoadMoreRow, LocationRow } from '@/components/locations/location-tree';
-import {
-  colors,
-  FocusAwareStatusBar,
-  Pressable,
-  SafeAreaView,
-  Text,
-  useModal,
-  View,
-} from '@/components/ui';
+import { colors, FocusAwareStatusBar, Pressable, SafeAreaView, Text, ThemedIcon, useModal, View } from '@/components/ui';
 import { MAX_PAGE_SIZE } from '@/lib/api/types';
 import {
   useDeleteLocation,
@@ -271,7 +263,7 @@ export function LocationsScreen() {
                   deepestOpen.length === 0 ? 'opacity-40' : ''
                 }`}
               >
-                <HugeiconsIcon icon={FolderMinusIcon} size={18} color={colors.neutral[600]} strokeWidth={2} />
+                <ThemedIcon icon={FolderMinusIcon} size={18} colorClassName="text-muted-foreground" strokeWidth={2} />
               </Pressable>
               <Pressable
                 accessibilityRole="button"

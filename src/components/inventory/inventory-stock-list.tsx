@@ -9,16 +9,7 @@ import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { Card, ScreenHeader } from '@/components/common/shell';
 import { LocationPickerSheet } from '@/components/locations/location-picker-sheet';
-import {
-  ActivityIndicator,
-  colors,
-  Input,
-  Pressable,
-  ScrollView,
-  Text,
-  useModal,
-  View,
-} from '@/components/ui';
+import { ActivityIndicator, colors, Input, Pressable, ScrollView, Text, ThemedIcon, useModal, View } from '@/components/ui';
 import { useInventoryStock } from '@/lib/hooks/api/use-inventory';
 
 type FilterTab = 'all' | 'in_stock' | 'low_stock';
@@ -59,7 +50,7 @@ export function InventoryStockListScreen({ basePath }: { basePath: '/admin/inven
             <View className="size-2 rounded-full bg-primary-600" />
             <Text className="text-sm font-semibold text-foreground">{locationLabel}</Text>
           </View>
-          <HugeiconsIcon icon={ArrowDown01Icon} size={16} color={colors.neutral[500]} strokeWidth={2} />
+          <ThemedIcon icon={ArrowDown01Icon} size={16} colorClassName="text-muted-foreground" strokeWidth={2} />
         </Pressable>
 
         <LocationPickerSheet
@@ -107,6 +98,7 @@ export function InventoryStockListScreen({ basePath }: { basePath: '/admin/inven
             <Input
               value={search}
               onChangeText={setSearch}
+              testID="stock-search-input"
               placeholder="Search items..."
               className="flex-1 border-0 bg-transparent text-sm text-foreground"
               placeholderTextColor={colors.neutral[400]}
@@ -140,7 +132,7 @@ export function InventoryStockListScreen({ basePath }: { basePath: '/admin/inven
                     >
                       <View className="flex-1 flex-row items-center gap-3">
                         <View className="size-11 items-center justify-center rounded-xl bg-muted">
-                          <HugeiconsIcon icon={Package01Icon} size={22} color={colors.neutral[700]} strokeWidth={1.8} />
+                          <ThemedIcon icon={Package01Icon} size={22} colorClassName="text-foreground" strokeWidth={1.8} />
                         </View>
                         <View className="flex-1 pr-2">
                           <Text className="text-sm font-bold text-foreground" numberOfLines={1}>
@@ -150,7 +142,7 @@ export function InventoryStockListScreen({ basePath }: { basePath: '/admin/inven
                             <Text className="text-xs text-muted-foreground">{item.code ?? 'SKU-000'}</Text>
                             {item.locationName && (
                               <View className="rounded-sm bg-muted px-1.5 py-0.5">
-                                <Text className="text-[10px] font-medium text-neutral-600">{item.locationName}</Text>
+                                <Text className="text-[10px] font-medium text-muted-foreground">{item.locationName}</Text>
                               </View>
                             )}
                           </View>
@@ -160,12 +152,12 @@ export function InventoryStockListScreen({ basePath }: { basePath: '/admin/inven
                       <View className="flex-row items-center gap-2">
                         <View
                           className={`rounded-full px-2.5 py-1 ${
-                            item.availableStock <= 10 ? 'bg-danger-50' : 'bg-success-50'
+                            item.availableStock <= 10 ? 'bg-danger-50 dark:bg-danger-950/40' : 'bg-success-50 dark:bg-success-900/40'
                           }`}
                         >
                           <Text
                             className={`text-xs font-bold ${
-                              item.availableStock <= 10 ? 'text-danger-600' : 'text-success-700'
+                              item.availableStock <= 10 ? 'text-danger-600' : 'text-success-700 dark:text-success-300'
                             }`}
                           >
                             {item.availableStock}

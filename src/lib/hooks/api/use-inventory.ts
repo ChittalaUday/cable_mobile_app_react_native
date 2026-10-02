@@ -2,6 +2,7 @@ import type { ApiQuery, ApiResponse } from '@/lib/api/contracts';
 import type {
   ApprovalRequest,
   ApprovalRequestPayload,
+  AvailableUnit,
   CatalogItemPayload,
   CustomerEquipmentRecord,
   InventoryDashboard,
@@ -148,6 +149,18 @@ export const useInventoryLookup = createQuery<
     return lookupInventory(q);
   },
   staleTime: 10 * 1000,
+});
+
+/** Units on the shelf that can be issued now; `q` narrows by item, type, serial, VC or MAC. */
+export const useAvailableUnits = createQuery<AvailableUnit[], { q?: string }, Error>({
+  queryKey: ['inventory', 'units', 'available'],
+  fetcher: async ({ q }) => {
+    const response = await client.get<ApiResponse<'/api/v1/inventory/units/available', 'get', 200>>('/inventory/units/available', {
+      params: { limit: 200, ...(q ? { q } : {}) },
+    });
+    return response.data;
+  },
+  staleTime: 15 * 1000,
 });
 
 export const useCustomerEquipment = createQuery<

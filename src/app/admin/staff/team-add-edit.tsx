@@ -156,7 +156,7 @@ export function AddEditTeamScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="Disband team"
                   onPress={confirmDelete}
-                  className="size-9 shrink-0 items-center justify-center rounded-lg border border-danger-200 bg-card"
+                  className="size-9 shrink-0 items-center justify-center rounded-lg border border-danger-200 bg-card dark:border-danger-800"
                 >
                   <HugeiconsIcon icon={Delete02Icon} size={18} color={colors.danger[500]} strokeWidth={2} />
                 </Pressable>
@@ -177,6 +177,7 @@ export function AddEditTeamScreen() {
               <Text className="text-primary-600"> *</Text>
             </Text>
             <TextInput
+              testID="team-name-input"
               value={name}
               onChangeText={value => edit({ name: value })}
               placeholder="Collection round"
@@ -189,6 +190,7 @@ export function AddEditTeamScreen() {
           <View className="gap-1">
             <Text className="text-[13px] font-bold text-foreground">Description</Text>
             <TextInput
+              testID="team-description-input"
               value={description}
               onChangeText={value => edit({ description: value })}
               placeholder="What this crew does"
@@ -229,6 +231,7 @@ export function AddEditTeamScreen() {
       </KeyboardAwareScrollView>
 
       <SaveBar
+        testID="team-save-button"
         label={isEdit ? 'Save changes' : 'Add team'}
         busyLabel="Saving..."
         busy={saving}

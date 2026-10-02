@@ -15,14 +15,7 @@ import { RefreshControl, TextInput } from 'react-native';
 import { ScreenHeader } from '@/components/common/screen-header';
 import { Card, Loading } from '@/components/common/shell';
 import { getProviderBrand } from '@/components/services/provider-brand-utils';
-import {
-  colors,
-  FocusAwareStatusBar,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from '@/components/ui';
+import { colors, FocusAwareStatusBar, Pressable, ScrollView, Text, ThemedIcon, View } from '@/components/ui';
 import { useServiceProviders } from '@/lib/hooks/api/use-service-providers';
 import { useServices } from '@/lib/hooks/api/use-services';
 import { serviceIcon } from '@/lib/service-icons';
@@ -147,7 +140,7 @@ export function ServicesScreen() {
               onPress={() => router.push('/admin/services/types')}
               className="size-9 items-center justify-center rounded-lg border border-border bg-card active:bg-muted"
             >
-              <HugeiconsIcon icon={Layers01Icon} size={18} color={colors.neutral[700]} strokeWidth={2} />
+              <ThemedIcon icon={Layers01Icon} size={18} colorClassName="text-foreground" strokeWidth={2} />
             </Pressable>
 
             <Pressable

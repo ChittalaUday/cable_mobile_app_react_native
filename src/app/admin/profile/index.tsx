@@ -82,7 +82,7 @@ export function ProfileScreen({ basePath = '/admin' }: { basePath?: '/admin' | '
 
       <ScrollView className="flex-1" contentContainerClassName="gap-2.5 px-3 pb-8" showsVerticalScrollIndicator={false}>
         <Card className="items-center gap-1 p-5">
-          <View className="size-20 overflow-hidden rounded-full bg-neutral-200">
+          <View className="size-20 overflow-hidden rounded-full bg-muted">
             {user?.photoURL
               ? <Image source={{ uri: user.photoURL }} className="size-20" contentFit="cover" />
               : (
@@ -110,7 +110,7 @@ export function ProfileScreen({ basePath = '/admin' }: { basePath?: '/admin' | '
                 className="flex-row items-center gap-3 py-3.5"
               >
                 <IconTile icon={row.icon} tint={row.tint} size={32} iconSize={17} />
-                <Text className="flex-1 text-[14px] text-charcoal-900">{row.label}</Text>
+                <Text className="flex-1 text-[14px] text-foreground">{row.label}</Text>
                 <HugeiconsIcon icon={ArrowRight01Icon} size={16} color={colors.neutral[400]} strokeWidth={2.2} />
               </Pressable>
             </View>

@@ -1,0 +1,224 @@
+appId: ${APP_ID}
+env:
+  # SATYAVENI KASAVARAPU (SSCN-000576): one active ACT Digital line, nothing due.
+  CODE: SSCN-000576
+  CUSTOMER: SATYAVENI KASAVARAPU
+tags:
+  - e2e
+  - admin
+  - recharge
+---
+# Recharge (admin), up to the moment money would be recorded: the plan step,
+# the subscription/equipment charge picker, the amount step and its validation,
+# and the "Leave this recharge?" guard. Nothing in this flow is recorded.
+- runFlow: ../utils/login-admin.yaml
+
+# --- Opened from the customer list's Recharge button -------------------------
+- tapOn: Customers
+- tapOn:
+    id: customer-search-input
+- inputText: ${CODE}
+- extendedWaitUntil:
+    visible: ${CUSTOMER}
+    timeout: 20000
+- tapOn: Recharge
+- extendedWaitUntil:
+    visible:
+      id: recharge-next
+    timeout: 30000
+
+# --- Plan step renders --------------------------------------------------------
+- assertVisible: ${CUSTOMER}
+- assertVisible: '(?i)plan'
+- assertVisible: '(?i)amount'
+- assertVisible: '(?i)receipt'
+- assertVisible: What is this payment for
+- assertVisible: Subscription
+- assertVisible: Equipment
+- assertVisible: '(?i)previous balance'
+- assertVisible:
+    id: recharge-previous-balance
+    text: ₹0.00
+- assertVisible: Which connection
+- assertVisible: ACT_BST_PRE_VIZ
+- assertVisible: Nothing due
+- assertVisible:
+    id: recharge-change-plan
+
+# Nothing typed yet, so back leaves without asking.
+- tapOn: Back
+- assertNotVisible: Leave this recharge?
+- extendedWaitUntil:
+    visible: ${CUSTOMER}
+    timeout: 10000
+- tapOn: Recharge
+- extendedWaitUntil:
+    visible:
+      id: recharge-next
+    timeout: 30000
+
+# --- Charge picker: equipment skips the plan step ---------------------------
+- tapOn: Equipment
+- assertNotVisible:
+    id: recharge-next
+- assertNotVisible: '(?i)plan'
+- assertVisible: Equipment already with the customer
+- assertVisible: Or issue a new one
+- assertVisible:
+    id: recharge-equipment-total
+    text: ₹0.00
+- assertVisible:
+    id: recharge-submit
+# Equipment needs a unit picked before it can record.
+- tapOn:
+    id: recharge-amount
+- inputText: '5'
+- runFlow: ../utils/hide-keyboard.yaml
+- assertVisible:
+    id: recharge-equipment-total
+    text: ₹5.00
+- scrollUntilVisible:
+    element:
+      id: recharge-submit
+- tapOn:
+    id: recharge-submit
+- assertVisible: Pick the equipment
+- tapOn: OK
+- scrollUntilVisible:
+    element: Subscription
+    direction: UP
+- tapOn:
+    id: recharge-amount
+- eraseText: 10
+
+# Back to subscription: the plan step is part of the walk again.
+- tapOn: Subscription
+- assertVisible: '(?i)plan'
+- assertVisible: '(?i)paying for'
+- tapOn: Back
+- extendedWaitUntil:
+    visible:
+      id: recharge-next
+    timeout: 10000
+
+# --- Amount step --------------------------------------------------------------
+- tapOn:
+    id: recharge-next
+- assertVisible: '(?i)paying for'
+- assertVisible: Amount paid
+- assertVisible: Plan ₹250.00
+- assertVisible: Paid by
+- assertVisible: Cash
+- assertVisible: UPI
+- assertVisible:
+    id: recharge-balance-after
+    text: ₹0.00
+
+# Empty, then zero: "Enter an amount".
+- tapOn:
+    id: recharge-submit
+- assertVisible: Enter an amount
+- tapOn: OK
+- tapOn:
+    id: recharge-amount
+- inputText: '0'
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: recharge-submit
+- assertVisible: Enter an amount
+- tapOn: OK
+
+# Letters, and a negative amount: "Invalid amount".
+- tapOn:
+    id: recharge-amount
+- eraseText: 10
+- inputText: abc
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: recharge-submit
+- assertVisible: Invalid amount
+- tapOn: OK
+- tapOn:
+    id: recharge-amount
+- eraseText: 10
+- inputText: '-5'
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: recharge-submit
+- assertVisible: Invalid amount
+- tapOn: OK
+
+# More than two decimals, and one rupee over the cap: "Invalid amount".
+- tapOn:
+    id: recharge-amount
+- eraseText: 10
+- inputText: '1.234'
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: recharge-submit
+- assertVisible: Invalid amount
+- assertVisible: The total payment must be between ₹0 and ₹99,000.
+- tapOn: OK
+- tapOn:
+    id: recharge-amount
+- eraseText: 10
+- inputText: '99001'
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: recharge-submit
+- assertVisible: Invalid amount
+- tapOn: OK
+
+# Exactly the cap is accepted: the running sum reads it back as an advance.
+- tapOn:
+    id: recharge-amount
+- eraseText: 10
+- inputText: '99000'
+- runFlow: ../utils/hide-keyboard.yaml
+- assertVisible: Record ₹99,000.00
+- assertVisible: Advance after recharge
+- assertVisible:
+    id: recharge-balance-after
+    text: ₹99,000.00
+
+# The plan chip fills the plan price.
+- tapOn: Plan ₹250.00
+- assertVisible: Record ₹250.00
+
+# --- Leaving mid-flow ---------------------------------------------------------
+# Hardware back on the amount step is one step, not an exit.
+- back
+- assertVisible:
+    id: recharge-next
+- assertNotVisible: Leave this recharge?
+# On the first step, with an amount typed, it asks. Keep going stays.
+- back
+- assertVisible: Leave this recharge?
+- assertVisible: Keep going
+- assertVisible: Discard
+- tapOn: Keep going
+- assertNotVisible: Leave this recharge?
+- assertVisible:
+    id: recharge-next
+# The header back asks the same question. Discard leaves.
+- tapOn: Back
+- assertVisible: Leave this recharge?
+- tapOn: Discard
+- extendedWaitUntil:
+    visible: ${CUSTOMER}
+    timeout: 10000
+- assertNotVisible:
+    id: recharge-next
+
+# Coming back starts clean: the discarded amount is gone.
+- tapOn: Recharge
+- extendedWaitUntil:
+    visible:
+      id: recharge-next
+    timeout: 30000
+- tapOn:
+    id: recharge-next
+- assertVisible: Record ₹0.00
+- tapOn: Back
+- tapOn: Back
+- assertNotVisible: Leave this recharge?

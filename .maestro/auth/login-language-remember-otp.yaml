@@ -1,0 +1,129 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - auth
+---
+# Login screen extras that never sign in: the language sheet, "Remember me"
+# surviving a relaunch, and the phone-OTP mode's validation. No OTP is sent.
+- clearState
+- runFlow: ../utils/open-dev-build.yaml
+- extendedWaitUntil:
+    visible: Welcome Back
+    timeout: 30000
+
+# Language toggle: Telugu translates the whole card, English brings it back.
+- tapOn:
+    id: language-toggle
+- extendedWaitUntil:
+    visible:
+      id: language-toggle-item-te
+    timeout: 10000
+- assertVisible: English
+- tapOn:
+    id: language-toggle-item-te
+- extendedWaitUntil:
+    visible: తిరిగి స్వాగతం
+    timeout: 10000
+- assertVisible: సత్య కేబుల్
+- assertVisible: సైన్ ఇన్
+- assertVisible: నన్ను గుర్తుంచుకో
+- assertVisible: ఫోన్ OTPతో కొనసాగండి
+- assertNotVisible: Welcome Back
+- tapOn:
+    id: language-toggle
+- extendedWaitUntil:
+    visible:
+      id: language-toggle-item-en
+    timeout: 10000
+- tapOn:
+    id: language-toggle-item-en
+- extendedWaitUntil:
+    visible: Welcome Back
+    timeout: 10000
+- assertVisible: Sign In
+- assertNotVisible: తిరిగి స్వాగతం
+
+# Remember me: the typed identifier survives killing the app.
+- tapOn:
+    id: email-input
+- inputText: suresh.staff@sscn.com
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: remember-me
+- assertVisible:
+    id: remember-me
+    checked: true
+- stopApp
+- runFlow: ../utils/open-dev-build.yaml
+- extendedWaitUntil:
+    visible: Welcome Back
+    timeout: 30000
+- assertVisible: suresh.staff@sscn.com
+- assertVisible:
+    id: remember-me
+    checked: true
+
+# Unticking forgets it: the next launch starts blank.
+- tapOn:
+    id: remember-me
+- assertVisible:
+    id: remember-me
+    checked: false
+- stopApp
+- runFlow: ../utils/open-dev-build.yaml
+- extendedWaitUntil:
+    visible: Welcome Back
+    timeout: 30000
+- assertNotVisible: suresh.staff@sscn.com
+- assertVisible: Email Address
+
+# Phone OTP mode swaps the form: one phone field, "Send OTP", and a way back.
+- tapOn:
+    id: phone-otp-option
+- extendedWaitUntil:
+    visible:
+      id: phone-input
+    timeout: 10000
+- assertVisible: Mobile Number
+- assertVisible: Send OTP
+- assertVisible:
+    id: password-option
+- assertNotVisible: Remember me
+- assertNotVisible: Forgot Password?
+# Only WhatsApp is enabled server side, so there is no channel choice to make.
+- assertNotVisible: Send code via
+- assertNotVisible:
+    id: channel-sms
+
+# Empty phone is refused on the device.
+- tapOn:
+    id: login-button
+- assertVisible: Enter a valid 10-digit mobile number.
+
+# Too short is refused too; letters are stripped as they are typed.
+- tapOn:
+    id: phone-input
+- inputText: abc98765
+- assertVisible: '98765'
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: login-button
+- assertVisible: Enter a valid 10-digit mobile number.
+
+# Over-long input is capped at ten digits (never sent: we stop here).
+- tapOn:
+    id: phone-input
+- inputText: '432101234'
+- assertVisible: '9876543210'
+- runFlow: ../utils/hide-keyboard.yaml
+
+# Back to password: the password form returns.
+- tapOn:
+    id: password-option
+- extendedWaitUntil:
+    visible:
+      id: password-input
+    timeout: 10000
+- assertVisible: Remember me
+- assertVisible: Sign In

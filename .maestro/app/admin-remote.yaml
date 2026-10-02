@@ -1,0 +1,101 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - remote
+---
+# IR remote (admin tab + the public /remote screen). The emulator has no IR blaster,
+# so the screen must say so, disable the keypad, and never crash on a key press.
+- runFlow: ../utils/login-admin.yaml
+- extendedWaitUntil:
+    visible: Total Customers
+    timeout: 60000
+- tapOn: Remote
+- extendedWaitUntil:
+    visible: Choose a remote
+    timeout: 30000
+
+# Hardware status: any of the "can't transmit" messages, plus a re-check button.
+- extendedWaitUntil:
+    visible: '(This device does not have an IR blaster\.|Android could not access the IR service\.|The IR module is unavailable.*|The IR hardware could not be checked.*|IR transmission is available only.*)'
+    timeout: 20000
+- assertNotVisible: IR ready
+- assertVisible: Check again
+- tapOn: Check again
+- extendedWaitUntil:
+    visible: '(This device does not have an IR blaster\.|Android could not access the IR service\.|The IR module is unavailable.*|The IR hardware could not be checked.*|IR transmission is available only.*)'
+    timeout: 20000
+- takeScreenshot: .maestro/screenshots/remote-no-emitter
+
+# Library: TV and Set-Top Box lists, brand search, and the no-match empty state.
+- assertVisible: TV
+- assertVisible: Set-Top Box
+- assertVisible: 'Search brand or model…'
+- tapOn:
+    id: remote-search-input
+- inputText: zzzz-no-such-brand
+- extendedWaitUntil:
+    visible: No remotes stored for this device type yet.
+    timeout: 10000
+- assertVisible: Try another brand, or switch between TV and set-top box.
+- eraseText: 30
+- inputText: Fire
+- extendedWaitUntil:
+    visible: 'Amazon Fire TV FireTV Omni Series 4K'
+    timeout: 10000
+- runFlow: ../utils/hide-keyboard.yaml
+
+# Switching to set-top boxes swaps the list (the TV brand drops out).
+- eraseText: 30
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Set-Top Box
+- extendedWaitUntil:
+    visible: 'ACT ACT Remote'
+    timeout: 20000
+- assertNotVisible: 'Amazon Fire TV FireTV Omni Series 4K'
+- tapOn: TV
+- extendedWaitUntil:
+    visible: 'Amazon Fire TV FireTV Omni Series 4K'
+    timeout: 20000
+
+# Picking a remote loads its keypad, flagged unverified, keys present but inert.
+- tapOn: 'Amazon Fire TV FireTV Omni Series 4K'
+- extendedWaitUntil:
+    visible: Choose another remote
+    timeout: 30000
+- assertVisible: 'FireTV Omni Series 4K'
+- assertVisible: 'Amazon Fire TV · .*'
+- assertVisible: 'These codes have not been tested.*'
+- assertVisible: Power
+- assertVisible:
+    text: Power
+    enabled: false
+- takeScreenshot: .maestro/screenshots/remote-keypad
+
+# Pressing a disabled key does nothing: no "sent" toast, no crash, still on the pad.
+- tapOn: Power
+- assertNotVisible: Power sent
+- assertNotVisible: 'Could not send the command.*'
+- assertVisible: Choose another remote
+
+# "Choose another remote" goes back to the library.
+- tapOn: Choose another remote
+- extendedWaitUntil:
+    visible: Choose a remote
+    timeout: 20000
+- assertVisible: 'Search brand or model…'
+
+# The public remote screen (reached from the customer portal) uses the same control.
+- openLink: ${DEV_SCHEME}://remote
+- extendedWaitUntil:
+    visible: IR Remote
+    timeout: 30000
+- assertVisible: Point your phone at the box and press
+- extendedWaitUntil:
+    visible: '(This device does not have an IR blaster\.|Android could not access the IR service\.|The IR module is unavailable.*|The IR hardware could not be checked.*|IR transmission is available only.*)'
+    timeout: 20000
+- assertVisible: Choose a remote
+- tapOn: Back
+- extendedWaitUntil:
+    notVisible: IR Remote
+    timeout: 20000

@@ -141,8 +141,7 @@ export function ServiceFormSheet({
           placeholder="e.g. Cable TV"
           testID="service-name"
           placeholderTextColor={colors.neutral[400]}
-          style={{ color: colors.charcoal[900] }}
-          className="rounded-2xl border border-border bg-card px-4 py-3 text-sm"
+          className="rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
         />
         {error ? <Text className="pt-1 text-xs text-danger-500">{error}</Text> : null}
 
@@ -190,8 +189,7 @@ export function ServiceFormSheet({
           placeholder="Optional"
           testID="service-description"
           placeholderTextColor={colors.neutral[400]}
-          style={{ color: colors.charcoal[900] }}
-          className="rounded-2xl border border-border bg-card px-4 py-3 text-sm"
+          className="rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
         />
 
         <Pressable

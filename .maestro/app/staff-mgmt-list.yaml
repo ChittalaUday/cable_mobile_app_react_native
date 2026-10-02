@@ -1,0 +1,78 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - staff-mgmt
+---
+# Staff & Teams list: renders, people search (hit, miss, clear), teams tab search,
+# and opening a member. The screen has no role/team/active filter chips, only
+# the People/Teams tabs and a free-text search, so those are what is covered.
+- runFlow: ../utils/login-admin.yaml
+- runFlow: ../utils/staff-mgmt-open.yaml
+
+# ------------------------------------------------------------ RENDERS
+- assertVisible: Staff & Teams
+- assertVisible: '\d+ people · \d+ teams'
+- assertVisible: People
+- assertVisible: Teams
+- assertVisible: Add staff member
+- assertVisible: Suresh Babu
+# Seeded team lead carries the Leader badge on the roster.
+- assertVisible: Ramesh Varma \(Lead\)
+
+# ------------------------------------------------------------ SEARCH PEOPLE
+# Matches on email as well as name.
+- tapOn:
+    id: staff-search-input
+- inputText: suresh.staff
+- assertVisible: Suresh Babu
+- assertNotVisible: SSCN Admin
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Clear
+- assertVisible: SSCN Admin
+
+# Empty result: the empty-state copy says it is the search, not the roster.
+- tapOn:
+    id: staff-search-input
+- inputText: zzqx-nobody
+- assertVisible: No staff yet
+- assertVisible: Nobody matches that search.
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Clear
+- assertVisible: Suresh Babu
+
+# ------------------------------------------------------------ TEAMS TAB
+- tapOn: Teams
+- assertVisible: Add team
+- assertVisible: Mandapeta Field Crew 2
+- assertVisible: 'Edit Mandapeta Field Crew 2'
+- tapOn:
+    id: staff-search-input
+- inputText: Crew 2
+- assertVisible: Mandapeta Field Crew 2
+- assertNotVisible: Edit Mandapeta Field Crew 1
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Clear
+- tapOn:
+    id: staff-search-input
+- inputText: zzqx-noteam
+- assertVisible: No teams yet
+- assertVisible: No team matches that search.
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Clear
+- tapOn: People
+
+# ------------------------------------------------------------ OPEN A MEMBER
+# A row opens the edit form; identity fields are read-only there.
+- tapOn: Suresh Babu
+- extendedWaitUntil:
+    visible: Edit staff member
+    timeout: 20000
+- assertVisible: Remove staff member
+- assertVisible: Save changes
+- assertVisible: .*belong to the person’s account.*
+- back
+- extendedWaitUntil:
+    visible:
+      id: staff-search-input
+    timeout: 20000

@@ -11,16 +11,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { Card, ScreenHeader } from '@/components/common/shell';
-import {
-  ActivityIndicator,
-  Button,
-  colors,
-  Input,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from '@/components/ui';
+import { ActivityIndicator, Button, colors, Input, Pressable, ScrollView, Text, ThemedIcon, View } from '@/components/ui';
 import { lookupInventory, useInventoryStock } from '@/lib/hooks/api/use-inventory';
 
 type Tab = 'scan' | 'search';
@@ -134,14 +125,14 @@ export function IssueScanSearchScreen({ basePath, customer }: {
 
       <View className="p-4 pb-2">
         {/* Segmented Toggle: Scan | Search */}
-        <View className="flex-row rounded-xl bg-neutral-200/80 p-1">
+        <View className="flex-row rounded-xl bg-muted p-1">
           <Pressable
             accessibilityRole="tab"
             accessibilityState={{ selected: tab === 'scan' }}
             onPress={() => setTab('scan')}
             className={`flex-1 items-center rounded-lg py-2 ${tab === 'scan' ? 'bg-primary-600' : ''}`}
           >
-            <Text className={`text-xs font-bold ${tab === 'scan' ? 'text-white' : 'text-neutral-600'}`}>
+            <Text className={`text-xs font-bold ${tab === 'scan' ? 'text-white' : 'text-muted-foreground'}`}>
               Scan Serial Code
             </Text>
           </Pressable>
@@ -152,7 +143,7 @@ export function IssueScanSearchScreen({ basePath, customer }: {
             onPress={() => setTab('search')}
             className={`flex-1 items-center rounded-lg py-2 ${tab === 'search' ? 'bg-primary-600' : ''}`}
           >
-            <Text className={`text-xs font-bold ${tab === 'search' ? 'text-white' : 'text-neutral-600'}`}>
+            <Text className={`text-xs font-bold ${tab === 'search' ? 'text-white' : 'text-muted-foreground'}`}>
               Search Catalog
             </Text>
           </Pressable>
@@ -234,15 +225,15 @@ export function IssueScanSearchScreen({ basePath, customer }: {
 
           {/* Feedback/Error Banner */}
           {scanMessage && (
-            <Card className="border border-warning-200 bg-warning-50 p-3">
-              <Text className="text-xs text-warning-800">{scanMessage}</Text>
+            <Card className="border border-warning-200 bg-warning-50 p-3 dark:border-warning-800 dark:bg-warning-900/40">
+              <Text className="text-xs text-warning-800 dark:text-warning-200">{scanMessage}</Text>
               <View className="mt-2 flex-row gap-2">
                 <Pressable
                   accessibilityRole="button"
                   onPress={() => setScanMessage(null)}
-                  className="rounded-lg bg-warning-200 px-3 py-1.5"
+                  className="rounded-lg bg-warning-200 px-3 py-1.5 dark:bg-warning-800/60"
                 >
-                  <Text className="text-xs font-bold text-warning-900">Scan Again</Text>
+                  <Text className="text-xs font-bold text-warning-900 dark:text-warning-100">Scan Again</Text>
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
@@ -269,6 +260,7 @@ export function IssueScanSearchScreen({ basePath, customer }: {
                 <Input
                   value={manualSerial}
                   onChangeText={setManualSerial}
+                  testID="issue-manual-serial-input"
                   placeholder="Enter serial code (or barcode)..."
                   className="text-xs text-foreground"
                   placeholderTextColor={colors.neutral[400]}
@@ -296,6 +288,7 @@ export function IssueScanSearchScreen({ basePath, customer }: {
               <Input
                 value={search}
                 onChangeText={setSearch}
+                testID="issue-item-search-input"
                 placeholder="Search by item name or code..."
                 className="flex-1 border-0 bg-transparent text-sm text-foreground"
                 placeholderTextColor={colors.neutral[400]}
@@ -324,7 +317,7 @@ export function IssueScanSearchScreen({ basePath, customer }: {
                         >
                           <View className="flex-1 flex-row items-center gap-3">
                             <View className="size-11 items-center justify-center rounded-xl bg-muted">
-                              <HugeiconsIcon icon={Package01Icon} size={22} color={colors.neutral[700]} strokeWidth={1.8} />
+                              <ThemedIcon icon={Package01Icon} size={22} colorClassName="text-foreground" strokeWidth={1.8} />
                             </View>
                             <View className="flex-1 pr-2">
                               <Text className="text-sm font-bold text-foreground" numberOfLines={1}>

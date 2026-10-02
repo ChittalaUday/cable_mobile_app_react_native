@@ -1,0 +1,94 @@
+appId: ${APP_ID}
+env:
+  # PADAMA NARAPU (SSCN-000465): one active ACT Digital line.
+  CODE: SSCN-000465
+  CUSTOMER: PADAMA NARAPU
+tags:
+  - e2e
+  - admin
+  - recharge
+  - receipts
+---
+# Recharge (admin), end to end: plan, a small amount by cash, the Done step
+# with its receipt preview, the printer panel failing gracefully (the emulator
+# has no Bluetooth printer), and finishing onto the receipt itself.
+- evalScript: ${output.stamp = String(Date.now()).slice(-6)}
+- runFlow: ../utils/login-admin.yaml
+
+- tapOn: Customers
+- tapOn:
+    id: customer-search-input
+- inputText: ${CODE}
+- extendedWaitUntil:
+    visible: ${CUSTOMER}
+    timeout: 20000
+- tapOn: Recharge
+- extendedWaitUntil:
+    visible:
+      id: recharge-next
+    timeout: 30000
+
+# --- Plan -> amount -----------------------------------------------------------
+- tapOn:
+    id: recharge-next
+- tapOn:
+    id: recharge-amount
+- inputText: '2'
+- runFlow: ../utils/hide-keyboard.yaml
+
+# UPI shows the scan-to-pay panel (or says no handle is set up); cash hides it.
+- tapOn: UPI
+- assertVisible: '(?i)(scan to pay|no UPI handle is set up.*)'
+- tapOn: Cash
+- assertNotVisible: (?i)scan to pay
+
+- tapOn: Anything the office should know
+- inputText: E2E recharge ${output.stamp}
+- runFlow: ../utils/hide-keyboard.yaml
+- scrollUntilVisible:
+    element:
+      id: recharge-submit
+- assertVisible: Record ₹2.00
+- tapOn:
+    id: recharge-submit
+
+# --- Printer step -------------------------------------------------------------
+# Opening the step asks for Bluetooth; grant it if the system asks.
+- extendedWaitUntil:
+    visible:
+      id: recharge-printer-next
+    timeout: 30000
+- runFlow:
+    when:
+      visible: Allow
+    commands:
+      - tapOn: Allow
+- assertNotVisible:
+    id: recharge-submit
+- assertNotVisible: What is this payment for
+
+# No printer on the emulator: the panel explains why, Next stays shut, Skip is offered.
+- assertVisible: '.*(Bluetooth is off|Nearby devices permission|No paired printer|Bluetooth printing is not in this build|Could not reach Bluetooth).*'
+- assertVisible:
+    id: recharge-printer-next
+    enabled: false
+- tapOn:
+    id: recharge-skip-print
+
+# --- Done step ----------------------------------------------------------------
+- extendedWaitUntil:
+    visible: (?i)payment recorded
+    timeout: 30000
+- assertVisible:
+    id: recharge-recorded-total
+    text: ₹2.00
+- assertVisible: 'Receipt [0-9A-F]{10}'
+- assertVisible: '(?i)not printed.*'
+
+# --- Finish closes the flow (the done step was the receipt) -----------------
+- tapOn:
+    id: recharge-finish
+- extendedWaitUntil:
+    notVisible:
+      id: recharge-finish
+    timeout: 30000

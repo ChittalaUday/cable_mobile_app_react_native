@@ -1,13 +1,7 @@
 import type { CustomerSubscription, PaymentEntryMethod } from '@/lib/api/types';
 import type { RecordCollectionPayload } from '@/lib/hooks/api/use-payments';
 import type { CollectionFix } from '@/lib/hooks/common/use-collection-fix';
-import {
-  Add01Icon,
-  CheckmarkCircle02Icon,
-  Location01Icon,
-  MinusSignIcon,
-  Package01Icon,
-} from '@hugeicons/core-free-icons';
+import { CheckmarkCircle02Icon, Location01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
@@ -25,7 +19,6 @@ import {
 } from '@/components/ui';
 import { MAX_COLLECTION_AMOUNT, PAYMENT_METHOD_LABELS, PAYMENT_METHODS } from '@/lib/constants/billing';
 import { useCustomer } from '@/lib/hooks/api/use-customers';
-import { useInventoryStock } from '@/lib/hooks/api/use-inventory';
 import { useRecordCollection } from '@/lib/hooks/api/use-payments';
 import { fixPayload, useCollectionFix } from '@/lib/hooks/common/use-collection-fix';
 import { translate } from '@/lib/i18n/utils';
@@ -48,8 +41,6 @@ const OUTCOMES = [
 
 type OutcomeChoice = (typeof OUTCOMES)[number]['id'];
 
-type AccessoryLine = { catalogId: string; name: string; quantity: number; unitPrice: string };
-
 /** Says plainly whether this receipt will carry a position, and how good it is. */
 function fixLabel(fix: CollectionFix): string {
   switch (fix.status) {
@@ -64,8 +55,12 @@ function fixLabel(fix: CollectionFix): string {
   }
 }
 
-function lineDue(subscription: CustomerSubscription | null, fallback: string): string {
-  return subscription === null ? fallback : subscription.outstandingBalance;
+/**
+ * What the line owes if paid now: its balance plus the plan, when the server
+ * says the cycle is due for charging. Display only — the server books the sum.
+ */
+function payable(subscription: CustomerSubscription): number {
+  return Number(subscription.outstandingBalance) + Number(subscription.nextPlanCharge);
 }
 
 export function CollectPaymentScreen({ customerId, basePath }: {
@@ -74,7 +69,6 @@ export function CollectPaymentScreen({ customerId, basePath }: {
 }) {
   const router = useRouter();
   const { data: customer, isPending, error, refetch } = useCustomer({ variables: { id: customerId } });
-  const { data: catalog } = useInventoryStock();
   const { mutate: record, isPending: isSaving } = useRecordCollection();
   const fix = useCollectionFix();
 
@@ -82,10 +76,8 @@ export function CollectPaymentScreen({ customerId, basePath }: {
   const [typedAmount, setTypedAmount] = React.useState('');
   const [method, setMethod] = React.useState<PaymentEntryMethod>('cash');
   const [subscriptionIndex, setSubscriptionIndex] = React.useState(0);
-  const [accessories, setAccessories] = React.useState<AccessoryLine[]>([]);
   const [reason, setReason] = React.useState('');
   const [notes, setNotes] = React.useState('');
-  const [showCatalog, setShowCatalog] = React.useState(false);
 
   const [pendingReference, setPendingReference] = React.useState(() => getPendingReference(customerId, 'dues'));
   // Once the earlier attempt is known to be on the server (409) or the collector
@@ -94,34 +86,20 @@ export function CollectPaymentScreen({ customerId, basePath }: {
 
   const lines = customer?.subscriptions ?? [];
   const line = lines[subscriptionIndex] ?? null;
-  const due = lineDue(line, customer?.outstandingBalance ?? '0');
+  const due = line === null ? Number(customer?.outstandingBalance ?? 0) : payable(line);
 
   // "Full" is whatever the chosen line owes and follows the line the collector
   // picks; only a part payment is typed. Derived rather than synced, so the
   // field cannot be left showing the previous line's balance.
-  const amount = outcome === 'full' ? Number(due).toFixed(2) : outcome === 'none' ? '0' : typedAmount;
-
-  const accessoryTotal = accessories.reduce((total, item) => total + Number(item.unitPrice) * item.quantity, 0);
-  const takings = (outcome === 'none' ? 0 : Number(amount || 0)) + accessoryTotal;
-
-  const addAccessory = (item: { id: string; name: string; defaultSalePrice: string }) => {
-    setShowCatalog(false);
-    setAccessories((current) => {
-      const existing = current.find(line => line.catalogId === item.id);
-
-      return existing === undefined
-        ? [...current, { catalogId: item.id, name: item.name, quantity: 1, unitPrice: Number(item.defaultSalePrice || 0).toFixed(2) }]
-        : current.map(line => line.catalogId === item.id ? { ...line, quantity: line.quantity + 1 } : line);
-    });
-  };
-
-  const step = (catalogId: string, by: number) => {
-    setAccessories(current => current
-      .map(line => line.catalogId === catalogId ? { ...line, quantity: line.quantity + by } : line)
-      .filter(line => line.quantity > 0));
-  };
+  const amount = outcome === 'full' ? due.toFixed(2) : outcome === 'none' ? '0' : typedAmount;
+  const takings = outcome === 'none' ? 0 : Number(amount || 0);
 
   const submit = () => {
+    // Dues are always paid against a line; hardware has its own screen.
+    if (line === null) {
+      void dialogs.notify('No connection', 'This customer has no connection to collect dues against.');
+      return;
+    }
     if (!isPaymentAmount(amount) || !Number.isFinite(takings) || takings < 0 || Math.round(takings * 100) > Number(MAX_COLLECTION_AMOUNT) * 100) {
       void dialogs.notify(translate('payment_errors.invalid_amount_title'), translate('payment_errors.invalid_amount_message'));
       return;
@@ -133,13 +111,11 @@ export function CollectPaymentScreen({ customerId, basePath }: {
 
     const payload: RecordCollectionPayload = {
       customerId,
-      amount: outcome === 'none' ? '0' : Number(amount || 0).toFixed(2),
+      subscriptionId: line.id,
+      // Null is "nothing paid": the server leaves the balance due.
+      amount: outcome === 'none' ? null : Number(amount || 0).toFixed(2),
       reference: pendingReference.reference,
-      ...(line !== null ? { subscriptionId: line.id } : {}),
       ...(outcome === 'none' ? { reason: reason.trim() } : { method }),
-      ...(accessories.length > 0
-        ? { accessories: accessories.map(({ catalogId, quantity, unitPrice }) => ({ catalogId, quantity, unitPrice })) }
-        : {}),
       ...(notes.trim() === '' ? {} : { notes: notes.trim() }),
       // Sent when the phone had one. A receipt is never held up waiting for it.
       ...pendingMetadata(customerId, 'dues', fixPayload(fix)),
@@ -213,6 +189,11 @@ export function CollectPaymentScreen({ customerId, basePath }: {
         <Card className="gap-1 border border-border p-4">
           <Text className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Outstanding</Text>
           <Text className="text-3xl font-black text-foreground">{rupees(due)}</Text>
+          {line !== null && Number(line.nextPlanCharge) > 0 && (
+            <Text className="text-xs text-muted-foreground">
+              {`${rupees(line.outstandingBalance)} owed + ${rupees(line.nextPlanCharge)} plan`}
+            </Text>
+          )}
           {customer.locationPath != null && (
             <Text className="text-xs text-muted-foreground">{customer.locationPath}</Text>
           )}
@@ -234,7 +215,7 @@ export function CollectPaymentScreen({ customerId, basePath }: {
                     <Text className="text-sm font-semibold text-foreground">{option.service.name}</Text>
                     <Text className="text-xs text-muted-foreground">{option.serviceAccountNumber}</Text>
                   </View>
-                  <Text className="text-sm font-bold text-foreground">{rupees(option.outstandingBalance)}</Text>
+                  <Text className="text-sm font-bold text-foreground">{rupees(payable(option))}</Text>
                 </Pressable>
               ))}
             </View>
@@ -304,54 +285,6 @@ export function CollectPaymentScreen({ customerId, basePath }: {
                 />
               </View>
             )}
-
-        <View className="gap-1.5">
-          <View className="flex-row items-center justify-between">
-            <Text className="text-xs font-semibold text-foreground">Accessories bought</Text>
-            <Pressable accessibilityRole="button" onPress={() => setShowCatalog(value => !value)}>
-              <Text className="text-xs font-bold text-primary-600">{showCatalog ? 'Close' : 'Add'}</Text>
-            </Pressable>
-          </View>
-
-          {accessories.map(item => (
-            <View key={item.catalogId} className="flex-row items-center justify-between rounded-xl border border-border bg-card px-3 py-2.5">
-              <View className="flex-1 pr-2">
-                <Text className="text-sm font-semibold text-foreground">{item.name}</Text>
-                <Text className="text-xs text-muted-foreground">{`${rupees(item.unitPrice)} each`}</Text>
-              </View>
-              <View className="flex-row items-center gap-3">
-                <Pressable accessibilityRole="button" accessibilityLabel={`Remove one ${item.name}`} onPress={() => step(item.catalogId, -1)}>
-                  <HugeiconsIcon icon={MinusSignIcon} size={18} color={colors.neutral[500]} strokeWidth={2} />
-                </Pressable>
-                <Text className="text-sm font-bold text-foreground">{item.quantity}</Text>
-                <Pressable accessibilityRole="button" accessibilityLabel={`Add one ${item.name}`} onPress={() => step(item.catalogId, 1)}>
-                  <HugeiconsIcon icon={Add01Icon} size={18} color={colors.primary[600]} strokeWidth={2} />
-                </Pressable>
-              </View>
-            </View>
-          ))}
-
-          {showCatalog && (
-            <View className="gap-1.5 rounded-xl border border-border bg-card p-2">
-              {(catalog ?? []).length === 0
-                ? <Text className="p-2 text-xs text-muted-foreground">Nothing in the catalogue yet.</Text>
-                : (catalog ?? []).slice(0, 12).map(item => (
-                    <Pressable
-                      key={item.id}
-                      accessibilityRole="button"
-                      onPress={() => addAccessory(item)}
-                      className="flex-row items-center justify-between rounded-lg p-2 active:bg-muted/40"
-                    >
-                      <View className="flex-row items-center gap-2">
-                        <HugeiconsIcon icon={Package01Icon} size={16} color={colors.primary[500]} strokeWidth={1.8} />
-                        <Text className="text-sm text-foreground">{item.name}</Text>
-                      </View>
-                      <Text className="text-xs font-semibold text-muted-foreground">{rupees(item.defaultSalePrice)}</Text>
-                    </Pressable>
-                  ))}
-            </View>
-          )}
-        </View>
 
         <View className="gap-1.5">
           <Text className="text-xs font-semibold text-foreground">Notes (optional)</Text>

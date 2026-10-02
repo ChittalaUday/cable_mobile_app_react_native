@@ -30,9 +30,10 @@ import { initials } from '@/lib/utils/admin-format';
 type Tab = 'people' | 'teams';
 
 const STATUS_TINT: Record<string, { bg: string; fg: string; label: string }> = {
-  active: { bg: '#ECFDF3', fg: '#027A48', label: 'Active' },
-  invited: { bg: '#EFF8FF', fg: '#175CD3', label: 'Invited' },
-  suspended: { bg: '#FEF3F2', fg: '#B42318', label: 'Suspended' },
+  // Mid-tone text on its own colour at ~12%: readable on light and dark cards.
+  active: { bg: '#12B76A1F', fg: '#12B76A', label: 'Active' },
+  invited: { bg: '#2E90FA1F', fg: '#2E90FA', label: 'Invited' },
+  suspended: { bg: '#EF44441F', fg: '#EF4444', label: 'Suspended' },
 };
 
 function StatusPill({ status }: { status: string }) {
@@ -238,6 +239,7 @@ export function StaffScreen() {
           <View className="mt-2.5 flex-row items-center rounded-xl border border-border bg-surface px-3 py-2">
             <HugeiconsIcon icon={Search01Icon} size={16} color={colors.neutral[400]} strokeWidth={2} />
             <TextInput
+              testID="staff-search-input"
               value={search}
               onChangeText={setSearch}
               placeholder={isPeople ? 'Search people...' : 'Search teams...'}

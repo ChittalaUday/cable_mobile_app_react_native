@@ -50,6 +50,8 @@ export default antfu(
       'uniwind-types.d.ts',
       'expo-env.d.ts',
       'migration/*',
+      // Maestro flows: GraalJS globals (http, json, output) and quoted ${} scalars
+      '.maestro/',
     ],
   },
 

@@ -1,0 +1,143 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - inventory
+---
+# Receive Stock (inward): quantity validation (0, negative, over the 1,000 cap,
+# non-numeric), serial-number handling (duplicates, quantity follows the serial
+# count) and the happy path with a unique serial on the shared E2E item.
+- evalScript: ${output.stamp = String(Date.now()).slice(-6)}
+- runFlow: ../utils/login-admin.yaml
+- runFlow: ../utils/inventory-open.yaml
+- runFlow: ../utils/inventory-ensure-item.yaml
+
+- tapOn: Receive Stock
+- extendedWaitUntil:
+    visible: Select product to receive
+    timeout: 20000
+- assertVisible: Receive Stock
+- assertVisible: Central Warehouse \(Default\)
+- assertVisible: Serial Numbers \(Default\) / Barcodes
+
+# --- No item chosen: the submit button is disabled, so nothing happens ------
+- scrollUntilVisible:
+    element:
+      id: receive-submit-button
+- tapOn:
+    id: receive-submit-button
+- assertNotVisible: Validation Error
+- scrollUntilVisible:
+    element:
+      id: receive-item-picker
+    direction: UP
+
+- tapOn:
+    id: receive-item-picker
+- scrollUntilVisible:
+    element: E2E Stock Unit
+    timeout: 20000
+    speed: 20
+    visibilityPercentage: 50
+    centerElement: true
+- tapOn: E2E Stock Unit
+- assertNotVisible: Select product to receive
+
+# --- Quantity: 0, negative, over the cap and non-numeric are all refused ---
+- tapOn:
+    id: receive-quantity-input
+- eraseText: 10
+- inputText: '0'
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: receive-submit-button
+- assertVisible: Enter a whole-number quantity from 1 to 1,000\.
+- tapOn: OK
+
+- tapOn:
+    id: receive-quantity-input
+- eraseText: 10
+- inputText: '-5'
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: receive-submit-button
+- assertVisible: Enter a whole-number quantity from 1 to 1,000\.
+- tapOn: OK
+
+- tapOn:
+    id: receive-quantity-input
+- eraseText: 10
+- inputText: '1001'
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: receive-submit-button
+- assertVisible: Enter a whole-number quantity from 1 to 1,000\.
+- tapOn: OK
+
+- tapOn:
+    id: receive-quantity-input
+- eraseText: 10
+- inputText: '2.5'
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: receive-submit-button
+- assertVisible: Enter a whole-number quantity from 1 to 1,000\.
+- tapOn: OK
+
+# --- Serials: a duplicate is refused; the count drives the quantity -------
+- tapOn:
+    id: receive-serial-input
+- inputText: E2E-${output.stamp}-1
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Add Serial
+- assertVisible: E2E-${output.stamp}-1
+# With serials listed, quantity is the serial count: the free field goes away.
+- assertNotVisible:
+    id: receive-quantity-input
+
+- tapOn:
+    id: receive-serial-input
+- inputText: E2E-${output.stamp}-1
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Add Serial
+- assertVisible: Duplicate
+- assertVisible: This serial number is already added to the list\.
+- tapOn: OK
+
+# Removing the serial brings the quantity field back; re-add it for the receipt.
+- tapOn: ×
+- assertNotVisible: E2E-${output.stamp}-1
+- assertVisible:
+    id: receive-quantity-input
+- tapOn:
+    id: receive-serial-input
+- eraseText: 40
+- inputText: E2E-${output.stamp}-1
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Add Serial
+- assertVisible: E2E-${output.stamp}-1
+
+# --- Happy path: one unit received, then visible in stock -----------------
+- tapOn:
+    id: receive-submit-button
+- extendedWaitUntil:
+    visible: Stock Received
+    timeout: 30000
+- assertVisible: Successfully received 1 unit\(s\) of E2E Stock Unit\.
+- tapOn: OK
+- extendedWaitUntil:
+    visible: Stock & Locations
+    timeout: 20000
+- tapOn:
+    id: stock-search-input
+- inputText: E2E Stock Unit
+- extendedWaitUntil:
+    visible: E2E Stock Unit
+    timeout: 20000
+
+# The unit's serial is listed on the item page.
+- tapOn: E2E Stock Unit
+- extendedWaitUntil:
+    visible: Item Details
+    timeout: 20000
+- assertVisible: Specifications

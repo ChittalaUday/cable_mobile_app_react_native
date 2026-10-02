@@ -6,10 +6,20 @@ describe('registryFor', () => {
     expect(staff.length).toBeGreaterThan(0);
     expect(staff.every(item => item.route.startsWith('/staff/'))).toBe(true);
     expect(staff.map(item => item.key)).not.toContain('packages');
+    expect(staff.map(item => item.key)).not.toContain('plans');
   });
 
-  it('gives admins the package actions and nothing to customers', () => {
-    expect(registryFor('admin').map(item => item.title)).toEqual(expect.arrayContaining(['Packages & Plans', 'Add Package', 'Edit Packages', 'Delete Packages']));
+  it('gives admins the plan and package actions and nothing to customers', () => {
+    expect(registryFor('admin').map(item => item.title)).toEqual(expect.arrayContaining([
+      'Plans',
+      'Add Plan',
+      'Edit Plans',
+      'Delete Plans',
+      'Provider Packages',
+      'Add Package',
+      'Edit Packages',
+      'Delete Packages',
+    ]));
     expect(registryFor('customer')).toEqual([]);
   });
 

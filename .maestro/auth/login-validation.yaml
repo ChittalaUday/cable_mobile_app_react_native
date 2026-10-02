@@ -1,0 +1,100 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - auth
+---
+# Login screen: what renders on a clean install, and every way a sign-in is
+# refused before or by the API. Never signs in, so it spends no session.
+- clearState
+- runFlow: ../utils/open-dev-build.yaml
+
+# Renders: hero, card, the alternative method, footer.
+- extendedWaitUntil:
+    visible: Welcome Back
+    timeout: 30000
+- assertVisible: Satya Cable
+- assertVisible: Operator Login
+- assertVisible: Sign in to your Satya Cable operator account
+- assertVisible: Email Address
+- assertVisible: Password
+- assertVisible: Remember me
+- assertVisible: Forgot Password?
+- assertVisible: Sign In
+- assertVisible:
+    id: phone-otp-option
+- assertVisible: Contact support
+- assertVisible: 'Version .*'
+# Guest and Google sign-in are gone (Google is server-switched off here).
+- assertNotVisible: Continue as Guest
+- assertNotVisible:
+    id: google-option
+
+# Empty submit is rejected on the device, before any network call.
+- tapOn:
+    id: login-button
+- assertVisible: Please enter your email and password.
+
+# Password alone (no identifier) is still "enter both".
+- tapOn:
+    id: password-input
+- inputText: Admin@123456
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: login-button
+- assertVisible: Please enter your email and password.
+
+# Show/hide toggle: the eye button flips its own label with the state.
+- tapOn: Show password
+- assertVisible: Hide password
+- assertVisible: Admin@123456
+- tapOn: Hide password
+- assertVisible: Show password
+- assertNotVisible: Admin@123456
+
+# Invalid email format: there is no client-side format check, so the API is the
+# judge and answers with a generic credentials refusal. We stay on login.
+- tapOn:
+    id: email-input
+- inputText: not-an-email
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: login-button
+# The "Sign in failed / Invalid credentials" flash auto-dismisses before the tap
+# settles (~3s), so assert the durable outcome: the button is back from its
+# loading state and we are still on the login form.
+- extendedWaitUntil:
+    visible: Sign In
+    timeout: 20000
+- assertVisible: Welcome Back
+
+# Wrong password for a real account. Uses a seeded lead, not admin@sscn.com:
+# the API allows 10 logins a minute per identifier, and every other flow needs
+# the admin's budget.
+- tapOn:
+    id: email-input
+- eraseText: 20
+- inputText: kiran.lead@sscn.com
+- tapOn:
+    id: password-input
+- eraseText: 20
+- inputText: Wrong@123456
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: login-button
+# The "Sign in failed / Invalid credentials" flash auto-dismisses before the tap
+# settles (~3s), so assert the durable outcome: the button is back from its
+# loading state and we are still on the login form.
+- extendedWaitUntil:
+    visible: Sign In
+    timeout: 20000
+- assertVisible: Welcome Back
+- assertNotVisible: Operator Panel
+
+# "Forgot Password?" is not built yet; it says so instead of doing nothing.
+- tapOn: Forgot Password?
+- assertVisible: Password reset is coming soon.
+
+# Same for the support link in the footer.
+- tapOn: Contact support
+- assertVisible: Contact support is coming soon.

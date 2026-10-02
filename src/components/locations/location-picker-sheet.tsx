@@ -10,15 +10,7 @@ import {
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as React from 'react';
 
-import {
-  ActivityIndicator,
-  colors,
-  Modal,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from '@/components/ui';
+import { ActivityIndicator, colors, Modal, Pressable, ScrollView, Text, ThemedIcon, View } from '@/components/ui';
 import { useLocationLevel } from '@/lib/hooks/api/use-locations';
 
 /**
@@ -153,7 +145,7 @@ function PickerRow({ node, selected, multi, canOpen, onChoose, onOpen }: {
               hitSlop={6}
               className="shrink-0 flex-row items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-2"
             >
-              <HugeiconsIcon icon={Folder01Icon} size={14} color={colors.neutral[600]} strokeWidth={2} />
+              <ThemedIcon icon={Folder01Icon} size={14} colorClassName="text-muted-foreground" strokeWidth={2} />
               <Text className="text-[11px] font-bold text-foreground">Open</Text>
             </Pressable>
           )

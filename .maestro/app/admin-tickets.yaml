@@ -1,0 +1,189 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - tickets
+---
+# Complaints, admin side: raise a ticket from a customer card (server-side subject
+# validation: too short, too long), find it in the queue, assign it, resolve it,
+# and walk the Open / Mine / All filters and the no-match empty state.
+- runFlow: ../utils/login-admin.yaml
+- evalScript: ${output.stamp = String(Date.now()).slice(-6)}
+- evalScript: ${output.long = 'E2E overlong subject '.concat('x'.repeat(200))}
+- extendedWaitUntil:
+    visible: Total Customers
+    timeout: 60000
+
+# Raise from the first customer card that has a live connection.
+- tapOn: Customers
+- extendedWaitUntil:
+    visible: Raise Ticket
+    timeout: 30000
+- tapOn:
+    text: Raise Ticket
+    index: 0
+- extendedWaitUntil:
+    visible: Raise a complaint
+    timeout: 10000
+- assertVisible: What is wrong
+- assertVisible: How urgent
+- assertVisible: No signal
+- assertVisible: Normal
+
+# Edge: a 2-character subject is rejected (min 3) and the sheet stays open.
+- tapOn:
+    id: ticket-subject
+- inputText: ab
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: ticket-submit
+- extendedWaitUntil:
+    visible: Not raised
+    timeout: 20000
+- tapOn: OK
+- assertVisible: Raise a complaint
+
+# Edge: an over-long subject (>200 chars) is rejected the same way.
+- tapOn:
+    id: ticket-subject
+- eraseText: 5
+- inputText: ${output.long}
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: ticket-submit
+- extendedWaitUntil:
+    visible: Not raised
+    timeout: 20000
+- tapOn: OK
+- assertVisible: Raise a complaint
+
+# Happy path: category, priority, subject and notes, then Raise.
+- tapOn:
+    id: ticket-subject
+- eraseText: 250
+- inputText: E2E ticket ${output.stamp}
+- tapOn: Poor picture
+- tapOn: High
+- tapOn:
+    id: ticket-description
+- inputText: Raised by Maestro admin-tickets
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: ticket-submit
+- extendedWaitUntil:
+    visible: Complaint raised
+    timeout: 20000
+- assertVisible: '.* is now in the queue\.'
+- tapOn: OK
+- assertNotVisible: Raise a complaint
+
+# Cancel closes the sheet without raising anything.
+- tapOn:
+    text: Raise Ticket
+    index: 0
+- extendedWaitUntil:
+    visible: Raise a complaint
+    timeout: 10000
+- tapOn: Cancel
+- extendedWaitUntil:
+    notVisible: Raise a complaint
+    timeout: 10000
+
+# The queue: the new complaint is Open, unassigned, with its category and priority.
+- tapOn: More
+- tapOn: Complaints
+- extendedWaitUntil:
+    visible: Search a ticket number or subject
+    timeout: 30000
+- assertVisible:
+    id: ticket-filter-open
+- assertVisible:
+    id: ticket-filter-mine
+- assertVisible:
+    id: ticket-filter-all
+- tapOn:
+    id: ticket-search
+- inputText: E2E ticket ${output.stamp}
+- runFlow: ../utils/hide-keyboard.yaml
+- extendedWaitUntil:
+    visible: E2E ticket ${output.stamp}
+    timeout: 20000
+- assertVisible: '.* • Poor picture'
+- assertVisible: 'High • .*'
+- assertVisible: '1 in this view'
+- assertVisible: 'Assign .*, currently Unassigned'
+- takeScreenshot: .maestro/screenshots/admin-ticket-open
+
+# Assign it to myself; it then shows under Mine.
+- tapOn: 'Assign .*, currently Unassigned'
+- extendedWaitUntil:
+    visible: Hand this over
+    timeout: 10000
+- tapOn:
+    id: assign-me
+- extendedWaitUntil:
+    notVisible: 'Assign .*, currently Unassigned'
+    timeout: 20000
+- tapOn:
+    id: ticket-filter-mine
+- extendedWaitUntil:
+    visible: E2E ticket ${output.stamp}
+    timeout: 20000
+
+# Edge: a resolution under 3 characters is ignored; the ticket stays open.
+- tapOn: Resolve
+- extendedWaitUntil:
+    visible: 'Resolve .*\?'
+    timeout: 10000
+- tapOn:
+    id: dialog-input
+- inputText: ok
+- tapOn:
+    text: Resolve
+    below:
+      id: dialog-input
+- extendedWaitUntil:
+    notVisible: 'Resolve .*\?'
+    timeout: 10000
+- assertVisible: E2E ticket ${output.stamp}
+- assertVisible: Resolve
+
+# Resolve with a real note: it leaves the Open view and shows Resolved under All.
+- tapOn:
+    id: ticket-filter-open
+- extendedWaitUntil:
+    visible: E2E ticket ${output.stamp}
+    timeout: 20000
+- tapOn: Resolve
+- extendedWaitUntil:
+    visible: 'Resolve .*\?'
+    timeout: 10000
+- tapOn:
+    id: dialog-input
+- inputText: Realigned the dish E2E
+- tapOn:
+    text: Resolve
+    below:
+      id: dialog-input
+- extendedWaitUntil:
+    visible: No complaint matches that.
+    timeout: 20000
+- tapOn:
+    id: ticket-filter-all
+- extendedWaitUntil:
+    visible: E2E ticket ${output.stamp}
+    timeout: 20000
+- assertVisible: Resolved
+- assertNotVisible:
+    id: 'resolve-.*'
+
+# Empty state: a search that matches nothing.
+- tapOn:
+    id: ticket-search
+- eraseText: 30
+- inputText: zz-no-such-ticket
+- runFlow: ../utils/hide-keyboard.yaml
+- extendedWaitUntil:
+    visible: No complaint matches that.
+    timeout: 20000
+- assertVisible: '0 in this view'

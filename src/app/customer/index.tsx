@@ -98,7 +98,7 @@ export function CustomerDashboardScreen() {
           onPress={() => router.push('/remote')}
           className="flex-row items-center gap-3 rounded-2xl border border-border bg-card p-4 active:bg-muted"
         >
-          <View className="size-11 items-center justify-center rounded-xl bg-primary-50">
+          <View className="size-11 items-center justify-center rounded-xl bg-primary-50 dark:bg-primary-950/40">
             <HugeiconsIcon icon={RemoteControlIcon} size={22} color={colors.primary[600]} strokeWidth={2.2} />
           </View>
           <View className="min-w-0 flex-1">

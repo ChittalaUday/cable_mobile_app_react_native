@@ -14,11 +14,15 @@ export type ConnectionAccount = {
   serviceTypeName: string;
   provider: string;
   providerName: string;
+  /** Provider logo and site, when the operator has set them (http(s) only). */
+  providerLogoUrl?: string;
+  providerWebsiteUrl?: string;
   stbNumber?: string;
   vcNumber?: string;
   ipAddress?: string;
   packageName: string;
-  monthlyPrice: number;
+  /** This connection's balance: positive is owed, negative is advance. */
+  balance: number;
   currency?: string;
   status: 'active' | 'expired' | 'suspended' | 'pending';
   expiryDate?: string;

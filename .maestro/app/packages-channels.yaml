@@ -1,0 +1,137 @@
+appId: ${APP_ID}
+env:
+  PROVIDER: ACT Digital
+  CH1: Gemini TV
+  CH2: ETV TELUGU
+tags:
+  - e2e
+  - admin
+  - packages
+---
+# Assigning channels to a package: pick two from the provider's lineup while
+# creating, see the count on the card, reopen and drop one, then clean up.
+- evalScript: ${output.stamp = String(Date.now()).slice(-6)}
+- runFlow: ../utils/login-admin.yaml
+- openLink: ${DEV_SCHEME}://admin/packages
+- extendedWaitUntil:
+    visible: Provider Packages
+    timeout: 30000
+
+# --- New package on a provider with a channel lineup ---------------------------
+- tapOn:
+    id: add-package-button
+- extendedWaitUntil:
+    visible: Create a new package
+    timeout: 10000
+- tapOn:
+    id: package-name-input
+- inputText: E2E Bouquet ${output.stamp}
+- tapOn: Choose provider
+- tapOn: ${PROVIDER}
+- tapOn:
+    id: package-price-input
+- inputText: '199'
+- runFlow: ../utils/hide-keyboard.yaml
+- assertVisible: 0 channels selected
+
+# --- Channel picker: search and tick two -----------------------------------------
+- tapOn: Select Channels
+- extendedWaitUntil:
+    visible: Package Channels
+    timeout: 10000
+- assertVisible: '${PROVIDER} - E2E Bouquet ${output.stamp}'
+- extendedWaitUntil:
+    visible: 'All \(\d+\)'
+    timeout: 20000
+- assertVisible: Selected (0)
+- tapOn: Search channels...
+- inputText: ${CH1}
+- extendedWaitUntil:
+    visible: '#102 · Entertainment'
+    timeout: 20000
+- tapOn: '#102 · Entertainment'
+- assertVisible: Selected (1)
+- tapOn: Clear
+- tapOn: Search channels...
+- inputText: ${CH2}
+- extendedWaitUntil:
+    visible: '#101 · Entertainment'
+    timeout: 20000
+- tapOn: '#101 · Entertainment'
+- assertVisible: Selected (2)
+# A search with no hit says so.
+- tapOn: Clear
+- tapOn: Search channels...
+- inputText: zzqq no channel
+- extendedWaitUntil:
+    visible: No channels match your search.
+    timeout: 20000
+- tapOn: Clear
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Back
+- extendedWaitUntil:
+    visible: 2 channels selected
+    timeout: 10000
+
+# --- Save: the confirm step and then the card carry the count ------------------
+- tapOn: Save Package
+- extendedWaitUntil:
+    visible: '.*E2E Bouquet ${output.stamp} — ₹199 monthly.*2 channels.*'
+    timeout: 10000
+- tapOn:
+    id: dialog-confirm
+- extendedWaitUntil:
+    visible: Provider Packages
+    timeout: 30000
+- tapOn:
+    id: package-search-input
+- inputText: E2E Bouquet ${output.stamp}
+- extendedWaitUntil:
+    visible: E2E Bouquet ${output.stamp}
+    timeout: 20000
+- assertVisible: 2 channels
+- runFlow: ../utils/hide-keyboard.yaml
+
+# --- Edit: the saved lineup comes back, drop one channel ------------------------
+- tapOn: Edit E2E Bouquet ${output.stamp}
+- extendedWaitUntil:
+    visible: 2 channels selected
+    timeout: 20000
+- tapOn: Select Channels
+- extendedWaitUntil:
+    visible: Package Channels
+    timeout: 10000
+- tapOn: Selected (2)
+- extendedWaitUntil:
+    visible: ${CH1}
+    timeout: 20000
+- assertVisible: ${CH2}
+- tapOn: '#102 · Entertainment'
+- assertVisible: Selected (1)
+- tapOn: Back
+- extendedWaitUntil:
+    visible: 1 channels selected
+    timeout: 10000
+- tapOn: Save Changes
+- extendedWaitUntil:
+    visible: '.*1 channel ·.*'
+    timeout: 10000
+- tapOn:
+    id: dialog-confirm
+- extendedWaitUntil:
+    visible: Provider Packages
+    timeout: 30000
+- extendedWaitUntil:
+    visible: 1 channels
+    timeout: 20000
+
+# --- Clean up ---------------------------------------------------------------------
+- tapOn: Delete E2E Bouquet ${output.stamp}
+- extendedWaitUntil:
+    visible: Delete package
+    timeout: 10000
+- tapOn:
+    id: dialog-confirm
+- extendedWaitUntil:
+    visible: No packages found
+    timeout: 20000

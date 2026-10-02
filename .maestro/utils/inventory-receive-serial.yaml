@@ -1,0 +1,44 @@
+appId: ${APP_ID}
+tags:
+  - util
+---
+# From the Inventory hub: receives one unit of "E2E Stock Unit" with serial
+# ${SERIAL}, then returns to the hub. Callers must pass SERIAL.
+- tapOn: Receive Stock
+- extendedWaitUntil:
+    visible: Select product to receive
+    timeout: 20000
+- tapOn:
+    id: receive-item-picker
+- scrollUntilVisible:
+    element: E2E Stock Unit
+    timeout: 20000
+    speed: 20
+    visibilityPercentage: 50
+    centerElement: true
+- tapOn: E2E Stock Unit
+- tapOn:
+    id: receive-serial-input
+- inputText: ${SERIAL}
+- runFlow: hide-keyboard.yaml
+- tapOn: Add Serial
+- extendedWaitUntil:
+    visible: ${SERIAL}
+    timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: receive-submit-button
+- tapOn:
+    id: receive-submit-button
+- extendedWaitUntil:
+    visible: Successfully received 1 unit\(s\) of E2E Stock Unit\.
+    timeout: 30000
+- tapOn: OK
+# Lands on the stock list; back to the hub.
+- extendedWaitUntil:
+    visible: Stock & Locations
+    timeout: 20000
+- back
+- extendedWaitUntil:
+    visible: Search inventory...
+    timeout: 20000

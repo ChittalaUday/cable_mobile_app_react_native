@@ -11,16 +11,7 @@ import * as React from 'react';
 import { dialogs } from '@/components/common/dialogs';
 import { Card, ScreenHeader } from '@/components/common/shell';
 import { LocationPickerSheet } from '@/components/locations/location-picker-sheet';
-import {
-  Button,
-  colors,
-  Input,
-  Pressable,
-  ScrollView,
-  Text,
-  useModal,
-  View,
-} from '@/components/ui';
+import { Button, colors, Input, Pressable, ScrollView, Text, ThemedIcon, useModal, View } from '@/components/ui';
 import { PERMISSIONS } from '@/constants/permissions';
 import {
   lookupInventory,
@@ -160,6 +151,7 @@ export function InventoryTransferScreen({ basePath }: { basePath: '/admin/invent
               <Input
                 value={serialNumber}
                 onChangeText={setSerialNumber}
+                testID="transfer-serial-input"
                 placeholder="Scan or enter equipment serial code..."
                 className="font-mono text-xs text-foreground"
                 placeholderTextColor={colors.neutral[400]}
@@ -183,7 +175,7 @@ export function InventoryTransferScreen({ basePath }: { basePath: '/admin/invent
             className="flex-row items-center justify-between rounded-xl border border-border bg-card p-3.5"
           >
             <View className="flex-row items-center gap-3">
-              <View className="size-9 items-center justify-center rounded-lg bg-orange-50">
+              <View className="size-9 items-center justify-center rounded-lg bg-orange-50 dark:bg-orange-950/40">
                 <HugeiconsIcon icon={Package01Icon} size={20} color={colors.primary[600]} strokeWidth={2} />
               </View>
               <View>
@@ -195,7 +187,7 @@ export function InventoryTransferScreen({ basePath }: { basePath: '/admin/invent
                 )}
               </View>
             </View>
-            <HugeiconsIcon icon={ArrowDown01Icon} size={18} color={colors.neutral[500]} strokeWidth={2} />
+            <ThemedIcon icon={ArrowDown01Icon} size={18} colorClassName="text-muted-foreground" strokeWidth={2} />
           </Pressable>
 
           {itemPickerOpen && (
@@ -245,20 +237,20 @@ export function InventoryTransferScreen({ basePath }: { basePath: '/admin/invent
           >
             <View className="flex-row items-center gap-3">
               <View className="size-9 items-center justify-center rounded-lg bg-muted">
-                <HugeiconsIcon icon={Location01Icon} size={20} color={colors.neutral[700]} strokeWidth={2} />
+                <ThemedIcon icon={Location01Icon} size={20} colorClassName="text-foreground" strokeWidth={2} />
               </View>
               <Text className="text-sm font-semibold text-foreground">
                 {fromLocation ? fromLocation.name : 'Central Warehouse (Default)'}
               </Text>
             </View>
-            <HugeiconsIcon icon={ArrowDown01Icon} size={18} color={colors.neutral[500]} strokeWidth={2} />
+            <ThemedIcon icon={ArrowDown01Icon} size={18} colorClassName="text-muted-foreground" strokeWidth={2} />
           </Pressable>
         </View>
 
         {/* Destination Type Toggle: Location vs Staff Van */}
         <View className="gap-1.5">
           <Text className="text-xs font-semibold text-foreground">Destination Type</Text>
-          <View className="flex-row rounded-xl bg-neutral-200/80 p-1">
+          <View className="flex-row rounded-xl bg-muted p-1">
             <Pressable
               accessibilityRole="tab"
               accessibilityState={{ selected: destinationType === 'location' }}
@@ -308,14 +300,14 @@ export function InventoryTransferScreen({ basePath }: { basePath: '/admin/invent
                   className="flex-row items-center justify-between rounded-xl border border-border bg-card p-3.5"
                 >
                   <View className="flex-row items-center gap-3">
-                    <View className="size-9 items-center justify-center rounded-lg bg-blue-50">
+                    <View className="size-9 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950/40">
                       <HugeiconsIcon icon={Location01Icon} size={20} color="#2563EB" strokeWidth={2} />
                     </View>
                     <Text className="text-sm font-semibold text-foreground">
                       {toLocation ? toLocation.name : 'Select destination location'}
                     </Text>
                   </View>
-                  <HugeiconsIcon icon={ArrowDown01Icon} size={18} color={colors.neutral[500]} strokeWidth={2} />
+                  <ThemedIcon icon={ArrowDown01Icon} size={18} colorClassName="text-muted-foreground" strokeWidth={2} />
                 </Pressable>
               </View>
             )
@@ -328,14 +320,14 @@ export function InventoryTransferScreen({ basePath }: { basePath: '/admin/invent
                   className="flex-row items-center justify-between rounded-xl border border-border bg-card p-3.5"
                 >
                   <View className="flex-row items-center gap-3">
-                    <View className="size-9 items-center justify-center rounded-lg bg-purple-50">
+                    <View className="size-9 items-center justify-center rounded-lg bg-purple-50 dark:bg-purple-950/40">
                       <HugeiconsIcon icon={UserIcon} size={20} color="#7C4DFF" strokeWidth={2} />
                     </View>
                     <Text className="text-sm font-semibold text-foreground">
                       {toStaff ? `${toStaff.name ?? 'Staff'} (${toStaff.roleId ?? 'tech'})` : 'Select technician'}
                     </Text>
                   </View>
-                  <HugeiconsIcon icon={ArrowDown01Icon} size={18} color={colors.neutral[500]} strokeWidth={2} />
+                  <ThemedIcon icon={ArrowDown01Icon} size={18} colorClassName="text-muted-foreground" strokeWidth={2} />
                 </Pressable>
 
                 {staffModalOpen && (
@@ -377,6 +369,7 @@ export function InventoryTransferScreen({ basePath }: { basePath: '/admin/invent
             <Input
               value={quantity}
               onChangeText={setQuantity}
+              testID="transfer-quantity-input"
               editable={false}
               keyboardType="numeric"
               className="text-sm text-foreground"
@@ -391,6 +384,7 @@ export function InventoryTransferScreen({ basePath }: { basePath: '/admin/invent
             <Input
               value={notes}
               onChangeText={setNotes}
+              testID="transfer-notes-input"
               placeholder="e.g. Assigned to morning repair route"
               className="text-xs text-foreground"
               placeholderTextColor={colors.neutral[400]}
@@ -403,6 +397,7 @@ export function InventoryTransferScreen({ basePath }: { basePath: '/admin/invent
           <Button
             label={isPending ? 'Transferring...' : 'Execute Stock Transfer'}
             disabled={isPending || (!selectedCatalogId && !equipmentId)}
+            testID="transfer-submit-button"
             className="bg-primary-600"
             onPress={handleSubmit}
           />

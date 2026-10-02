@@ -1,0 +1,103 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - dashboard
+---
+# Admin More tab: every menu entry opens its screen and hardware back returns to More.
+# Only the destination heading is asserted; each area's own flows test the screens.
+- runFlow: ../utils/login-admin.yaml
+- extendedWaitUntil:
+    visible: Total Customers
+    timeout: 60000
+- tapOn: More
+- extendedWaitUntil:
+    visible: 'Manage services, network catalog, staff, and account'
+    timeout: 30000
+
+# The menu: profile card, the seven admin entries, and Sign Out.
+- assertVisible: Services
+- assertVisible: Channels
+- assertVisible: Locations
+- assertVisible: 'Staff & Teams'
+- assertVisible: Inventory
+- assertVisible: Complaints
+- assertVisible: Profile
+- assertVisible: Sign Out
+- takeScreenshot: .maestro/screenshots/admin-more
+
+- tapOn: Services
+- extendedWaitUntil:
+    visible: Service Providers
+    timeout: 30000
+- back
+- extendedWaitUntil:
+    visible: 'Manage services, network catalog, staff, and account'
+    timeout: 20000
+
+- tapOn: Channels
+- extendedWaitUntil:
+    visible: Channel Lineup
+    timeout: 30000
+- back
+- extendedWaitUntil:
+    visible: 'Manage services, network catalog, staff, and account'
+    timeout: 20000
+
+- tapOn: Locations
+- extendedWaitUntil:
+    visible: Manage areas and sub-areas
+    timeout: 30000
+- back
+- extendedWaitUntil:
+    visible: 'Manage services, network catalog, staff, and account'
+    timeout: 20000
+
+- tapOn: 'Staff & Teams'
+- extendedWaitUntil:
+    visible: '.* people · .* teams'
+    timeout: 30000
+- back
+- extendedWaitUntil:
+    visible: 'Manage services, network catalog, staff, and account'
+    timeout: 20000
+
+- tapOn: Inventory
+- extendedWaitUntil:
+    visible: Stock overview & quick stats
+    timeout: 30000
+- back
+- extendedWaitUntil:
+    visible: 'Manage services, network catalog, staff, and account'
+    timeout: 20000
+
+- tapOn: Complaints
+- extendedWaitUntil:
+    visible: Search a ticket number or subject
+    timeout: 30000
+- back
+- extendedWaitUntil:
+    visible: 'Manage services, network catalog, staff, and account'
+    timeout: 20000
+
+# The More row shares its subtitle with the Profile header, so wait for More to go first.
+- tapOn: Profile
+- extendedWaitUntil:
+    notVisible: 'Manage services, network catalog, staff, and account'
+    timeout: 30000
+- assertVisible: Account details, settings, and security
+- back
+- extendedWaitUntil:
+    visible: 'Manage services, network catalog, staff, and account'
+    timeout: 20000
+
+# Sign Out asks first; Cancel keeps the session.
+- tapOn: Sign Out
+- extendedWaitUntil:
+    visible: Are you sure you want to sign out of this device?
+    timeout: 10000
+- tapOn: Cancel
+- extendedWaitUntil:
+    notVisible: Are you sure you want to sign out of this device?
+    timeout: 10000
+- assertVisible: 'Manage services, network catalog, staff, and account'

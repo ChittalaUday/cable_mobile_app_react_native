@@ -1,0 +1,54 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - staff
+  - search
+---
+# Staff global search only offers what their permissions and layout allow.
+- runFlow: ../utils/login-staff.yaml
+- extendedWaitUntil:
+    visible: Field Officer
+    timeout: 30000
+
+- tapOn: Global Search
+- extendedWaitUntil:
+    visible: 'Search screens, actions, commands...'
+    timeout: 20000
+
+# Shared entries they hold the permission for are there.
+- inputText: customer
+- assertVisible:
+    id: search-result-customers
+- assertVisible:
+    id: search-result-add-customer
+- eraseText: 10
+- inputText: collections
+- assertVisible:
+    id: search-result-my-collections
+
+# Role edges: admin-only screens and actions never appear.
+- eraseText: 15
+- inputText: staff
+- assertNotVisible:
+    id: search-result-staff
+- assertNotVisible: 'Staff & Teams'
+- eraseText: 10
+- inputText: package
+- assertNotVisible:
+    id: search-result-packages
+- assertNotVisible:
+    id: search-result-add-package
+- assertVisible: No matching actions or screens found
+- eraseText: 10
+- inputText: settings
+- assertNotVisible:
+    id: search-result-settings
+
+# Opening a staff result works.
+- eraseText: 10
+- inputText: collections
+- tapOn:
+    id: search-result-my-collections
+- extendedWaitUntil:
+    visible: My Collections
+    timeout: 30000

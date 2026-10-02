@@ -27,7 +27,7 @@ export function RevenueOverview({ revenue, range, onRange }: {
           <HugeiconsIcon icon={ChartBarLineIcon} size={16} color={TINT.orange.fg} strokeWidth={2.2} />
         </View>
         <Text className="flex-1 text-[15px] font-bold text-foreground">{t('admin_dashboard.collections_overview')}</Text>
-        <View className="flex-row rounded-xl bg-neutral-100 p-0.5">
+        <View className="flex-row rounded-xl bg-muted p-0.5">
           {RANGES.map(option => (
             <Pressable
               key={option.key}

@@ -1,36 +1,38 @@
 import * as React from 'react';
 import { useMMKVString } from 'react-native-mmkv';
-import { Uniwind, useUniwind } from 'uniwind';
+import { Uniwind } from 'uniwind';
 
 import { storage } from '@/lib/storage';
 
 const SELECTED_THEME = 'SELECTED_THEME';
 export type ColorSchemeType = 'light' | 'dark' | 'system';
+
+/** What the app starts in until the user picks something in Settings. */
+export const DEFAULT_THEME: ColorSchemeType = 'dark';
+
+function asTheme(value: string | undefined): ColorSchemeType {
+  return value === 'light' || value === 'dark' || value === 'system' ? value : DEFAULT_THEME;
+}
+
 /**
- * this hooks should only be used while selecting the theme
- * This hooks will return the selected theme which is stored in MMKV
- * selectedTheme should be one of the following values 'light', 'dark' or 'system'
- * don't use this hooks if you want to use it to style your component based on the theme use useUniwind from uniwind instead
- *
+ * The theme picked in Settings (stored in MMKV), and the setter for it.
+ * Only for choosing the theme — to style by the current theme, use `useUniwind`.
  */
 export function useSelectedTheme() {
-  const { theme: _theme } = useUniwind();
-  const [theme, _setTheme] = useMMKVString(SELECTED_THEME, storage);
+  const [theme, setStoredTheme] = useMMKVString(SELECTED_THEME, storage);
 
-  // TODO: dark theme is temporarily disabled app-wide - restore `t` here to re-enable.
   const setSelectedTheme = React.useCallback(
-    (_t: ColorSchemeType) => {
-      Uniwind.setTheme('light');
-      _setTheme('light');
+    (next: ColorSchemeType) => {
+      Uniwind.setTheme(next);
+      setStoredTheme(next);
     },
-    [_setTheme],
+    [setStoredTheme],
   );
 
-  const selectedTheme = (theme ?? 'light') as ColorSchemeType;
-  return { selectedTheme, setSelectedTheme } as const;
+  return { selectedTheme: asTheme(theme), setSelectedTheme } as const;
 }
-// to be used in the root file to load the selected theme from MMKV
-// TODO: dark theme is temporarily disabled app-wide - read the stored theme here to re-enable.
+
+/** Called once in the root layout: applies the stored theme, or dark when none is stored. */
 export function loadSelectedTheme() {
-  Uniwind.setTheme('light');
+  Uniwind.setTheme(asTheme(storage.getString(SELECTED_THEME)));
 }

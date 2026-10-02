@@ -1,0 +1,216 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - inventory
+---
+# Issue wizard (item -> customer -> confirm -> success) on a unit this flow
+# receives itself (serial E2E-<stamp>-I), issued to the seeded
+# "E2E Customer Login" subscriber. Covers empty item/customer searches,
+# an unknown serial, back navigation between steps, cancelling mid-way
+# (nothing issued), the happy path, and re-issuing an allocated unit.
+- evalScript: ${output.stamp = String(Date.now()).slice(-6)}
+- runFlow: ../utils/login-admin.yaml
+- runFlow: ../utils/inventory-open.yaml
+- runFlow: ../utils/inventory-ensure-item.yaml
+- runFlow:
+    file: ../utils/inventory-receive-serial.yaml
+    env:
+      SERIAL: E2E-${output.stamp}-I
+
+# --- Step 1: item. Catalog search, hit and empty ----------------------------
+- tapOn: Issue to Customer
+- extendedWaitUntil:
+    visible: Scan serial code or select item
+    timeout: 20000
+- assertVisible: Scan Serial Code
+- assertVisible: Manual Serial Code Lookup
+- tapOn: Search Catalog
+- tapOn:
+    id: issue-item-search-input
+- inputText: zzqq-none
+- extendedWaitUntil:
+    visible: No items match your search
+    timeout: 20000
+- eraseText: 20
+- inputText: E2E Stock Unit
+- runFlow: ../utils/hide-keyboard.yaml
+- extendedWaitUntil:
+    visible: E2E Stock Unit
+    timeout: 20000
+# Zero-stock items are not offered for issue.
+- assertNotVisible: ACT Smart Remote
+- tapOn: E2E Stock Unit
+- extendedWaitUntil:
+    visible: 'Step 2: Assign equipment to subscriber'
+    timeout: 20000
+# Back returns to step 1 with the search intact.
+- back
+- extendedWaitUntil:
+    visible: Scan serial code or select item
+    timeout: 20000
+- assertVisible: E2E Stock Unit
+
+# --- Step 1 by serial: unknown serial, then ours ----------------------------
+- tapOn: Scan Serial Code
+- tapOn:
+    id: issue-manual-serial-input
+- inputText: E2E-NOPE-${output.stamp}
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Lookup Serial
+- extendedWaitUntil:
+    visible: 'No item found matching "E2E-NOPE-${output.stamp}"\. Select an item below or inward it\.'
+    timeout: 20000
+- tapOn: Scan Again
+- assertNotVisible: .*No item found matching.*
+- tapOn:
+    id: issue-manual-serial-input
+- eraseText: 40
+- inputText: E2E-${output.stamp}-I
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Lookup Serial
+
+# --- Step 2: customer. Empty search, then the E2E subscriber ----------------
+- extendedWaitUntil:
+    visible: 'Step 2: Assign equipment to subscriber'
+    timeout: 20000
+- tapOn:
+    id: issue-customer-search-input
+- inputText: zzqq-nobody
+- extendedWaitUntil:
+    visible: No Customers Found
+    timeout: 20000
+- assertVisible: 'No customer matches "zzqq-nobody"\.'
+- eraseText: 20
+- inputText: E2E Customer Login
+- runFlow: ../utils/hide-keyboard.yaml
+- extendedWaitUntil:
+    visible: E2E Customer Login
+    timeout: 20000
+- tapOn: E2E Customer Login
+
+# --- Step 3: confirm shows the item, serial, customer and terms -------------
+- extendedWaitUntil:
+    visible: 'Step 3: Verify terms and assign equipment'
+    timeout: 20000
+- assertVisible: E2E Stock Unit
+- assertVisible: E2E-STOCK-UNIT
+- assertVisible: E2E-${output.stamp}-I
+- assertVisible: E2E Customer Login
+- assertVisible: SSCN-000001
+- assertVisible: On Loan
+# Ownership cycles through its options on tap.
+- tapOn: On Loan
+- assertVisible: Security Deposit
+- tapOn: Security Deposit
+- tapOn: Customer Owned / Sold
+- tapOn: Rental
+- assertVisible: On Loan
+
+# --- Cancel mid-way: back out of every step to the hub ----------------------
+- back
+- extendedWaitUntil:
+    visible: 'Step 2: Assign equipment to subscriber'
+    timeout: 20000
+- back
+- extendedWaitUntil:
+    visible: Scan serial code or select item
+    timeout: 20000
+- back
+- extendedWaitUntil:
+    visible: Search inventory...
+    timeout: 20000
+# Nothing was issued: the unit has no customer assignment.
+- tapOn: Customer Equipment
+- extendedWaitUntil:
+    visible:
+      id: equipment-search-input
+    timeout: 20000
+- tapOn:
+    id: equipment-search-input
+- inputText: E2E-${output.stamp}-I
+- extendedWaitUntil:
+    visible: No Equipment Found
+    timeout: 20000
+- runFlow: ../utils/hide-keyboard.yaml
+- back
+
+# --- Happy path: issue it for real ------------------------------------------
+- tapOn: Issue to Customer
+- extendedWaitUntil:
+    visible: Manual Serial Code Lookup
+    timeout: 20000
+- tapOn:
+    id: issue-manual-serial-input
+- inputText: E2E-${output.stamp}-I
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Lookup Serial
+- extendedWaitUntil:
+    visible: 'Step 2: Assign equipment to subscriber'
+    timeout: 20000
+- tapOn:
+    id: issue-customer-search-input
+- inputText: E2E Customer Login
+- runFlow: ../utils/hide-keyboard.yaml
+- extendedWaitUntil:
+    visible: E2E Customer Login
+    timeout: 20000
+- tapOn: E2E Customer Login
+- extendedWaitUntil:
+    visible: Confirm Issue
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      text: Confirm Issue
+      index: 1
+- tapOn:
+    text: Confirm Issue
+    index: 1
+
+# --- Success screen ---------------------------------------------------------
+- extendedWaitUntil:
+    visible: Equipment Issued Successfully
+    timeout: 30000
+- assertVisible: E2E-${output.stamp}-I
+- assertVisible: Active / Allocated
+- assertVisible: Issue Another
+- tapOn: View Assignment
+- extendedWaitUntil:
+    visible: Search inventory...
+    timeout: 20000
+
+# The assignment shows in Customer Equipment, under Active not Returned.
+- tapOn: Customer Equipment
+- extendedWaitUntil:
+    visible:
+      id: equipment-search-input
+    timeout: 20000
+- tapOn:
+    id: equipment-search-input
+- inputText: E2E-${output.stamp}-I
+- runFlow: ../utils/hide-keyboard.yaml
+- extendedWaitUntil:
+    visible: 'SN: E2E-${output.stamp}-I'
+    timeout: 20000
+- assertVisible: E2E Customer Login
+- assertVisible: active
+- tapOn: Active \(.*\)
+- assertVisible: 'SN: E2E-${output.stamp}-I'
+- tapOn: Returned \(.*\)
+- assertNotVisible: 'SN: E2E-${output.stamp}-I'
+- assertVisible: No Equipment Found
+- back
+
+# --- The same unit cannot be issued twice -----------------------------------
+- tapOn: Issue to Customer
+- extendedWaitUntil:
+    visible: Manual Serial Code Lookup
+    timeout: 20000
+- tapOn:
+    id: issue-manual-serial-input
+- inputText: E2E-${output.stamp}-I
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Lookup Serial
+- extendedWaitUntil:
+    visible: E2E-${output.stamp}-I is already assigned to a customer\.
+    timeout: 20000

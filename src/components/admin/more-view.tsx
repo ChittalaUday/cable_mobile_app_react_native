@@ -3,6 +3,7 @@ import type { Href } from 'expo-router';
 import type { TintKey } from '@/components/common/shell';
 import {
   ArrowRight01Icon,
+  DiscountTag01Icon,
   HeadsetIcon,
   Location01Icon,
   Logout01Icon,
@@ -40,6 +41,14 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
+  {
+    key: 'plans',
+    title: 'Plans',
+    subtitle: 'What customers are sold: your price & discount',
+    icon: DiscountTag01Icon,
+    tint: 'green',
+    route: '/admin/plans',
+  },
   {
     key: 'services',
     title: 'Services',
@@ -144,7 +153,7 @@ export function MoreView({
             className="flex-row items-center justify-between"
           >
             <View className="flex-row items-center gap-3">
-              <View className="size-12 overflow-hidden rounded-full bg-neutral-200">
+              <View className="size-12 overflow-hidden rounded-full bg-muted">
                 {user?.photoURL
                   ? (
                       <Image source={{ uri: user.photoURL }} className="size-12" contentFit="cover" />

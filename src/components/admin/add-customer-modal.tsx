@@ -1,5 +1,4 @@
-import type { CustomerDetail, Location } from '@/lib/api/types';
-import type { NormalizedPackage } from '@/lib/hooks/api/use-packages';
+import type { CustomerDetail, Location, Plan } from '@/lib/api/types';
 import {
   AlertCircleIcon,
   Cancel01Icon,
@@ -12,11 +11,11 @@ import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, TextInput, TouchableOpacity } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
-import { Button, colors, Pressable, Text, View } from '@/components/ui';
+import { Button, colors, Pressable, Text, ThemedIcon, View } from '@/components/ui';
 
 import { useCreateCustomer, useCustomers } from '@/lib/hooks/api/use-customers';
 import { useLocations } from '@/lib/hooks/api/use-locations';
-import { usePackages } from '@/lib/hooks/api/use-packages';
+import { usePlans } from '@/lib/hooks/api/use-plans';
 import { useDismissKeyboardOnExit } from '@/lib/hooks/common/use-dismiss-keyboard';
 
 export type AddCustomerModalProps = {
@@ -34,8 +33,8 @@ const AREA_RESULTS = 8;
 /**
  * Register a subscriber and fit their first connection, in one sheet.
  *
- * Two steps, not three. The package is picked from the tenant's own catalogue
- * rather than typed, because its price, cycle and provider all come with it,
+ * Two steps, not three. The plan is picked from the tenant's own plans rather
+ * than typed, because its amount, cycle and provider all come with it,
  * and the area is picked from the location tree, because that is what decides
  * who can see this customer afterwards. Hardware is not here at all: issuing a
  * box moves stock and books a serial, which is the inventory flow's job.
@@ -72,16 +71,16 @@ export function AddCustomerModal({ visible, onClose, onSuccess }: AddCustomerMod
     ? (phoneMatches?.pages[0]?.items ?? []).find(item => item.phone === digits) ?? null
     : null;
 
-  const [packageId, setPackageId] = React.useState<string | null>(null);
+  const [planId, setPlanId] = React.useState<string | null>(null);
   const [areaQuery, setAreaQuery] = React.useState('');
   const [area, setArea] = React.useState<Location | null>(null);
 
   const { mutateAsync: createCustomer, isPending } = useCreateCustomer();
-  const { data: allPackages } = usePackages({ variables: { status: 'active' } });
+  const { data: allPlans } = usePlans({ variables: { status: 'active' } });
   const { data: areaPage } = useLocations({ variables: areaQuery.trim() === '' ? undefined : { q: areaQuery.trim() } });
 
-  const catalogue = (allPackages ?? []).filter(item => item.active);
-  const chosen = catalogue.find(item => item.id === packageId) ?? null;
+  const catalogue = (allPlans ?? []).filter(item => item.status === 'active');
+  const chosen = catalogue.find(item => item.id === planId) ?? null;
   const areas = (areaPage?.items ?? []).slice(0, AREA_RESULTS);
 
   const resetForm = () => {
@@ -91,7 +90,7 @@ export function AddCustomerModal({ visible, onClose, onSuccess }: AddCustomerMod
     setName('');
     setPhone('');
     setAddress('');
-    setPackageId(null);
+    setPlanId(null);
     setAreaQuery('');
     setArea(null);
   };
@@ -119,7 +118,7 @@ export function AddCustomerModal({ visible, onClose, onSuccess }: AddCustomerMod
   const validateStep2 = (): boolean => {
     const errs: Record<string, string> = {};
     if (chosen === null)
-      errs.packageId = t('add_customer.package_required', 'Pick the package this connection is on');
+      errs.planId = t('add_customer.plan_required', 'Pick the plan this connection is on');
 
     if (area === null)
       errs.area = t('add_customer.area_required', 'Pick the area the line is fitted in');
@@ -144,7 +143,7 @@ export function AddCustomerModal({ visible, onClose, onSuccess }: AddCustomerMod
           phone: digits,
           address: address.trim(),
           connection: {
-            packageId: chosen.id,
+            planId: chosen.id,
             locationId: area.id,
             installationAddress: address.trim(),
           },
@@ -181,7 +180,7 @@ export function AddCustomerModal({ visible, onClose, onSuccess }: AddCustomerMod
               </Text>
             </View>
             <TouchableOpacity onPress={handleClose} hitSlop={12} testID="add-customer-close" accessibilityRole="button" accessibilityLabel={t('add_customer.close', 'Close')} className="rounded-full bg-neutral-100 p-2 dark:bg-neutral-800">
-              <HugeiconsIcon icon={Cancel01Icon} size={20} color={colors.neutral[500]} />
+              <ThemedIcon icon={Cancel01Icon} size={20} colorClassName="text-muted-foreground" />
             </TouchableOpacity>
           </View>
 
@@ -245,6 +244,7 @@ export function AddCustomerModal({ visible, onClose, onSuccess }: AddCustomerMod
                     value={name}
                     onChangeText={setName}
                     placeholder={t('add_customer.full_name_placeholder', 'e.g. Ramesh Kumar')}
+                    testID="add-customer-name"
                     placeholderTextColor={colors.neutral[400]}
                     className="rounded-xl border border-border bg-card px-4 py-3 text-base text-foreground"
                   />
@@ -257,6 +257,7 @@ export function AddCustomerModal({ visible, onClose, onSuccess }: AddCustomerMod
                     keyboardType="phone-pad"
                     maxLength={10}
                     placeholder={t('add_customer.phone_placeholder', 'e.g. 9876543210')}
+                    testID="add-customer-phone"
                     placeholderTextColor={colors.neutral[400]}
                     className="rounded-xl border border-border bg-card px-4 py-3 text-base text-foreground"
                   />
@@ -280,6 +281,7 @@ export function AddCustomerModal({ visible, onClose, onSuccess }: AddCustomerMod
                     multiline
                     numberOfLines={2}
                     placeholder={t('add_customer.address_placeholder', 'e.g. Main Street, Door 4-12')}
+                    testID="add-customer-address"
                     placeholderTextColor={colors.neutral[400]}
                     className="rounded-xl border border-border bg-card px-4 py-3 text-base text-foreground"
                   />
@@ -289,21 +291,21 @@ export function AddCustomerModal({ visible, onClose, onSuccess }: AddCustomerMod
 
             {successMessage === '' && step === 2 && (
               <View className="gap-3.5">
-                <Field label={t('add_customer.choose_package', 'Package')} required error={errors.packageId}>
+                <Field label={t('add_customer.choose_plan', 'Plan')} required error={errors.planId}>
                   {catalogue.length === 0
                     ? (
                         <Text className="text-xs text-muted-foreground">
-                          {t('add_customer.no_packages', 'No active packages yet. Add one under Packages first.')}
+                          {t('add_customer.no_plans', 'No active plans yet. Add one under Plans first.')}
                         </Text>
                       )
                     : (
                         <View className="gap-2">
                           {catalogue.map(item => (
-                            <PackageRow
+                            <PlanRow
                               key={item.id}
                               item={item}
-                              selected={item.id === packageId}
-                              onPress={() => setPackageId(item.id)}
+                              selected={item.id === planId}
+                              onPress={() => setPlanId(item.id)}
                             />
                           ))}
                         </View>
@@ -410,8 +412,8 @@ function Field({ label, required = false, error, children }: {
   );
 }
 
-function PackageRow({ item, selected, onPress }: {
-  item: NormalizedPackage;
+function PlanRow({ item, selected, onPress }: {
+  item: Plan;
   selected: boolean;
   onPress: () => void;
 }) {
@@ -426,12 +428,10 @@ function PackageRow({ item, selected, onPress }: {
     >
       <View className="min-w-0 flex-1">
         <Text className="text-sm font-extrabold text-foreground" numberOfLines={1}>{item.name}</Text>
-        {item.providerName != null && (
-          <Text className="text-[11px] text-muted-foreground" numberOfLines={1}>{item.providerName}</Text>
-        )}
+        <Text className="text-[11px] text-muted-foreground" numberOfLines={1}>{item.serviceProviderName}</Text>
       </View>
-      <Text className="text-xs font-bold text-primary-600">
-        {`₹${item.monthlyPrice} / ${item.billingCycle}`}
+      <Text className="shrink-0 text-xs font-bold text-primary-600" numberOfLines={1}>
+        {`₹${item.amount} / ${item.billingCycle}`}
       </Text>
     </Pressable>
   );

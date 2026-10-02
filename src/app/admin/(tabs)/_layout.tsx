@@ -9,11 +9,15 @@ import { HugeiconsIcon } from '@hugeicons/react-native';
 import { Tabs } from 'expo-router';
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useCSSVariable } from 'uniwind';
 
 import { colors } from '@/components/ui';
 
 export default function AdminTabsLayout() {
   const { t } = useTranslation();
+  // The bar is the card colour of the current theme, not a fixed white.
+  const card = String(useCSSVariable('--color-card') ?? colors.white);
+  const border = String(useCSSVariable('--color-border') ?? colors.neutral[200]);
 
   return (
     <Tabs
@@ -22,8 +26,8 @@ export default function AdminTabsLayout() {
         tabBarActiveTintColor: colors.primary[600],
         tabBarInactiveTintColor: colors.neutral[400],
         tabBarStyle: {
-          backgroundColor: colors.white,
-          borderTopColor: colors.neutral[200],
+          backgroundColor: card,
+          borderTopColor: border,
           paddingTop: 4,
         },
         tabBarLabelStyle: {

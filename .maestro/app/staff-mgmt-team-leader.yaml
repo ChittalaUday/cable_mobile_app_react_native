@@ -1,0 +1,152 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - staff-mgmt
+---
+# Team detail roster and the leader badge: two hires on a fresh crew, make A
+# leader, then B (PATCH /teams/{id} leaderMembershipId), and the badge moves.
+# Then take B off the crew from the member sheet, and clean everything up.
+- evalScript: ${output.stamp = String(Date.now()).slice(-6)}
+- evalScript: ${output.team = 'E2E Team ' + output.stamp}
+- evalScript: ${output.a = 'E2E Lead A ' + output.stamp}
+- evalScript: ${output.b = 'E2E Lead B ' + output.stamp}
+- runFlow: ../utils/login-admin.yaml
+- runFlow: ../utils/staff-mgmt-open.yaml
+
+# ------------------------------------------------------------ SETUP: crew + two members
+- tapOn: Teams
+- tapOn: Add team
+- extendedWaitUntil:
+    visible:
+      id: team-name-input
+    timeout: 20000
+- tapOn:
+    id: team-name-input
+- inputText: ${output.team}
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: team-save-button
+- extendedWaitUntil:
+    visible: Edit ${output.team}
+    timeout: 30000
+- tapOn: People
+- runFlow:
+    file: ../utils/staff-mgmt-hire.yaml
+    env:
+      NAME: ${output.a}
+      EMAIL: e2e.leada.${output.stamp}@e2e.test
+      TEAM: ${output.team}
+- runFlow:
+    file: ../utils/staff-mgmt-hire.yaml
+    env:
+      NAME: ${output.b}
+      EMAIL: e2e.leadb.${output.stamp}@e2e.test
+      TEAM: ${output.team}
+
+# ------------------------------------------------------------ TEAM DETAIL
+- tapOn: Teams
+- tapOn:
+    id: staff-search-input
+- inputText: ${output.stamp}
+- runFlow: ../utils/hide-keyboard.yaml
+- assertVisible: 2 members · 0 areas
+- tapOn: ${output.team}
+- extendedWaitUntil:
+    visible: The team’s areas
+    timeout: 20000
+- extendedWaitUntil:
+    visible: ${output.b}
+    timeout: 20000
+- assertVisible: 2 members · 0 areas
+- assertVisible: ${output.a}
+- assertNotVisible:
+    id: team-member-leader-badge
+
+# ------------------------------------------------------------ A BECOMES LEADER
+- tapOn: ${output.a}
+- extendedWaitUntil:
+    visible: Team leader
+    timeout: 20000
+- assertVisible: Areas covered
+- tapOn:
+    id: team-leader-switch
+- tapOn: Save
+- extendedWaitUntil:
+    visible: 2 members · 0 areas · 1 leader
+    timeout: 30000
+- assertVisible:
+    id: team-member-row
+    containsDescendants:
+      - text: ${output.a}
+      - id: team-member-leader-badge
+- assertNotVisible:
+    id: team-member-row
+    containsDescendants:
+      - text: ${output.b}
+      - id: team-member-leader-badge
+
+# ------------------------------------------------------------ LEADERSHIP MOVES TO B
+- tapOn: ${output.b}
+- extendedWaitUntil:
+    visible: Team leader
+    timeout: 20000
+- tapOn:
+    id: team-leader-switch
+- tapOn: Save
+- extendedWaitUntil:
+    visible:
+      id: team-member-row
+      containsDescendants:
+        - text: ${output.b}
+        - id: team-member-leader-badge
+    timeout: 30000
+# One leader per crew: A lost the badge.
+- assertVisible: 2 members · 0 areas · 1 leader
+- assertNotVisible:
+    id: team-member-row
+    containsDescendants:
+      - text: ${output.a}
+      - id: team-member-leader-badge
+
+# ------------------------------------------------------------ TAKE B OFF THE CREW
+- tapOn: ${output.b}
+- extendedWaitUntil:
+    visible: Team leader
+    timeout: 20000
+- tapOn: Remove
+- assertVisible: Remove from this team
+- tapOn:
+    text: Remove
+    below:
+      text: .*lose every area they reached through this crew.*
+- extendedWaitUntil:
+    visible: 1 member · 0 areas
+    timeout: 30000
+- assertNotVisible: ${output.b}
+
+# ------------------------------------------------------------ CLEANUP
+- back
+- tapOn: People
+- extendedWaitUntil:
+    visible: ${output.a}
+    timeout: 20000
+- runFlow:
+    file: ../utils/staff-mgmt-remove.yaml
+    env:
+      NAME: ${output.a}
+- runFlow:
+    file: ../utils/staff-mgmt-remove.yaml
+    env:
+      NAME: ${output.b}
+- assertVisible: Nobody matches that search.
+- tapOn: Teams
+- tapOn: Edit ${output.team}
+- extendedWaitUntil:
+    visible: Disband team
+    timeout: 20000
+- tapOn: Disband team
+- tapOn: Disband
+- extendedWaitUntil:
+    visible: No team matches that search.
+    timeout: 30000

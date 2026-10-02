@@ -1,40 +1,84 @@
 appId: ${APP_ID}
 tags:
   - e2e
+  - admin
   - search
 ---
-# The appRegistry drives global search: screens and per-permission actions.
-- runFlow:
-    file: ../utils/fresh-login.yaml
-    env:
-      EMAIL: admin@sscn.com
-      PASSWORD: Admin@123456
-- assertVisible: Operator Panel
+# Global search (header magnifier): the admin registry, opening a result,
+# a miss, and closing the modal.
+- runFlow: ../utils/login-admin.yaml
+- extendedWaitUntil:
+    visible: Operator Panel
+    timeout: 30000
 
 - tapOn: Global Search
-- assertVisible: 'Search screens, actions, commands...'
+- extendedWaitUntil:
+    visible: 'Search screens, actions, commands...'
+    timeout: 20000
 
-# Empty query lists everything the admin is permitted to reach.
-- assertVisible: Customers
-- assertVisible: 'Packages & Plans'
+# A screen name finds it, with its type badge.
+- inputText: staff
+- extendedWaitUntil:
+    visible:
+      id: search-result-staff
+    timeout: 10000
+- assertVisible: 'Staff & Teams'
 
-# Every packages CRUD operation is registered as its own searchable action.
-- inputText: package
-- assertVisible: 'Packages & Plans'
-- assertVisible: Add Package
-- assertVisible: Edit Packages
-- assertVisible: Delete Packages
-
-# A miss reports cleanly rather than showing stale results.
-- eraseText: 7
-- inputText: zzzznotathing
+# A miss reports cleanly.
+- eraseText: 10
+- inputText: zzqxnotathing
 - assertVisible: No matching actions or screens found
-- eraseText: 13
+- assertNotVisible:
+    id: search-result-staff
 
-# The create action deep-links straight into an open form.
-- inputText: add package
-- tapOn: Add Package
-- assertVisible: New Package
+# Admin-only entries are all searchable.
+- eraseText: 20
+- inputText: package
+- assertVisible:
+    id: search-result-packages
+- assertVisible:
+    id: search-result-add-package
+- assertVisible:
+    id: search-result-edit-packages
+- assertVisible:
+    id: search-result-delete-packages
+
+# Opening a result navigates there and closes the modal.
+- eraseText: 10
+- inputText: staff
 - tapOn:
-    id: package-cancel-button
-- assertVisible: 'Packages & Plans'
+    id: search-result-staff
+- extendedWaitUntil:
+    notVisible: 'Search screens, actions, commands...'
+    timeout: 10000
+- extendedWaitUntil:
+    visible: 'Staff & Teams'
+    timeout: 30000
+- back
+- extendedWaitUntil:
+    visible: Operator Panel
+    timeout: 20000
+
+# Settings is searchable by keyword, not just title.
+- tapOn: Global Search
+- inputText: upi
+- tapOn:
+    id: search-result-settings
+- extendedWaitUntil:
+    visible: General
+    timeout: 20000
+- back
+
+# Hardware back closes the modal without navigating.
+- tapOn: Global Search
+- extendedWaitUntil:
+    visible: 'Search screens, actions, commands...'
+    timeout: 10000
+- back
+- runFlow:
+    when:
+      visible: 'Search screens, actions, commands...'
+    commands:
+      - back
+- assertNotVisible: 'Search screens, actions, commands...'
+- assertVisible: Operator Panel

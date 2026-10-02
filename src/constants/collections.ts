@@ -16,5 +16,6 @@ export const QUERY_KEYS = {
   USER_ACCESS: 'user-access',
   APP_REGISTRY: 'app-registry',
   PACKAGES: 'packages',
+  PLANS: 'plans',
   TICKETS: 'tickets',
 } as const;

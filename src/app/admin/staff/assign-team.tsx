@@ -150,6 +150,7 @@ export function AssignTeamScreen() {
               <Card className="gap-2 border border-border p-3">
                 <Text className="text-sm font-bold text-foreground">New team</Text>
                 <TextInput
+                  testID="assign-team-new-input"
                   value={newTeam}
                   onChangeText={setNewTeam}
                   placeholder="Collection round"
@@ -200,6 +201,7 @@ export function AssignTeamScreen() {
       </KeyboardAwareScrollView>
 
       <SaveBar
+        testID="assign-team-save-button"
         label={selected === null ? 'Finish' : 'Assign & finish'}
         busyLabel="Saving..."
         busy={updateStaff.isPending}

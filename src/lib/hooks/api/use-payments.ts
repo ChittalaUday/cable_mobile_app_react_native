@@ -27,12 +27,21 @@ export type RecordCollectionPayload = ApiBody<'/api/v1/payments/subscription', '
  */
 export type RecordEquipmentPaymentPayload = ApiBody<'/api/v1/payments/equipment', 'post'>;
 
+/** Swaps a unit the customer already has for one from stock; the amount is an optional fee. */
+export type ReplaceEquipmentPayload = ApiBody<'/api/v1/payments/equipment/replace', 'post'>;
+
 /**
  * The id this device gives a visit. Replaying it makes a retry or double tap
  * return the same receipt instead of recording another payment.
  */
 export function newCollectionReference(): string {
   return Crypto.randomUUID();
+}
+
+/** One page of receipts, for a one-off read outside a query (e.g. before a confirm). */
+export async function listCollections(params: CollectionQueryVariables, signal?: AbortSignal): Promise<CollectionPage> {
+  const response = await client.get<CollectionPage>('/payments', { params, signal });
+  return response.data;
 }
 
 /**
@@ -47,13 +56,7 @@ export const useCollections = createInfiniteQuery<
   string | undefined
 >({
   queryKey: ['payments'],
-  fetcher: async (variables, { pageParam, signal }) => {
-    const response = await client.get<ApiResponse<'/api/v1/payments', 'get', 200>>('/payments', {
-      params: { limit: PAGE_SIZE, cursor: pageParam, ...variables },
-      signal,
-    });
-    return response.data;
-  },
+  fetcher: (variables, { pageParam, signal }) => listCollections({ limit: PAGE_SIZE, cursor: pageParam, ...variables }, signal),
   getNextPageParam: lastPage => lastPage.nextCursor ?? undefined,
   initialPageParam: undefined,
   // A collection round is a shared book — somebody else's receipt changes what
@@ -102,6 +105,16 @@ export const useRecordEquipmentPayment = createMutation<
   Error
 >({
   mutationFn: async ({ payload }) => (await client.post<ApiResponse<'/api/v1/payments/equipment', 'post', 201>>('/payments/equipment', payload)).data,
+  onSuccess: async () => {
+    await Promise.all([
+      refreshAfterCollection(),
+      queryClient.invalidateQueries({ queryKey: ['inventory'] }),
+    ]);
+  },
+});
+
+export const useReplaceEquipment = createMutation<Collection, { payload: ReplaceEquipmentPayload }, Error>({
+  mutationFn: async ({ payload }) => (await client.post<ApiResponse<'/api/v1/payments/equipment/replace', 'post', 201>>('/payments/equipment/replace', payload)).data,
   onSuccess: async () => {
     await Promise.all([
       refreshAfterCollection(),

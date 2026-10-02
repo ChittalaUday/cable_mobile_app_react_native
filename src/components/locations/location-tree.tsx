@@ -11,7 +11,7 @@ import {
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as React from 'react';
 
-import { ActivityIndicator, colors, Pressable, Text, View } from '@/components/ui';
+import { ActivityIndicator, colors, Pressable, Text, ThemedIcon, View } from '@/components/ui';
 
 /**
  * One row of the flattened tree.
@@ -124,10 +124,10 @@ export function LocationRow({
           ? <ActivityIndicator size="small" color={colors.primary[500]} />
           : hasChildren
             ? (
-                <HugeiconsIcon
+                <ThemedIcon
                   icon={isOpen ? ArrowDown01Icon : ArrowRight01Icon}
                   size={16}
-                  color={colors.neutral[500]}
+                  colorClassName="text-muted-foreground"
                   strokeWidth={2.4}
                 />
               )
@@ -175,7 +175,7 @@ export function LocationRow({
               hitSlop={10}
               className="size-7 items-center justify-center rounded-lg"
             >
-              <HugeiconsIcon icon={MoreVerticalIcon} size={18} color={colors.neutral[500]} strokeWidth={2} />
+              <ThemedIcon icon={MoreVerticalIcon} size={18} colorClassName="text-muted-foreground" strokeWidth={2} />
             </Pressable>
           )}
     </View>

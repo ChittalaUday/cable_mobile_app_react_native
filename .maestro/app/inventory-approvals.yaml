@@ -1,0 +1,151 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - staff
+  - admin
+  - inventory
+  - rbac
+---
+# Staff propose two catalog items (approval requests), see them pending
+# without decision buttons, then the admin rejects one and approves the
+# other, each after first backing out of the confirm with Cancel.
+- evalScript: ${output.stamp = String(Date.now()).slice(-6)}
+- runFlow: ../utils/login-staff.yaml
+- runFlow: ../utils/inventory-open.yaml
+
+# --- Staff: two proposals from the catalog ----------------------------------
+- tapOn: Item Catalog
+- extendedWaitUntil:
+    visible: .*Staff permissions.*
+    timeout: 20000
+- tapOn:
+    id: catalog-add-button
+- extendedWaitUntil:
+    visible: Request New Catalog Item
+    timeout: 10000
+- tapOn:
+    id: catalog-name-input
+- inputText: E2E Req A ${output.stamp}
+# Approving a create applies it, and a code-less item collides (the API
+# allows only one item without a SKU), so this proposal carries a SKU.
+- tapOn:
+    id: catalog-code-input
+- inputText: E2E-RA-${output.stamp}
+- tapOn:
+    id: catalog-reason-input
+- inputText: E2E approve path
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: catalog-submit-button
+- extendedWaitUntil:
+    visible: Request Submitted
+    timeout: 20000
+- tapOn: OK
+
+- tapOn:
+    id: catalog-add-button
+- extendedWaitUntil:
+    visible: Request New Catalog Item
+    timeout: 10000
+- tapOn:
+    id: catalog-name-input
+- inputText: E2E Req B ${output.stamp}
+- tapOn:
+    id: catalog-reason-input
+- inputText: E2E reject path
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: catalog-submit-button
+- extendedWaitUntil:
+    visible: Request Submitted
+    timeout: 20000
+- tapOn: OK
+- back
+
+# --- Staff: own requests are listed as pending, with no decision buttons ----
+- tapOn: My Change Requests
+- extendedWaitUntil:
+    visible: Approval Requests
+    timeout: 20000
+- scrollUntilVisible:
+    element: E2E Req A ${output.stamp}
+    timeout: 30000
+- assertVisible: E2E Req B ${output.stamp}
+- assertVisible:
+    text: (?i)pending
+    above: E2E Req A ${output.stamp}
+- assertNotVisible: Approve
+- assertNotVisible: Reject
+
+# --- Admin: reject B (Cancel first), approve A (Cancel first) ---------------
+- runFlow: ../utils/login-admin.yaml
+- runFlow: ../utils/inventory-open.yaml
+- tapOn: Approval Requests
+- extendedWaitUntil:
+    visible: Review item modification & creation requests
+    timeout: 20000
+
+- scrollUntilVisible:
+    element: E2E Req B ${output.stamp}
+    timeout: 60000
+    centerElement: true
+- assertVisible: '"E2E reject path"'
+- tapOn:
+    text: Reject
+    below: E2E Req B ${output.stamp}
+- assertVisible: Reject Request
+- assertVisible: Are you sure you want to rejected this item modification request\?
+- tapOn: Cancel
+# Cancel leaves the request pending with its buttons in place.
+- assertVisible:
+    text: Reject
+    below: E2E Req B ${output.stamp}
+- tapOn:
+    text: Reject
+    below: E2E Req B ${output.stamp}
+- tapOn:
+    text: Reject
+    index: 1
+- extendedWaitUntil:
+    visible: Request marked as rejected\.
+    timeout: 20000
+- tapOn: OK
+
+- scrollUntilVisible:
+    element: E2E Req A ${output.stamp}
+    timeout: 60000
+    centerElement: true
+- tapOn:
+    text: Approve
+    below: E2E Req A ${output.stamp}
+- assertVisible: Approve Request
+- tapOn: Cancel
+- assertVisible:
+    text: Approve
+    below: E2E Req A ${output.stamp}
+- tapOn:
+    text: Approve
+    below: E2E Req A ${output.stamp}
+- tapOn:
+    text: Approve
+    index: 1
+- extendedWaitUntil:
+    visible: Request marked as approved\.
+    timeout: 20000
+- tapOn: OK
+
+# Both cards now carry their final status and no decision buttons.
+- scrollUntilVisible:
+    element: E2E Req A ${output.stamp}
+    timeout: 60000
+    centerElement: true
+- assertVisible:
+    text: (?i)approved
+    above: E2E Req A ${output.stamp}
+- scrollUntilVisible:
+    element: E2E Req B ${output.stamp}
+    timeout: 60000
+    centerElement: true
+- assertVisible:
+    text: (?i)rejected
+    above: E2E Req B ${output.stamp}

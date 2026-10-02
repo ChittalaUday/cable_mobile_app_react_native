@@ -1,0 +1,93 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - inventory
+---
+# Stock & Locations: level filters, search (hit and empty), opening an item,
+# and the item details page (specifications, admin menu, actions).
+- runFlow: ../utils/login-admin.yaml
+- runFlow: ../utils/inventory-open.yaml
+- tapOn: Stock & Locations
+- extendedWaitUntil:
+    visible: ACT HD Installation Kit
+    timeout: 30000
+- assertVisible: All Locations
+- assertVisible: All Items
+- assertVisible: In Stock
+- assertVisible: Low Stock
+
+# --- Level filters ----------------------------------------------------------
+# In Stock: the seeded kit has stock; zero-stock items drop out.
+- tapOn: In Stock
+- extendedWaitUntil:
+    visible: ACT HD Installation Kit
+    timeout: 20000
+- assertNotVisible: ACT Smart Remote
+# Low Stock: the zero-stock items appear; the well-stocked kit does not.
+- tapOn: Low Stock
+- extendedWaitUntil:
+    visible: ACT Smart Remote
+    timeout: 20000
+- assertVisible: 0 in stock
+- assertNotVisible: ACT HD Installation Kit
+- tapOn: All Items
+- extendedWaitUntil:
+    visible: ACT HD Installation Kit
+    timeout: 20000
+
+# --- Search: a match, then an empty result with its copy --------------------
+- tapOn:
+    id: stock-search-input
+- inputText: Smart Remote
+- extendedWaitUntil:
+    visible: ACT Smart Remote
+    timeout: 20000
+- assertNotVisible: ACT HD Installation Kit
+- eraseText: 20
+- inputText: zzqq-no-such-item
+- extendedWaitUntil:
+    visible: No stock items found
+    timeout: 20000
+- eraseText: 30
+- inputText: Installation Kit
+- runFlow: ../utils/hide-keyboard.yaml
+- extendedWaitUntil:
+    visible: ACT HD Installation Kit
+    timeout: 20000
+
+# --- Item details -----------------------------------------------------------
+- tapOn: ACT HD Installation Kit
+- extendedWaitUntil:
+    visible: Item Details
+    timeout: 20000
+- assertVisible: ACT-KIT-HD
+- assertVisible: Specifications
+- assertVisible: Total Stock
+- assertVisible: Available
+- assertVisible: Issued
+- assertVisible: Location
+- assertVisible: Description
+- assertVisible: View Stock
+- assertVisible: Issue Item
+# Admins do not get the staff permission banner.
+- assertNotVisible: .*Staff access.*
+# The overflow menu tells admins where editing lives.
+- tapOn:
+    id: item-details-menu-button
+- assertVisible: Edit Item
+- assertVisible: Admin direct editing is available in the item catalog\.
+- tapOn: OK
+# BUG: that message points to the catalog, but the catalog offers no edit
+# (or delete) action for an existing item. See report.
+
+# Issue Item jumps straight to the customer step with this item.
+- tapOn: Issue Item
+- extendedWaitUntil:
+    visible: Select Customer
+    timeout: 20000
+- back
+- tapOn: View Stock
+- extendedWaitUntil:
+    visible: Current levels across storage points
+    timeout: 20000

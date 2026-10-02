@@ -1,9 +1,8 @@
 import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
 
-import { colors, Pressable, SafeAreaView, Text, View } from '@/components/ui';
+import { Pressable, SafeAreaView, Text, ThemedIcon, View } from '@/components/ui';
 
 export type ScreenHeaderProps = {
   /** Main screen title displayed prominently. */
@@ -56,7 +55,7 @@ export function ScreenHeader({
               onPress={handleBack}
               className="size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card active:bg-muted"
             >
-              <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color={colors.charcoal[900]} strokeWidth={2.2} />
+              <ThemedIcon icon={ArrowLeft01Icon} size={20} colorClassName="text-foreground" strokeWidth={2.2} />
             </Pressable>
           )}
           <View className="min-w-0 flex-1">

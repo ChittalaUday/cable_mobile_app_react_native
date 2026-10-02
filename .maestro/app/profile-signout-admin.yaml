@@ -1,0 +1,70 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - profile
+---
+# Admin profile: renders the account, links to inbox and settings, guards
+# "sign out all devices" behind a confirm, and sign-out really ends the session.
+- runFlow: ../utils/login-admin.yaml
+- extendedWaitUntil:
+    visible: Operator Panel
+    timeout: 30000
+
+# Reached from the More tab's account card.
+- tapOn: More
+- tapOn: 'Account details, settings, and security'
+- extendedWaitUntil:
+    visible: admin@sscn.com
+    timeout: 20000
+- assertVisible: Profile
+- assertVisible: '(?i)admin'
+- assertVisible: Notifications
+- assertVisible: Settings
+- assertVisible: Sign out
+- assertVisible: Sign out all devices
+
+# Each row lands on a screen; Back returns to the profile.
+- tapOn: Notifications
+- extendedWaitUntil:
+    visible: All
+    timeout: 20000
+- tapOn: Back
+- extendedWaitUntil:
+    visible: admin@sscn.com
+    timeout: 10000
+- tapOn: Settings
+- extendedWaitUntil:
+    visible: General
+    timeout: 10000
+- back
+- extendedWaitUntil:
+    visible: admin@sscn.com
+    timeout: 10000
+
+# "Sign out all devices" asks first; Cancel keeps the session. (Confirm is not
+# exercised: it would revoke every admin session other flows are using.)
+- tapOn: Sign out all devices
+- extendedWaitUntil:
+    visible: This will end every active session for your account.
+    timeout: 10000
+- tapOn:
+    id: dialog-cancel
+- assertNotVisible: This will end every active session for your account.
+- assertVisible: admin@sscn.com
+
+# Sign out goes to the login form.
+- tapOn: Sign out
+- extendedWaitUntil:
+    visible: Welcome Back
+    timeout: 30000
+- assertNotVisible: Operator Panel
+
+# The session is really gone: a relaunch shows login, not the dashboard.
+- stopApp
+- launchApp
+- runFlow: ../utils/open-dev-build.yaml
+- extendedWaitUntil:
+    visible: Welcome Back
+    timeout: 30000
+- assertNotVisible: Operator Panel

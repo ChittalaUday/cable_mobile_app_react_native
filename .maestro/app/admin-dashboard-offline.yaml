@@ -1,0 +1,23 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - dashboard
+---
+# Network edge on the admin home: drop the network, refresh, see the error state
+# with "Try again"; restore the network, retry, and the figures load.
+- runFlow: ../utils/login-admin.yaml
+- extendedWaitUntil:
+    visible: Total Customers
+    timeout: 60000
+
+- setAirplaneMode: enabled
+- swipe:
+    start: 50%, 30%
+    end: 50%, 80%
+- takeScreenshot: /private/tmp/claude-501/-Users-udaychittala-exp-cable-mobile-app-react-native/10571404-f19f-483e-9003-a78a85cb9ca6/scratchpad/off1
+- extendedWaitUntil:
+    visible: '(Could not refresh.*|Try again)'
+    timeout: 30000
+- takeScreenshot: /private/tmp/claude-501/-Users-udaychittala-exp-cable-mobile-app-react-native/10571404-f19f-483e-9003-a78a85cb9ca6/scratchpad/off2
+- setAirplaneMode: disabled

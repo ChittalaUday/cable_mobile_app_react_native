@@ -1,0 +1,32 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - staff
+  - payments
+  - receipts
+---
+# A field officer who has never collected: My Collections and the staff
+# Receipts list both show the empty state instead of somebody else's round.
+# venkat.kap is a seeded staff login no other flow collects as.
+- runFlow:
+    file: ../utils/fresh-login.yaml
+    env:
+      EMAIL: venkat.kap@sscn.com
+      PASSWORD: Staff@123456
+
+- tapOn: Payments
+- extendedWaitUntil:
+    visible: My Collections
+    timeout: 30000
+- assertVisible: Every receipt you have issued, newest first
+- assertVisible: '0 receipts'
+- assertVisible: No receipts yet.
+# The office rollup is admin-only.
+- assertNotVisible: Payments & Collections
+- assertNotVisible: Collected Today
+
+- openLink: ${DEV_SCHEME}://staff/receipts
+- extendedWaitUntil:
+    visible: Your round
+    timeout: 30000
+- assertVisible: No receipts yet.

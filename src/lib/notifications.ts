@@ -78,7 +78,18 @@ export async function registerNotificationChannels(): Promise<void> {
  * signed-out phone stays reachable for promotional messages. Failing is not
  * worth surfacing — the next launch or token refresh tries again.
  */
-export async function syncPushToken(): Promise<void> {
+export function syncPushToken(): Promise<void> {
+  // One at a time: the permission prompt itself flips the app inactive and back,
+  // and every caller that fires meanwhile would otherwise raise another prompt.
+  inFlight ??= registerPushToken().finally(() => {
+    inFlight = null;
+  });
+  return inFlight;
+}
+
+let inFlight: Promise<void> | null = null;
+
+async function registerPushToken(): Promise<void> {
   const granted = await requestNotificationPermission().catch(() => false);
   const token = granted ? await pushToken() : null;
 

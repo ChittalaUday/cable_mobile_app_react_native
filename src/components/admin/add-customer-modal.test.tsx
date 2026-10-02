@@ -14,11 +14,11 @@ jest.mock('@/lib/hooks/api/use-customers', () => ({
   useCustomers: () => ({ data: { pages: [{ items: mockPhoneMatches }] } }),
 }));
 
-jest.mock('@/lib/hooks/api/use-packages', () => ({
-  usePackages: () => ({
+jest.mock('@/lib/hooks/api/use-plans', () => ({
+  usePlans: () => ({
     data: [
-      { id: 'pkg-1', name: 'Gold HD', monthlyPrice: 350, billingCycle: 'monthly', providerName: 'ACT', active: true },
-      { id: 'pkg-2', name: 'Retired', monthlyPrice: 99, billingCycle: 'monthly', providerName: 'ACT', active: false },
+      { id: 'plan-1', name: 'Gold HD', price: '400.00', discount: '50.00', amount: '350.00', billingCycle: 'monthly', serviceProviderName: 'ACT', status: 'active' },
+      { id: 'plan-2', name: 'Retired', price: '99.00', discount: '0.00', amount: '99.00', billingCycle: 'monthly', serviceProviderName: 'ACT', status: 'inactive' },
     ],
     isPending: false,
   }),
@@ -63,7 +63,7 @@ describe('addCustomerModal', () => {
 
     // Still only a warning: the identity step lets the operator carry on.
     toConnectionStep();
-    expect(screen.getByText(/Package/)).toBeTruthy();
+    expect(screen.getByText(/Plan/)).toBeTruthy();
   });
 
   it('opens on the customer details step', () => {
@@ -86,21 +86,22 @@ describe('addCustomerModal', () => {
     expect(mockMutateAsync).not.toHaveBeenCalled();
   });
 
-  it('offers only active packages, from the tenant catalogue', () => {
+  it('offers only active plans, priced at what a cycle charges', () => {
     renderWithClient(<AddCustomerModal visible onClose={jest.fn()} />);
     toConnectionStep();
 
     expect(screen.getByText('Gold HD')).toBeTruthy();
+    expect(screen.getByText('₹350.00 / monthly')).toBeTruthy();
     expect(screen.queryByText('Retired')).toBeNull();
   });
 
-  it('refuses to save without a package and an area', () => {
+  it('refuses to save without a plan and an area', () => {
     renderWithClient(<AddCustomerModal visible onClose={jest.fn()} />);
     toConnectionStep();
 
     fireEvent.press(screen.getByText('Create Customer'));
 
-    expect(screen.getByText('Pick the package this connection is on')).toBeTruthy();
+    expect(screen.getByText('Pick the plan this connection is on')).toBeTruthy();
     expect(screen.getByText('Pick the area the line is fitted in')).toBeTruthy();
     expect(mockMutateAsync).not.toHaveBeenCalled();
   });
@@ -124,7 +125,7 @@ describe('addCustomerModal', () => {
         phone: '9876543210',
         address: 'Door 4-12, Station Road',
         connection: {
-          packageId: 'pkg-1',
+          planId: 'plan-1',
           locationId: 'loc-1',
           installationAddress: 'Door 4-12, Station Road',
         },

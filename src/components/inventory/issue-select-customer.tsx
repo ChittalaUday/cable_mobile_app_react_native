@@ -83,6 +83,7 @@ export function IssueSelectCustomerScreen({
             <Input
               value={search}
               onChangeText={setSearch}
+              testID="issue-customer-search-input"
               placeholder="Search customer by name, ID or phone..."
               className="flex-1 border-0 bg-transparent text-sm text-foreground"
               placeholderTextColor={colors.neutral[400]}
@@ -111,7 +112,7 @@ export function IssueSelectCustomerScreen({
                       }`}
                     >
                       <View className="flex-1 flex-row items-center gap-3">
-                        <View className="size-11 items-center justify-center rounded-full bg-orange-50">
+                        <View className="size-11 items-center justify-center rounded-full bg-orange-50 dark:bg-orange-950/40">
                           <HugeiconsIcon icon={UserIcon} size={22} color={colors.primary[600]} strokeWidth={2} />
                         </View>
                         <View className="flex-1 pr-2">

@@ -1,0 +1,140 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - staff-mgmt
+---
+# Hire -> assign team (step 2, creating the team inline) -> find in list ->
+# rename -> unassign from the team -> remove (cancel first) -> disband the team.
+# Leaves nothing behind.
+- evalScript: ${output.stamp = String(Date.now()).slice(-6)}
+- evalScript: ${output.staff = 'E2E Staff ' + output.stamp}
+- evalScript: ${output.team = 'E2E Team ' + output.stamp}
+- runFlow: ../utils/login-admin.yaml
+- runFlow: ../utils/staff-mgmt-open.yaml
+
+# ------------------------------------------------------------ CREATE (step 1)
+- tapOn: Add staff member
+- extendedWaitUntil:
+    visible:
+      id: staff-name-input
+    timeout: 20000
+- tapOn:
+    id: staff-name-input
+- inputText: ${output.staff}
+- tapOn:
+    id: staff-phone-input
+- inputText: 7000${output.stamp}
+- tapOn:
+    id: staff-email-input
+- inputText: e2e.staff.${output.stamp}@e2e.test
+- tapOn:
+    id: staff-password-input
+- inputText: E2eStaff@123
+- runFlow: ../utils/hide-keyboard.yaml
+# Role: Admin then back to Staff; the hire is a plain staff member.
+- tapOn: Admin
+- tapOn: Staff
+- tapOn:
+    id: staff-save-button
+
+# ------------------------------------------------------------ ASSIGN TEAM (step 2)
+- extendedWaitUntil:
+    visible: Assign a team
+    timeout: 30000
+- assertVisible: ${output.staff} was added.
+- assertVisible: No team
+- assertVisible: Finish
+- assertVisible: Skip
+# A new team from right here; it is selected straight away.
+- tapOn: Create a team
+- tapOn:
+    id: assign-team-new-input
+- inputText: ${output.team}
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Create team
+- extendedWaitUntil:
+    visible: ${output.team}
+    timeout: 20000
+- assertVisible: Assign & finish
+- tapOn:
+    id: assign-team-save-button
+
+# ------------------------------------------------------------ READ
+- extendedWaitUntil:
+    visible:
+      id: staff-search-input
+    timeout: 30000
+- tapOn:
+    id: staff-search-input
+- inputText: ${output.stamp}
+- runFlow: ../utils/hide-keyboard.yaml
+- assertVisible: ${output.staff}
+- assertVisible: 7000${output.stamp} · ${output.team}
+- assertVisible: No areas — reaches nothing
+
+# ------------------------------------------------------------ UPDATE (rename)
+- tapOn: ${output.staff}
+- extendedWaitUntil:
+    visible: Edit staff member
+    timeout: 20000
+- tapOn:
+    id: staff-name-input
+- eraseText: 30
+- inputText: ${output.staff} Edited
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: staff-save-button
+- extendedWaitUntil:
+    visible: ${output.staff} Edited
+    timeout: 30000
+- assertVisible:
+    id: staff-search-input
+
+# ------------------------------------------------------------ UNASSIGN TEAM
+- tapOn: ${output.staff} Edited
+- extendedWaitUntil:
+    visible: Edit staff member
+    timeout: 20000
+- tapOn: No team
+- tapOn:
+    id: staff-save-button
+- extendedWaitUntil:
+    visible: '7000${output.stamp}'
+    timeout: 30000
+- assertNotVisible: 7000${output.stamp} · ${output.team}
+
+# ------------------------------------------------------------ REMOVE (cleanup)
+- tapOn: ${output.staff} Edited
+- extendedWaitUntil:
+    visible: Edit staff member
+    timeout: 20000
+# Cancel keeps them.
+- tapOn: Remove staff member
+- assertVisible: Remove from this operator
+- tapOn: Cancel
+- assertVisible: Edit staff member
+- tapOn: Remove staff member
+- assertVisible: Remove from this operator
+- tapOn: Remove
+- extendedWaitUntil:
+    visible: Nobody matches that search.
+    timeout: 30000
+
+# ------------------------------------------------------------ DISBAND TEAM (cleanup)
+- tapOn: Teams
+- extendedWaitUntil:
+    visible: Edit ${output.team}
+    timeout: 20000
+- assertVisible: 0 members · 0 areas
+- tapOn: Edit ${output.team}
+- extendedWaitUntil:
+    visible: Edit team
+    timeout: 20000
+- tapOn: Disband team
+- assertVisible: Disband this team
+- assertVisible: The team and its area grants are removed.
+- tapOn: Disband
+- extendedWaitUntil:
+    visible: No team matches that search.
+    timeout: 30000

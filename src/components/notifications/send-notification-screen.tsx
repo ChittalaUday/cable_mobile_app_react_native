@@ -152,8 +152,8 @@ export function SendNotificationScreen() {
         </Card>
 
         <Card className="p-3.5">
-          <Input label="Title" value={title} onChangeText={setTitle} maxLength={120} />
-          <Input label="Message" value={body} onChangeText={setBody} multiline maxLength={1000} />
+          <Input label="Title" value={title} onChangeText={setTitle} maxLength={120} testID="notify-title" />
+          <Input label="Message" value={body} onChangeText={setBody} multiline maxLength={1000} testID="notify-body" />
           <Input
             label="Image URL (optional)"
             value={imageUrl}
@@ -161,10 +161,11 @@ export function SendNotificationScreen() {
             autoCapitalize="none"
             keyboardType="url"
             placeholder="https://..."
+            testID="notify-image"
           />
         </Card>
 
-        <Button label="Send now" onPress={onSubmit} disabled={!canSend} loading={send.isPending} />
+        <Button label="Send now" onPress={onSubmit} disabled={!canSend} loading={send.isPending} testID="notify-send" />
       </ScrollView>
     </View>
   );

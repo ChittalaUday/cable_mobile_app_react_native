@@ -1,4 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
+import { HugeiconsIcon } from '@hugeicons/react-native';
 import Svg from 'react-native-svg';
 import { withUniwind } from 'uniwind';
 
@@ -27,3 +28,10 @@ export { SafeAreaView } from 'react-native-safe-area-context';
 
 // Apply withUniwind to Svg to add className support
 export const StyledSvg = withUniwind(Svg);
+
+/**
+ * A Hugeicons icon coloured by a theme class, so it follows light and dark:
+ * `<ThemedIcon icon={X} colorClassName="text-muted-foreground" />`. Use it
+ * instead of a fixed grey from `colors`, which only reads on one background.
+ */
+export const ThemedIcon = withUniwind(HugeiconsIcon);

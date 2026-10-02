@@ -1,0 +1,44 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - staff
+  - remote
+---
+# Staff Remote tab: same IR control as the office. On the emulator (no IR blaster)
+# it reports that, keeps keys inert, and survives a press.
+- runFlow: ../utils/login-staff.yaml
+- extendedWaitUntil:
+    visible: My Status
+    timeout: 60000
+- tapOn: Remote
+- extendedWaitUntil:
+    visible: Choose a remote
+    timeout: 30000
+- extendedWaitUntil:
+    visible: '(This device does not have an IR blaster\.|Android could not access the IR service\.|The IR module is unavailable.*|The IR hardware could not be checked.*|IR transmission is available only.*)'
+    timeout: 20000
+- assertVisible: Check again
+- assertVisible: TV
+- assertVisible: Set-Top Box
+
+# Set-top box library -> ACT remote keypad.
+- tapOn: Set-Top Box
+- extendedWaitUntil:
+    visible: 'ACT ACT Remote'
+    timeout: 20000
+- tapOn: 'ACT ACT Remote'
+- extendedWaitUntil:
+    visible: Choose another remote
+    timeout: 30000
+- assertVisible: 'ACT · .*'
+- assertVisible:
+    text: Power
+    enabled: false
+- takeScreenshot: .maestro/screenshots/staff-remote
+- tapOn: Power
+- assertNotVisible: Power sent
+- assertVisible: Choose another remote
+- tapOn: Choose another remote
+- extendedWaitUntil:
+    visible: Choose a remote
+    timeout: 20000

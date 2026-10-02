@@ -11,7 +11,7 @@
   "scripts": {
     "start": "expo start",
     "prebuild": "pnpm expo prebuild",
-    "android": "expo run:android",
+    "android": "adb reverse tcp:8081 tcp:8081 && adb reverse tcp:5050 tcp:5050 && (curl -s -m2 -o /dev/null http://localhost:5050 || echo '⚠️  Backend not running on :5050. Start it: cd ../cable-backend && pnpm dev') && cross-env REACT_NATIVE_PACKAGER_HOSTNAME=localhost expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
     "xcode": "xed -b ios",

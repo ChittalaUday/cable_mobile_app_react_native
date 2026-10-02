@@ -1,0 +1,46 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - staff
+  - profile
+---
+# Staff profile (same screen, staff paths): renders, settings link goes to the
+# staff settings, sign-out ends the session across a relaunch.
+- runFlow: ../utils/login-staff.yaml
+- extendedWaitUntil:
+    visible: Field Officer
+    timeout: 30000
+
+- tapOn: More
+- tapOn: 'Account details, settings, and security'
+- extendedWaitUntil:
+    visible: suresh.staff@sscn.com
+    timeout: 20000
+- assertVisible: Profile
+- assertVisible: '(?i)staff'
+- assertVisible: Notifications
+- assertVisible: Settings
+- assertVisible: Sign out
+
+- tapOn: Settings
+- extendedWaitUntil:
+    visible: General
+    timeout: 10000
+- back
+- extendedWaitUntil:
+    visible: suresh.staff@sscn.com
+    timeout: 10000
+
+- tapOn: Sign out
+- extendedWaitUntil:
+    visible: Welcome Back
+    timeout: 30000
+- assertNotVisible: Field Officer
+
+- stopApp
+- launchApp
+- runFlow: ../utils/open-dev-build.yaml
+- extendedWaitUntil:
+    visible: Welcome Back
+    timeout: 30000
+- assertNotVisible: Field Officer

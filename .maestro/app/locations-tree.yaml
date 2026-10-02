@@ -1,0 +1,131 @@
+appId: ${APP_ID}
+env:
+  PARENT: Angara
+  CHILD: Main Road
+tags:
+  - e2e
+  - admin
+  - locations
+---
+# Locations (More > Locations): the tree, expand / collapse, search and its
+# empty state; adding a sub-location under a parent with validation (empty and
+# duplicate name); and deleting it, where Cancel keeps it.
+- evalScript: ${output.stamp = String(Date.now()).slice(-6)}
+- runFlow: ../utils/login-admin.yaml
+- tapOn: More
+- extendedWaitUntil:
+    visible: Locations
+    timeout: 10000
+- tapOn: Locations
+- extendedWaitUntil:
+    visible: Manage areas and sub-areas
+    timeout: 20000
+
+# --- Renders: the root areas ------------------------------------------------------
+- extendedWaitUntil:
+    visible: Expand ${PARENT}
+    timeout: 30000
+- assertVisible: Expand Mandapeta
+- assertVisible: Add location
+
+# --- Expand and collapse a branch ---------------------------------------------------
+- tapOn: Expand ${PARENT}
+- extendedWaitUntil:
+    visible: ${CHILD}
+    timeout: 20000
+- tapOn: Collapse ${PARENT}
+- extendedWaitUntil:
+    notVisible: ${CHILD}
+    timeout: 10000
+
+# --- Search anywhere in the tree, and a miss ----------------------------------------
+- tapOn: Search anywhere in the tree...
+- inputText: ${CHILD}
+- extendedWaitUntil:
+    visible: '.*Show in tree.*'
+    timeout: 20000
+- assertVisible: '.*${PARENT} / ${CHILD}.*'
+- tapOn: Clear
+- tapOn: Search anywhere in the tree...
+- inputText: zzqq-nowhere
+- extendedWaitUntil:
+    visible: No locations found
+    timeout: 20000
+- assertVisible: Nothing in the tree matches that name or alias.
+- tapOn: Clear
+- runFlow: ../utils/hide-keyboard.yaml
+
+# --- Add a sub-location from the parent's menu: empty name refused ------------------
+- tapOn: Options for ${PARENT}
+- extendedWaitUntil:
+    visible: Add sub-location
+    timeout: 10000
+- tapOn: Add sub-location
+- extendedWaitUntil:
+    visible: Create a new location
+    timeout: 10000
+- tapOn: Save Location
+- assertVisible: Name is required
+
+# --- A name already used at that level is refused ------------------------------------
+- tapOn:
+    id: location-name-input
+- inputText: ${CHILD}
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Save Location
+- extendedWaitUntil:
+    visible: Could not save location
+    timeout: 20000
+- assertVisible: '.*already exists at this level.*'
+- tapOn: OK
+
+# --- A new unique name is saved under the parent ----------------------------------
+- tapOn:
+    id: location-name-input
+- eraseText: 20
+- inputText: E2E Street ${output.stamp}
+- tapOn: e.g. MDP
+- inputText: E2E${output.stamp}
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Save Location
+- extendedWaitUntil:
+    visible: Manage areas and sub-areas
+    timeout: 20000
+- tapOn: Search anywhere in the tree...
+- inputText: E2E Street ${output.stamp}
+- extendedWaitUntil:
+    visible: '.*${PARENT} / E2E Street ${output.stamp}.*'
+    timeout: 20000
+- tapOn: Show E2E Street ${output.stamp} in the tree
+- extendedWaitUntil:
+    visible: Collapse ${PARENT}
+    timeout: 20000
+- assertVisible: E2E Street ${output.stamp}
+
+# --- Delete: Cancel keeps it, confirm removes it -------------------------------------
+- tapOn: Options for E2E Street ${output.stamp}
+- extendedWaitUntil:
+    visible: Delete location
+    timeout: 10000
+- tapOn: Delete location
+- extendedWaitUntil:
+    visible: '.*Delete E2E Street ${output.stamp}\?.*'
+    timeout: 10000
+- tapOn:
+    id: dialog-cancel
+- assertVisible: E2E Street ${output.stamp}
+- tapOn: Options for E2E Street ${output.stamp}
+- extendedWaitUntil:
+    visible: Delete location
+    timeout: 10000
+- tapOn: Delete location
+- extendedWaitUntil:
+    visible:
+      id: dialog-confirm
+    timeout: 10000
+- tapOn:
+    id: dialog-confirm
+- extendedWaitUntil:
+    notVisible: E2E Street ${output.stamp}
+    timeout: 20000
+- assertVisible: ${CHILD}

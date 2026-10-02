@@ -1,0 +1,33 @@
+appId: ${APP_ID}
+tags:
+  - util
+---
+# From the Staff list (People tab): hire ${NAME} <${EMAIL}> and put them on ${TEAM}
+# in step 2. Ends back on the list.
+- tapOn: Add staff member
+- extendedWaitUntil:
+    visible:
+      id: staff-name-input
+    timeout: 20000
+- tapOn:
+    id: staff-name-input
+- inputText: ${NAME}
+- tapOn:
+    id: staff-email-input
+- inputText: ${EMAIL}
+- runFlow: hide-keyboard.yaml
+- tapOn:
+    id: staff-save-button
+- extendedWaitUntil:
+    visible: Assign a team
+    timeout: 30000
+- extendedWaitUntil:
+    visible: ${TEAM}
+    timeout: 20000
+- tapOn: ${TEAM}
+- tapOn:
+    id: assign-team-save-button
+- extendedWaitUntil:
+    visible:
+      id: staff-search-input
+    timeout: 30000

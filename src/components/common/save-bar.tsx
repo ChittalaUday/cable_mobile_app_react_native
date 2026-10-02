@@ -23,6 +23,7 @@ export function SaveBar({
   disabled = false,
   onPress,
   secondary,
+  testID,
 }: {
   label: string;
   busyLabel?: string;
@@ -31,6 +32,7 @@ export function SaveBar({
   onPress: () => void;
   /** An optional lighter action beside it, e.g. "Cancel". */
   secondary?: { label: string; onPress: () => void };
+  testID?: string;
 }) {
   const isBlocked = busy || disabled;
 
@@ -53,6 +55,7 @@ export function SaveBar({
               )
             : null}
           <Pressable
+            testID={testID}
             accessibilityRole="button"
             accessibilityState={{ disabled: isBlocked, busy }}
             disabled={isBlocked}

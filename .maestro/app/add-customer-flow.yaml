@@ -1,70 +1,87 @@
 appId: ${APP_ID}
 env:
-  CUSTOMER: E2E Wizard Subscriber
+  # A seeded plan and a root area; both are fixed in the seed.
+  PACKAGE: Satya Basic
+  AREA: Angara
 tags:
   - e2e
+  - admin
   - customers
 ---
-# 6-step Add Customer wizard:
-# Customer Details -> Select Services -> Package Details -> Device / Box
-# -> Additional Information -> Review & Confirm -> success.
-- runFlow:
-    file: ../utils/fresh-login.yaml
-    env:
-      EMAIL: admin@sscn.com
-      PASSWORD: Admin@123456
-- assertVisible: Operator Panel
-
-- tapOn: Customers
-- assertVisible: Customers & Lines
-- tapOn: '+ Add Customer'
-
-# --- Step 1: customer details ---------------------------------------------
-- assertVisible: Customer Details
-- assertVisible: Enter the basic information of the customer.
-- tapOn: Enter customer name
-- inputText: ${CUSTOMER}
-- tapOn: 10 digit mobile number
-- inputText: '9911002233'
-- tapOn: Next →
-
-# --- Step 2: services ------------------------------------------------------
-- assertVisible: Select Services
-- assertVisible: Cable TV
-- assertVisible: Broadband Internet
-- assertVisible: IPTV / OTT
-- tapOn: Next →
-
-# --- Step 3: package (from the Packages & Plans catalogue) ------------------
-- assertVisible: Package Details
-- assertVisible: Select a package for each selected service.
-- tapOn: Next →
-
-# --- Step 4: device / box --------------------------------------------------
-- assertVisible: Device / Box Details
-- tapOn: Enter serial number
-- inputText: STB_E2E_WIZ
-- tapOn: Next →
-
-# --- Step 5: additional ----------------------------------------------------
-- assertVisible: Additional Information
-- tapOn: Next →
-
-# --- Step 6: review & save -------------------------------------------------
-- assertVisible: Review & Confirm
-- assertVisible: Please review all the details before saving.
-- assertVisible: Customer Information
-- assertVisible: ${CUSTOMER}
-- tapOn: Save Customer
-
+# Add Customer, the happy path: details -> plan and area from the catalogue
+# -> created -> straight onto the new customer's page -> findable by search.
+- evalScript: ${output.stamp = String(Date.now()).slice(-6)}
+# Unique 10-digit number per run: 9 + 3 fixed digits + the 6-digit stamp.
+- evalScript: ${output.phone = '9555' + output.stamp}
+- runFlow: ../utils/login-admin.yaml
+- runFlow: ../utils/customers-open.yaml
+- tapOn:
+    id: customers-add-button
 - extendedWaitUntil:
-    visible: Customer Added Successfully!
-    timeout: 30000
-- assertVisible: Customer ID
-- tapOn: Go to Customers List
+    visible: Add New Customer
+    timeout: 10000
 
-# The new subscriber is searchable in the list.
-- tapOn: Customers
-- tapOn: Search customer name, phone, STB serial, VC card...
-- inputText: ${CUSTOMER}
-- assertVisible: ${CUSTOMER}
+# --- Step 1: customer details ------------------------------------------------
+- tapOn:
+    id: add-customer-name
+- inputText: E2E Customer ${output.stamp}
+- tapOn:
+    id: add-customer-phone
+- inputText: ${output.phone}
+- tapOn:
+    id: add-customer-address
+- inputText: E2E Door ${output.stamp}, Main Road
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Next Step
+
+# --- Step 2: plan from the live plans, area from the location tree ---------
+- extendedWaitUntil:
+    visible: 'Area the line is fitted in.*'
+    timeout: 10000
+- scrollUntilVisible:
+    element: ${PACKAGE}
+    timeout: 30000
+- tapOn: ${PACKAGE}
+- scrollUntilVisible:
+    element:
+      id: add-customer-area-search
+- tapOn:
+    id: add-customer-area-search
+# A partial name, so the only "Angara" text on screen is the result row.
+- inputText: Angar
+- extendedWaitUntil:
+    visible: ${AREA}
+    timeout: 20000
+- tapOn: ${AREA}
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Create Customer
+- extendedWaitUntil:
+    visible: Customer added successfully!
+    timeout: 30000
+
+# --- Lands on the new subscriber's page ---------------------------------------
+- extendedWaitUntil:
+    visible: Customer Details
+    timeout: 20000
+- assertVisible: E2E Customer ${output.stamp}
+- assertVisible: '\+91 ${output.phone}'
+- assertVisible: '.*${PACKAGE}.*'
+- assertVisible: 'SUBSCRIPTIONS \(1\)'
+- assertVisible: '.*E2E Door ${output.stamp}.*'
+
+# --- And the list finds them by name and by phone ---------------------------
+- back
+- extendedWaitUntil:
+    visible: Customers & Lines
+    timeout: 20000
+- tapOn:
+    id: customer-search-input
+- inputText: E2E Customer ${output.stamp}
+- extendedWaitUntil:
+    visible: E2E Customer ${output.stamp}
+    timeout: 20000
+- eraseText: 30
+- inputText: ${output.phone}
+- extendedWaitUntil:
+    visible: E2E Customer ${output.stamp}
+    timeout: 20000

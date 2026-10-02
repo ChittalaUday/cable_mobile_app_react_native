@@ -6,7 +6,7 @@ import * as React from 'react';
 import { Card } from '@/components/common/shell';
 import { LocationPickerSheet } from '@/components/locations/location-picker-sheet';
 import { toggleArea } from '@/components/locations/toggle-area';
-import { colors, Pressable, Text, useModal, View } from '@/components/ui';
+import { colors, Pressable, Text, ThemedIcon, useModal, View } from '@/components/ui';
 
 /**
  * The areas a person or a crew reaches, edited as a list.
@@ -73,7 +73,7 @@ export function AreaGrants({
           : value.map(area => (
               <View key={area.id} className="flex-row items-center gap-2.5">
                 <View className="size-8 items-center justify-center rounded-lg bg-muted">
-                  <HugeiconsIcon icon={Location01Icon} size={15} color={colors.neutral[600]} strokeWidth={2} />
+                  <ThemedIcon icon={Location01Icon} size={15} colorClassName="text-muted-foreground" strokeWidth={2} />
                 </View>
                 <View className="flex-1">
                   <Text className="text-sm font-semibold text-foreground" numberOfLines={1}>{area.name}</Text>

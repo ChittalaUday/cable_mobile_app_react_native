@@ -1,0 +1,118 @@
+appId: ${APP_ID}
+env:
+  NAME: Bhadakar Rao Motupalli
+  CODE: SSCN-000066
+tags:
+  - e2e
+  - admin
+  - customers
+---
+# Admin customer page: profile, balance tiles, subscriptions, equipment on loan,
+# recent transactions, and that every action button (on the page and on the
+# list card) navigates. Payments themselves are covered by the payments flows.
+# There is no "Edit customer" anywhere in the app, so nothing to edit here.
+- runFlow: ../utils/login-admin.yaml
+- runFlow: ../utils/customers-open.yaml
+- tapOn:
+    id: customer-search-input
+- inputText: ${CODE}
+- extendedWaitUntil:
+    visible: ${NAME}
+    timeout: 20000
+- runFlow: ../utils/hide-keyboard.yaml
+
+# --- List card actions: Recharge and Raise Ticket ---------------------------
+- assertVisible: Recharge
+- assertVisible: Raise Ticket
+- tapOn: Recharge
+- extendedWaitUntil:
+    visible: Recharge
+    timeout: 20000
+- extendedWaitUntil:
+    notVisible: Customers & Lines
+    timeout: 20000
+- back
+- extendedWaitUntil:
+    visible: Customers & Lines
+    timeout: 20000
+- tapOn: Raise Ticket
+- extendedWaitUntil:
+    visible: Raise a complaint
+    timeout: 10000
+- assertVisible: What is wrong
+- back
+- extendedWaitUntil:
+    visible: Customers & Lines
+    timeout: 10000
+
+# --- Open the customer page --------------------------------------------------
+- tapOn: View
+- extendedWaitUntil:
+    visible: Customer Details
+    timeout: 20000
+
+# Profile card and contact buttons.
+- assertVisible: ${NAME}
+- assertVisible: ${CODE}
+- assertVisible: '\+91 9603078128'
+- assertVisible: Call
+- assertVisible: WhatsApp
+- assertVisible: Message
+
+# Balance and lines.
+- assertVisible: Outstanding Balance
+- assertVisible: Monthly Value
+- assertVisible: Active Lines
+- assertVisible: '1 / 1'
+
+# Location card.
+- assertVisible: '.*Mandapeta / TIDCO Apartments.*'
+
+# Connections / subscriptions.
+- assertVisible: 'SUBSCRIPTIONS \(1\)'
+- assertVisible: Cable TV
+- assertVisible: Account Number
+- assertVisible: C3094113
+- assertVisible: Price & Cycle
+
+# Equipment on loan.
+- scrollUntilVisible:
+    element: '.*EQUIPMENT ON LOAN.*'
+- scrollUntilVisible:
+    element: '.*70531828179.*'
+
+# History.
+- scrollUntilVisible:
+    element: '.*RECENT TRANSACTIONS.*'
+- takeScreenshot: .maestro/screenshots/customer-detail-admin
+
+# --- Page actions navigate ---------------------------------------------------
+- scrollUntilVisible:
+    element: Issue Equipment
+- assertVisible: Collect Payment
+- tapOn: Collect Payment
+- extendedWaitUntil:
+    visible: Collect payment
+    timeout: 20000
+- back
+- extendedWaitUntil:
+    visible: Customer Details
+    timeout: 20000
+
+- scrollUntilVisible:
+    element: Issue Equipment
+- tapOn: Issue Equipment
+- extendedWaitUntil:
+    visible: Issue to ${NAME}
+    timeout: 20000
+- back
+- extendedWaitUntil:
+    visible: Customer Details
+    timeout: 20000
+
+# --- Back returns to the list with the search intact --------------------------
+- back
+- extendedWaitUntil:
+    visible: Customers & Lines
+    timeout: 10000
+- assertVisible: ${NAME}

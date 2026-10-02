@@ -1,0 +1,10 @@
+appId: ${APP_ID}
+tags:
+  - util
+---
+# Fresh install, signed in as the seeded SSCN staff.
+- runFlow:
+    file: fresh-login.yaml
+    env:
+      EMAIL: suresh.staff@sscn.com
+      PASSWORD: Staff@123456

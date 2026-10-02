@@ -1,0 +1,68 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - inventory
+---
+# Stock Movements (audit list) and Customer Equipment (status filter pills,
+# search hit and empty). Movements has no filters in the UI.
+- runFlow: ../utils/login-admin.yaml
+- runFlow: ../utils/inventory-open.yaml
+
+# --- Movements: rows (or the empty copy on a fresh DB) ----------------------
+- tapOn: Stock Movements
+- extendedWaitUntil:
+    visible: Audit trail of all inventory transactions
+    timeout: 20000
+- extendedWaitUntil:
+    visible: '.*(By:.*|No stock movement logs recorded).*'
+    timeout: 30000
+- runFlow:
+    when:
+      notVisible: No stock movement logs recorded
+    commands:
+      - assertVisible: .*units\).*
+- takeScreenshot: .maestro/screenshots/inventory-movements
+- back
+
+# --- Customer Equipment -----------------------------------------------------
+- tapOn: Customer Equipment
+- extendedWaitUntil:
+    visible: .* Assignments
+    timeout: 20000
+- extendedWaitUntil:
+    visible: 'SN: .*'
+    timeout: 30000
+- assertVisible: All \(.*\)
+- assertVisible: Active \(.*\)
+- assertVisible: Returned \(.*\)
+
+# Status filter: Active shows only active cards, Returned only returned.
+- tapOn: Active \(.*\)
+- assertVisible:
+    text: active
+    index: 0
+- assertNotVisible: returned
+- tapOn: Returned \(.*\)
+- runFlow:
+    when:
+      notVisible: No Equipment Found
+    commands:
+      - assertNotVisible: active
+- tapOn: All \(.*\)
+
+# Search by a seeded customer, then an empty result with its copy.
+- tapOn:
+    id: equipment-search-input
+- inputText: Bhadakar
+- runFlow: ../utils/hide-keyboard.yaml
+- extendedWaitUntil:
+    visible: Bhadakar Rao Motupalli
+    timeout: 20000
+- tapOn:
+    id: equipment-search-input
+- eraseText: 20
+- inputText: zzqq-none
+- runFlow: ../utils/hide-keyboard.yaml
+- assertVisible: No Equipment Found
+- assertVisible: 'No assigned hardware matching "zzqq-none"\.'

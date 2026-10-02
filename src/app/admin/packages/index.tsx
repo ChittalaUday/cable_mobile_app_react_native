@@ -15,15 +15,7 @@ import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { dialogs } from '@/components/common/dialogs';
 import { ScreenHeader } from '@/components/common/screen-header';
 import { Card, LoadError, StatusPill } from '@/components/common/shell';
-import {
-  colors,
-  FocusAwareStatusBar,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  Text,
-  View,
-} from '@/components/ui';
+import { colors, FocusAwareStatusBar, Pressable, SafeAreaView, ScrollView, Text, ThemedIcon, View } from '@/components/ui';
 import { PERMISSIONS } from '@/constants';
 import { coverageLabel, useDeletePackage, usePackages } from '@/lib/hooks/api/use-packages';
 import { usePermissions } from '@/lib/hooks/common/use-permissions';
@@ -84,13 +76,12 @@ function PackageCard({ pkg, canUpdate, canDelete, onEdit, onDelete }: {
     <Card className="gap-3 border border-border p-4">
       <View className="flex-row items-start gap-3">
         <View
-          className="size-11 items-center justify-center rounded-xl"
-          style={{ backgroundColor: '#F1F1F4' }}
+          className="size-11 items-center justify-center rounded-xl bg-muted"
         >
-          <HugeiconsIcon
+          <ThemedIcon
             icon={serviceIcon(pkg.serviceIcon)}
             size={20}
-            color={colors.neutral[600]}
+            colorClassName="text-muted-foreground"
           />
         </View>
 
@@ -163,8 +154,8 @@ function PackageListEmpty({ isPending, query }: { isPending: boolean; query: str
       <Text className="text-base font-bold text-foreground">No packages found</Text>
       <Text className="text-center text-xs text-muted-foreground">
         {query
-          ? `No plan matched "${query}".`
-          : 'Create your first plan — it becomes selectable as a service on customer connections.'}
+          ? `No package matched "${query}".`
+          : 'Add the provider\'s packages here, then sell them to customers through a plan.'}
       </Text>
     </View>
   );
@@ -266,16 +257,16 @@ export function PackagesScreen() {
         visible={pendingDelete !== null}
         busy={deletePackage.isPending}
         title="Delete package"
-        confirmLabel="Delete plan"
-        message={`Delete "${pendingDelete?.name ?? ''}"? Customers already on this plan keep their service, but it can no longer be assigned.`}
+        confirmLabel="Delete package"
+        message={`Delete "${pendingDelete?.name ?? ''}"? A package any plan still includes cannot be deleted — take it out of those plans first.`}
         onConfirm={handleDelete}
         onCancel={() => setPendingDelete(null)}
       />
 
       <SafeAreaView edges={['top']} className="bg-card">
         <ScreenHeader
-          title="Packages & Plans"
-          subtitle="Base packs, bouquets & a-la-carte plans"
+          title="Provider Packages"
+          subtitle="Provider rates behind your plans — not shown to customers"
           showBack
           rightAction={canCreate
             ? (
@@ -297,7 +288,7 @@ export function PackagesScreen() {
               testID="package-search-input"
               value={query}
               onChangeText={setQuery}
-              placeholder="Search plan name, service, provider…"
+              placeholder="Search package name, service, provider…"
               placeholderTextColor={colors.neutral[400]}
               className="ml-2 flex-1 py-0 text-sm text-foreground"
             />

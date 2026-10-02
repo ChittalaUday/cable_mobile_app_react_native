@@ -130,14 +130,14 @@ function RemoteRow({ remote, first, onPress }: {
       {/* The flag a technician needs before trusting a code set at a customer's box. */}
       {remote.verified
         ? (
-            <View className="flex-row items-center gap-1 rounded-full bg-success-50 px-2 py-1">
+            <View className="flex-row items-center gap-1 rounded-full bg-success-50 px-2 py-1 dark:bg-success-900/40">
               <HugeiconsIcon icon={ShieldKeyIcon} size={12} color={colors.success[700]} strokeWidth={2.4} />
-              <Text className="text-[11px] font-bold text-success-700">{t('remote.verified')}</Text>
+              <Text className="text-[11px] font-bold text-success-700 dark:text-success-300">{t('remote.verified')}</Text>
             </View>
           )
         : (
-            <View className="rounded-full bg-warning-50 px-2 py-1">
-              <Text className="text-[11px] font-bold text-warning-700">{t('remote.unverified')}</Text>
+            <View className="rounded-full bg-warning-50 px-2 py-1 dark:bg-warning-900/40">
+              <Text className="text-[11px] font-bold text-warning-700 dark:text-warning-300">{t('remote.unverified')}</Text>
             </View>
           )}
 

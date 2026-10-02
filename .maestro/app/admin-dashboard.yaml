@@ -2,47 +2,84 @@ appId: ${APP_ID}
 tags:
   - e2e
   - admin
+  - dashboard
 ---
-# Operator panel: KPIs, quick actions, activity feed and bottom navigation.
-- runFlow:
-    file: ../utils/fresh-login.yaml
-    env:
-      EMAIL: admin@sscn.com
-      PASSWORD: Admin@123456
+# Admin home: header, KPI grid, Recent Activity and its See All, and the tab bar.
+- runFlow: ../utils/login-admin.yaml
 
+# Header: tenant + role subtitle, search and bell are both reachable.
+- extendedWaitUntil:
+    visible: Operator Panel
+    timeout: 60000
 - assertVisible: Sri Satya Cable Network
-- assertVisible: Operator Panel
 - assertVisible: "Here's what's happening with your network today."
+- assertVisible: Global Search
+- assertVisible: 'Notifications.*'
 
-# KPI grid - all four tiles are admin-visible.
+# KPI grid: all four tiles are admin-visible.
 - assertVisible: Total Customers
 - assertVisible: Active Connections
 - assertVisible: Collected Today
 - assertVisible: Outstanding Dues
+- assertVisible: '.* receipts today'
+- assertVisible: '.* accounts due'
 - takeScreenshot: .maestro/screenshots/admin-home
 
-# Quick actions
-- assertVisible: Quick Actions
-- assertVisible: Add Customer
-- assertVisible: Collect Payment
-- assertVisible: Receipts
-- assertVisible: Complaints
+# Search opens the global search modal (input autofocused); back closes it.
+- tapOn: Global Search
+- extendedWaitUntil:
+    visible: 'Search screens, actions, commands...'
+    timeout: 20000
+- runFlow: ../utils/hide-keyboard.yaml
+- back
+- extendedWaitUntil:
+    notVisible: 'Search screens, actions, commands...'
+    timeout: 10000
 
-- scroll
-- assertVisible: Recent Activity
+# Bell opens the notifications inbox; back returns home.
+- tapOn: 'Notifications.*'
+- extendedWaitUntil:
+    visible: '.* total'
+    timeout: 30000
+- assertVisible: Notifications
+- back
+- extendedWaitUntil:
+    visible: Operator Panel
+    timeout: 20000
 
-# Bottom navigation across every tab.
+# Recent Activity lists rows (or its empty copy), and See All opens analytics.
+- scrollUntilVisible:
+    element: Recent Activity
+    direction: DOWN
+- assertVisible: See All
+- tapOn: See All
+- extendedWaitUntil:
+    visible: Collections Overview
+    timeout: 30000
+- assertVisible: Dashboard
+- back
+- extendedWaitUntil:
+    visible: Recent Activity
+    timeout: 20000
+
+# Every bottom tab switches the screen, and Home brings the KPIs back.
 - tapOn: Customers
-- assertVisible: 'Customers & Lines'
+- extendedWaitUntil:
+    visible: 'Customers & Lines'
+    timeout: 30000
 - tapOn: Payments
-- assertVisible: 'Payments & Collections'
+- extendedWaitUntil:
+    visible: 'Payments & Collections'
+    timeout: 30000
 - tapOn: Remote
+- extendedWaitUntil:
+    visible: Choose a remote
+    timeout: 30000
 - tapOn: More
+- extendedWaitUntil:
+    visible: 'Manage services, network catalog, staff, and account'
+    timeout: 30000
 - tapOn: Home
-- assertVisible: Quick Actions
-
-# Quick action deep-links into the customers tab with the wizard open.
-- tapOn: Add Customer
-- assertVisible: Add New Customer
-- tapOn:
-    id: add-customer-close
+- extendedWaitUntil:
+    visible: Total Customers
+    timeout: 30000

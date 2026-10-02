@@ -5,7 +5,7 @@
  * amount against the balance it read under lock — the app never sends it, so
  * the two sides cannot disagree about whether a payment was "full".
  */
-export const COLLECTION_OUTCOMES = ['full', 'partial', 'none', 'refund', 'others'] as const;
+export const COLLECTION_OUTCOMES = ['full', 'partial', 'none', 'due', 'refund', 'others'] as const;
 export type CollectionOutcome = (typeof COLLECTION_OUTCOMES)[number];
 
 export const MAX_COLLECTION_AMOUNT = '99000.00';

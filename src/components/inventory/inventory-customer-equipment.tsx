@@ -8,15 +8,7 @@ import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as React from 'react';
 import { RefreshControl } from 'react-native';
 import { Card, ScreenHeader } from '@/components/common/shell';
-import {
-  ActivityIndicator,
-  colors,
-  Input,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from '@/components/ui';
+import { ActivityIndicator, colors, Input, Pressable, ScrollView, Text, ThemedIcon, View } from '@/components/ui';
 import { useCustomerEquipment } from '@/lib/hooks/api/use-inventory';
 
 export function InventoryCustomerEquipmentScreen() {
@@ -71,6 +63,7 @@ export function InventoryCustomerEquipmentScreen() {
             <Input
               value={search}
               onChangeText={setSearch}
+              testID="equipment-search-input"
               placeholder="Search customer, serial, item, or VC..."
               className="flex-1 border-0 bg-transparent text-sm text-foreground"
               placeholderTextColor={colors.neutral[400]}
@@ -87,7 +80,7 @@ export function InventoryCustomerEquipmentScreen() {
               statusFilter === 'all' ? 'bg-primary-600' : 'border border-border bg-card'
             }`}
           >
-            <Text className={`text-xs font-bold ${statusFilter === 'all' ? 'text-white' : 'text-neutral-600'}`}>
+            <Text className={`text-xs font-bold ${statusFilter === 'all' ? 'text-white' : 'text-muted-foreground'}`}>
               All (
               {records?.length ?? 0}
               )
@@ -101,7 +94,7 @@ export function InventoryCustomerEquipmentScreen() {
               statusFilter === 'active' ? 'bg-primary-600' : 'border border-border bg-card'
             }`}
           >
-            <Text className={`text-xs font-bold ${statusFilter === 'active' ? 'text-white' : 'text-neutral-600'}`}>
+            <Text className={`text-xs font-bold ${statusFilter === 'active' ? 'text-white' : 'text-muted-foreground'}`}>
               Active (
               {activeCount}
               )
@@ -115,7 +108,7 @@ export function InventoryCustomerEquipmentScreen() {
               statusFilter === 'returned' ? 'bg-primary-600' : 'border border-border bg-card'
             }`}
           >
-            <Text className={`text-xs font-bold ${statusFilter === 'returned' ? 'text-white' : 'text-neutral-600'}`}>
+            <Text className={`text-xs font-bold ${statusFilter === 'returned' ? 'text-white' : 'text-muted-foreground'}`}>
               Returned (
               {returnedCount}
               )
@@ -143,7 +136,7 @@ export function InventoryCustomerEquipmentScreen() {
                     {/* Customer Header */}
                     <View className="flex-row items-center justify-between border-b border-border/50 pb-2.5">
                       <View className="flex-row items-center gap-2.5">
-                        <View className="size-8 items-center justify-center rounded-full bg-orange-50">
+                        <View className="size-8 items-center justify-center rounded-full bg-orange-50 dark:bg-orange-950/40">
                           <HugeiconsIcon icon={UserIcon} size={16} color={colors.primary[600]} strokeWidth={2} />
                         </View>
                         <View>
@@ -161,13 +154,13 @@ export function InventoryCustomerEquipmentScreen() {
                       <View
                         className={`rounded-full px-2.5 py-0.5 ${
                           item.status === 'active'
-                            ? 'bg-emerald-50 text-emerald-700'
+                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
                             : 'bg-muted text-muted-foreground'
                         }`}
                       >
                         <Text
                           className={`text-[11px] font-bold capitalize ${
-                            item.status === 'active' ? 'text-emerald-700' : 'text-muted-foreground'
+                            item.status === 'active' ? 'text-emerald-700 dark:text-emerald-300' : 'text-muted-foreground'
                           }`}
                         >
                           {item.status}
@@ -190,7 +183,7 @@ export function InventoryCustomerEquipmentScreen() {
                         )}
 
                         <View className="mt-1 flex-row items-center gap-1.5 rounded-lg border border-border/60 bg-surface p-2">
-                          <HugeiconsIcon icon={QrCodeIcon} size={15} color={colors.neutral[500]} strokeWidth={2} />
+                          <ThemedIcon icon={QrCodeIcon} size={15} colorClassName="text-muted-foreground" strokeWidth={2} />
                           <Text className="font-mono text-xs font-semibold text-foreground">
                             SN:
                             {' '}

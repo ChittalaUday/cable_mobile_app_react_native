@@ -1,0 +1,122 @@
+appId: ${APP_ID}
+env:
+  # Phone of the seeded subscriber Bhadakar Rao Motupalli (SSCN-000066).
+  DUP_PHONE: '9603078128'
+tags:
+  - e2e
+  - admin
+  - customers
+---
+# Add Customer wizard, the edges: per-step required fields, a short phone, the
+# duplicate-phone warning, Back keeping what was typed, and closing the sheet
+# throwing the draft away. The form has no email field, so there is no email
+# format to check.
+- runFlow: ../utils/login-admin.yaml
+- runFlow: ../utils/customers-open.yaml
+- tapOn:
+    id: customers-add-button
+- extendedWaitUntil:
+    visible: Add New Customer
+    timeout: 10000
+- assertVisible: 1. Customer Details
+- assertVisible: 2. Connection
+
+# --- Step 1 with nothing filled: every required field complains -------------
+- tapOn: Next Step
+- assertVisible: Full name is required
+- assertVisible: Valid 10-digit phone number is required
+- assertVisible: Address / Line Area is required
+
+# --- A 9-digit phone is still rejected, the name error clears ---------------
+- tapOn:
+    id: add-customer-name
+- inputText: E2E Draft Person
+- tapOn:
+    id: add-customer-phone
+- inputText: '987654321'
+- tapOn:
+    id: add-customer-address
+- inputText: Door 1 Main Street
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Next Step
+- assertVisible: Valid 10-digit phone number is required
+- assertNotVisible: Full name is required
+- assertNotVisible: Address / Line Area is required
+
+# --- Letters never reach the phone field (phone-pad, digits only) -----------
+- tapOn:
+    id: add-customer-phone
+- eraseText: 12
+- inputText: abcdefghij
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Next Step
+- assertVisible: Valid 10-digit phone number is required
+
+# --- A phone already on the book warns with the existing customer -----------
+- tapOn:
+    id: add-customer-phone
+- eraseText: 12
+- inputText: ${DUP_PHONE}
+- extendedWaitUntil:
+    visible:
+      id: add-customer-duplicate-phone
+    timeout: 20000
+- assertVisible: '.*Already registered: Bhadakar Rao Motupalli \(SSCN-000066\).*'
+- runFlow: ../utils/hide-keyboard.yaml
+
+# The warning does not block: a shop and the flat above can share a handset.
+- tapOn: Next Step
+- extendedWaitUntil:
+    visible: 'Area the line is fitted in.*'
+    timeout: 10000
+
+# --- Step 2 with nothing picked: plan and area are both required ------------
+- tapOn: Create Customer
+- assertVisible: Pick the plan this connection is on
+# The area's message sits under its result list, below the fold.
+- scrollUntilVisible:
+    element: Pick the area the line is fitted in
+    timeout: 30000
+
+# --- Back keeps step 1 exactly as typed --------------------------------------
+- tapOn: Back
+- extendedWaitUntil:
+    visible: E2E Draft Person
+    timeout: 10000
+- assertVisible: ${DUP_PHONE}
+- assertVisible: Door 1 Main Street
+
+# The step pill also goes back (only to earlier steps, never forward).
+- tapOn: Next Step
+- extendedWaitUntil:
+    visible: 'Area the line is fitted in.*'
+    timeout: 10000
+- tapOn: 1. Customer Details
+- extendedWaitUntil:
+    visible: E2E Draft Person
+    timeout: 10000
+- tapOn: 2. Connection
+- assertVisible: E2E Draft Person
+
+# --- Closing discards the draft: reopening starts empty ---------------------
+# NOTE: there is no "discard changes?" prompt; close throws the draft away at once.
+- tapOn:
+    id: add-customer-close
+- extendedWaitUntil:
+    notVisible: Add New Customer
+    timeout: 10000
+- tapOn:
+    id: customers-add-button
+- extendedWaitUntil:
+    visible: Add New Customer
+    timeout: 10000
+- assertNotVisible: E2E Draft Person
+- assertVisible: e.g. Ramesh Kumar
+- assertVisible: e.g. 9876543210
+
+# Hardware back closes the sheet as well.
+- back
+- extendedWaitUntil:
+    notVisible: Add New Customer
+    timeout: 10000
+- assertVisible: Customers & Lines

@@ -1,4 +1,3 @@
-import type { ServiceProvider } from '@/lib/api/types';
 import { ArrowDown01Icon, ArrowRight01Icon, Location01Icon, PackageIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useQueryClient } from '@tanstack/react-query';
@@ -6,96 +5,18 @@ import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { Switch, TextInput } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { FieldLabel, ProviderPicker } from '@/components/admin/catalogue-form';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 
 import { dialogs } from '@/components/common/dialogs';
 import { SaveBar } from '@/components/common/save-bar';
 import { Card, ScreenHeader } from '@/components/common/shell';
-import {
-  colors,
-  FocusAwareStatusBar,
-  Pressable,
-  Text,
-  View,
-} from '@/components/ui';
+import { colors, FocusAwareStatusBar, Pressable, Text, ThemedIcon, View } from '@/components/ui';
 import { QUERY_KEYS } from '@/constants';
+import { BILLING_OPTIONS } from '@/lib/constants/crm';
 import { useCreatePackage, usePackageDetail, useSetPackageChannels, useUpdatePackage } from '@/lib/hooks/api/use-packages';
 import { useServiceProviders } from '@/lib/hooks/api/use-service-providers';
 import { sameChannels, usePackageFormStore } from '@/lib/hooks/stores/use-package-form-store';
-
-const BILLING_OPTIONS: { key: 'monthly' | 'quarterly' | 'semi_annual' | 'annual'; label: string }[] = [
-  { key: 'monthly', label: 'Monthly' },
-  { key: 'quarterly', label: 'Quarterly' },
-  { key: 'semi_annual', label: 'Semi-Annual' },
-  { key: 'annual', label: 'Annual' },
-];
-
-function FieldLabel({ children, required }: { children: string; required?: boolean }) {
-  return (
-    <Text className="text-sm font-bold text-foreground">
-      {children}
-      {required ? <Text className="text-primary-600"> *</Text> : null}
-    </Text>
-  );
-}
-
-function ProviderPicker({
-  providers,
-  selectedId,
-  selectedName,
-  onSelect,
-}: {
-  providers: ServiceProvider[];
-  selectedId: string;
-  selectedName: string;
-  onSelect: (provider: ServiceProvider) => void;
-}) {
-  const [open, setOpen] = React.useState(false);
-
-  return (
-    <View className="gap-1.5">
-      <FieldLabel required>Provider</FieldLabel>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Choose provider"
-        onPress={() => setOpen(!open)}
-        className="flex-row items-center justify-between rounded-2xl border border-border bg-card px-4 py-3.5"
-      >
-        <Text className={`text-sm font-medium ${selectedId ? 'text-foreground' : 'text-muted-foreground'}`}>
-          {selectedName || 'Select a provider'}
-        </Text>
-        <HugeiconsIcon icon={ArrowDown01Icon} size={18} color={colors.neutral[400]} />
-      </Pressable>
-      {open
-        ? (
-            <Card className="border border-border p-1">
-              {providers.length === 0
-                ? (
-                    <Text className="px-4 py-3 text-sm text-muted-foreground">
-                      No providers yet — add one from Services first.
-                    </Text>
-                  )
-                : providers.map(provider => (
-                    <Pressable
-                      key={provider.id}
-                      onPress={() => {
-                        onSelect(provider);
-                        setOpen(false);
-                      }}
-                      className={`rounded-xl px-4 py-2.5 ${provider.id === selectedId ? 'bg-primary-50 dark:bg-primary-950/60' : ''}`}
-                    >
-                      <Text className={`text-sm font-semibold ${provider.id === selectedId ? 'text-primary-600' : 'text-foreground'}`}>
-                        {provider.name}
-                      </Text>
-                      <Text className="text-xs text-muted-foreground">{provider.serviceName}</Text>
-                    </Pressable>
-                  ))}
-            </Card>
-          )
-        : null}
-    </View>
-  );
-}
 
 export function AddEditPackageScreen() {
   const router = useRouter();
@@ -233,6 +154,7 @@ export function AddEditPackageScreen() {
             value={packageName}
             onChangeText={v => setField('packageName', v)}
             placeholder="e.g. Basic Pack"
+            testID="package-name-input"
             placeholderTextColor={colors.neutral[400]}
             className="rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
           />
@@ -255,6 +177,7 @@ export function AddEditPackageScreen() {
             value={price}
             onChangeText={v => setField('price', v)}
             placeholder="e.g. 299"
+            testID="package-price-input"
             keyboardType="numeric"
             placeholderTextColor={colors.neutral[400]}
             className="rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
@@ -328,7 +251,7 @@ export function AddEditPackageScreen() {
               </Text>
               <View className="flex-row items-center gap-1">
                 <Text className="text-xs font-semibold text-foreground">Select Channels</Text>
-                <HugeiconsIcon icon={ArrowRight01Icon} size={16} color={colors.neutral[500]} />
+                <ThemedIcon icon={ArrowRight01Icon} size={16} colorClassName="text-muted-foreground" />
               </View>
             </Pressable>
           </Card>
@@ -356,7 +279,7 @@ export function AddEditPackageScreen() {
                     </View>
                     <View className="flex-row items-center gap-1">
                       <Text className="text-xs font-semibold text-foreground">Choose locations</Text>
-                      <HugeiconsIcon icon={ArrowRight01Icon} size={16} color={colors.neutral[500]} />
+                      <ThemedIcon icon={ArrowRight01Icon} size={16} colorClassName="text-muted-foreground" />
                     </View>
                   </Pressable>
                 </Card>
@@ -369,6 +292,7 @@ export function AddEditPackageScreen() {
           <Switch
             value={isActive}
             onValueChange={v => setField('isActive', v)}
+            testID="package-active-toggle"
             trackColor={{ false: colors.neutral[300], true: colors.primary[500] }}
             thumbColor="#ffffff"
           />

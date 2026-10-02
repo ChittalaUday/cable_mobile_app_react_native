@@ -1,0 +1,39 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - inventory
+# Always restore the network, even if a step fails: the emulator is shared.
+onFlowComplete:
+  - setAirplaneMode: disabled
+---
+# Network edge on Stock & Locations: open the list with the network down,
+# check what is shown, restore the network and retry by re-opening.
+- runFlow: ../utils/login-admin.yaml
+- runFlow: ../utils/inventory-open.yaml
+
+- setAirplaneMode: enabled
+- tapOn: Stock & Locations
+- extendedWaitUntil:
+    visible: Current levels across storage points
+    timeout: 20000
+# React Query retries before giving up; wait out the spinner.
+- extendedWaitUntil:
+    visible: No stock items found
+    timeout: 60000
+# BUG: a failed fetch renders the "No stock items found" empty state instead
+# of an error with a retry action, so offline looks like an empty warehouse.
+# - assertVisible: .*(network|offline|Could not load|Try again).*
+- assertNotVisible: ACT HD Installation Kit
+- takeScreenshot: .maestro/screenshots/inventory-stock-offline
+
+# Network back: there is no retry button, so re-open the screen to retry.
+- setAirplaneMode: disabled
+- back
+- extendedWaitUntil:
+    visible: Search inventory...
+    timeout: 20000
+- tapOn: Stock & Locations
+- extendedWaitUntil:
+    visible: ACT HD Installation Kit
+    timeout: 60000

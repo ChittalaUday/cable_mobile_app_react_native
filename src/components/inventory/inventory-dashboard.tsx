@@ -13,15 +13,7 @@ import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { Card, ScreenHeader } from '@/components/common/shell';
 import { LocationPickerSheet } from '@/components/locations/location-picker-sheet';
-import {
-  ActivityIndicator,
-  colors,
-  Pressable,
-  ScrollView,
-  Text,
-  useModal,
-  View,
-} from '@/components/ui';
+import { ActivityIndicator, colors, Pressable, ScrollView, Text, ThemedIcon, useModal, View } from '@/components/ui';
 import { useInventoryDashboard } from '@/lib/hooks/api/use-inventory';
 
 export function InventoryDashboardScreen({ basePath }: { basePath: '/admin/inventory' | '/staff/inventory' }) {
@@ -60,7 +52,7 @@ export function InventoryDashboardScreen({ basePath }: { basePath: '/admin/inven
               {dashboard?.locationName ?? locationLabel}
             </Text>
           </View>
-          <HugeiconsIcon icon={ArrowDown01Icon} size={16} color={colors.neutral[500]} strokeWidth={2} />
+          <ThemedIcon icon={ArrowDown01Icon} size={16} colorClassName="text-muted-foreground" strokeWidth={2} />
         </Pressable>
 
         <LocationPickerSheet
@@ -87,7 +79,7 @@ export function InventoryDashboardScreen({ basePath }: { basePath: '/admin/inven
                   {/* Total Items */}
                   <Card className="flex-1 border border-border bg-card p-3.5">
                     <View className="flex-row items-center justify-between">
-                      <View className="size-8 items-center justify-center rounded-lg bg-orange-50">
+                      <View className="size-8 items-center justify-center rounded-lg bg-orange-50 dark:bg-orange-950/40">
                         <HugeiconsIcon icon={ArrowUp01Icon} size={16} color={colors.primary[600]} strokeWidth={2.4} />
                       </View>
                       <Text className="text-xs font-semibold text-primary-600">Total</Text>
@@ -101,7 +93,7 @@ export function InventoryDashboardScreen({ basePath }: { basePath: '/admin/inven
                   {/* In Stock */}
                   <Card className="flex-1 border border-border bg-card p-3.5">
                     <View className="flex-row items-center justify-between">
-                      <View className="size-8 items-center justify-center rounded-lg bg-success-50">
+                      <View className="size-8 items-center justify-center rounded-lg bg-success-50 dark:bg-success-900/40">
                         <HugeiconsIcon icon={CheckmarkCircle02Icon} size={16} color={colors.success[600]} strokeWidth={2.4} />
                       </View>
                       <Text className="text-xs font-semibold text-success-600">Available</Text>
@@ -117,7 +109,7 @@ export function InventoryDashboardScreen({ basePath }: { basePath: '/admin/inven
                   {/* Issued */}
                   <Card className="flex-1 border border-border bg-card p-3.5">
                     <View className="flex-row items-center justify-between">
-                      <View className="size-8 items-center justify-center rounded-lg bg-warning-50">
+                      <View className="size-8 items-center justify-center rounded-lg bg-warning-50 dark:bg-warning-900/40">
                         <HugeiconsIcon icon={Upload01Icon} size={16} color={colors.warning[600]} strokeWidth={2.4} />
                       </View>
                       <Text className="text-xs font-semibold text-warning-600">Assigned</Text>
@@ -131,7 +123,7 @@ export function InventoryDashboardScreen({ basePath }: { basePath: '/admin/inven
                   {/* In Transit */}
                   <Card className="flex-1 border border-border bg-card p-3.5">
                     <View className="flex-row items-center justify-between">
-                      <View className="size-8 items-center justify-center rounded-lg bg-purple-50">
+                      <View className="size-8 items-center justify-center rounded-lg bg-purple-50 dark:bg-purple-950/40">
                         <HugeiconsIcon icon={Exchange01Icon} size={16} color="#7C4DFF" strokeWidth={2.4} />
                       </View>
                       <Text className="text-xs font-semibold text-[#7C4DFF]">In Van</Text>
@@ -171,14 +163,14 @@ export function InventoryDashboardScreen({ basePath }: { basePath: '/admin/inven
                             >
                               <View className="flex-row items-center gap-3">
                                 <View className="size-10 items-center justify-center rounded-lg bg-muted">
-                                  <HugeiconsIcon icon={Package01Icon} size={20} color={colors.neutral[700]} strokeWidth={1.8} />
+                                  <ThemedIcon icon={Package01Icon} size={20} colorClassName="text-foreground" strokeWidth={1.8} />
                                 </View>
                                 <View>
                                   <Text className="text-sm font-bold text-foreground">{item.name}</Text>
                                   <Text className="text-xs text-muted-foreground">{item.code ?? 'SKU'}</Text>
                                 </View>
                               </View>
-                              <View className="rounded-full bg-danger-50 px-2.5 py-1">
+                              <View className="rounded-full bg-danger-50 px-2.5 py-1 dark:bg-danger-950/40">
                                 <Text className="text-xs font-bold text-danger-600">
                                   {item.availableStock}
                                   {' '}

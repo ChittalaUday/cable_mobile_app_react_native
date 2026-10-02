@@ -14,16 +14,7 @@ import { Modal } from 'react-native';
 
 import { dialogs } from '@/components/common/dialogs';
 import { Card, ScreenHeader } from '@/components/common/shell';
-import {
-  ActivityIndicator,
-  Button,
-  colors,
-  Input,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from '@/components/ui';
+import { ActivityIndicator, Button, colors, Input, Pressable, ScrollView, Text, ThemedIcon, View } from '@/components/ui';
 import { useCustomer } from '@/lib/hooks/api/use-customers';
 import { useIssueEquipment } from '@/lib/hooks/api/use-inventory';
 
@@ -163,7 +154,7 @@ export function IssueConfirmScreen({
           <Text className="text-xs font-semibold text-foreground">Assign to</Text>
           <Card className="flex-row items-center justify-between border border-border p-3.5">
             <View className="flex-row items-center gap-3">
-              <View className="size-10 items-center justify-center rounded-full bg-orange-50">
+              <View className="size-10 items-center justify-center rounded-full bg-orange-50 dark:bg-orange-950/40">
                 <HugeiconsIcon icon={UserIcon} size={20} color={colors.primary[600]} strokeWidth={2} />
               </View>
               <View>
@@ -196,8 +187,8 @@ export function IssueConfirmScreen({
                           ? `${selectedSubscription.service?.name ?? 'Subscription'} (${selectedSubscription.serviceAccountNumber})`
                           : 'None / Standalone Assignment'}
                       </Text>
-                      {selectedSubscription?.package?.name && (
-                        <Text className="text-xs text-muted-foreground">{selectedSubscription.package.name}</Text>
+                      {selectedSubscription?.plan?.name && (
+                        <Text className="text-xs text-muted-foreground">{selectedSubscription.plan.name}</Text>
                       )}
                     </View>
                     <HugeiconsIcon icon={ArrowRight01Icon} size={16} color={colors.neutral[400]} strokeWidth={2} />
@@ -221,7 +212,7 @@ export function IssueConfirmScreen({
             <Text className="text-sm font-semibold text-foreground">
               {OWNERSHIP_OPTIONS[ownershipIndex]!.label}
             </Text>
-            <HugeiconsIcon icon={ArrowDown01Icon} size={16} color={colors.neutral[500]} strokeWidth={2} />
+            <ThemedIcon icon={ArrowDown01Icon} size={16} colorClassName="text-muted-foreground" strokeWidth={2} />
           </Pressable>
         </View>
 

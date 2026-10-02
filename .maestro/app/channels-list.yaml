@@ -1,0 +1,68 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - packages
+---
+# Channel Lineup (More > Channels): the list, search by name and by number,
+# genre chips, and the empty result. The lineup is read-only in the app (it is
+# synced from the MSO), so there is no add/edit form to validate.
+- runFlow: ../utils/login-admin.yaml
+- tapOn: More
+- extendedWaitUntil:
+    visible: Channels
+    timeout: 10000
+- tapOn: Channels
+- extendedWaitUntil:
+    visible: Channel Lineup
+    timeout: 20000
+
+# --- Renders ------------------------------------------------------------------
+- extendedWaitUntil:
+    visible: '\d+ Available Channels'
+    timeout: 30000
+- assertVisible: 'Showing \d+ of \d+ channels'
+- assertVisible: All Genres
+- assertVisible: All Languages
+- assertVisible: Refresh
+- scroll
+- scroll
+
+# --- Search by name -------------------------------------------------------------
+- tapOn: Search channels by name, number, broadcaster...
+- inputText: Gemini TV
+- extendedWaitUntil:
+    visible: Gemini TV
+    timeout: 20000
+- assertVisible: '#102'
+
+# --- An empty result ---------------------------------------------------------------
+- tapOn: Clear
+- tapOn: Search channels by name, number, broadcaster...
+- inputText: zzqq no channel
+- extendedWaitUntil:
+    visible: No Channels Found
+    timeout: 20000
+- assertVisible: No channels match your current search and filter settings.
+- tapOn: Clear
+- runFlow: ../utils/hide-keyboard.yaml
+
+# --- Genre chip narrows, tapping it again clears ----------------------------------
+- extendedWaitUntil:
+    visible: Movies
+    timeout: 20000
+- tapOn: Movies
+- extendedWaitUntil:
+    visible: '.*Movies.*Telugu.*|.*Movies.*Hindi.*|.*Movies.*'
+    timeout: 20000
+- assertNotVisible: ETV TELUGU
+- tapOn: All Genres
+- extendedWaitUntil:
+    visible: ETV TELUGU
+    timeout: 20000
+
+# --- Back to More ---------------------------------------------------------------
+- tapOn: Back
+- extendedWaitUntil:
+    visible: Locations
+    timeout: 10000

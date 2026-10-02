@@ -8,15 +8,7 @@ import { dialogs } from '@/components/common/dialogs';
 import { Card } from '@/components/common/shell';
 import { LocationPickerSheet } from '@/components/locations/location-picker-sheet';
 import { toggleArea } from '@/components/locations/toggle-area';
-import {
-  colors,
-  Modal,
-  Pressable,
-  ScrollView,
-  Text,
-  useModal,
-  View,
-} from '@/components/ui';
+import { colors, Modal, Pressable, ScrollView, Text, ThemedIcon, useModal, View } from '@/components/ui';
 import { useSetStaffTeamAreas, useUpdateStaff, useUpdateTeam } from '@/lib/hooks/api/use-staff';
 import { apiErrorMessage } from '@/lib/utils/api-error';
 
@@ -160,7 +152,7 @@ export function TeamMemberSheet({ member, teamId, teamAreas, onClose, onSaved }:
                   Optional. A leader can manage this crew — its members and their areas — and nothing outside it.
                 </Text>
               </View>
-              <Switch value={leader} onValueChange={setLeader} />
+              <Switch testID="team-leader-switch" value={leader} onValueChange={setLeader} />
             </View>
           </Card>
 
@@ -185,7 +177,7 @@ export function TeamMemberSheet({ member, teamId, teamAreas, onClose, onSaved }:
               : areas.map(area => (
                   <View key={area.id} className="flex-row items-center gap-2.5">
                     <View className="size-8 items-center justify-center rounded-lg bg-muted">
-                      <HugeiconsIcon icon={Location01Icon} size={15} color={colors.neutral[600]} strokeWidth={2} />
+                      <ThemedIcon icon={Location01Icon} size={15} colorClassName="text-muted-foreground" strokeWidth={2} />
                     </View>
                     <View className="min-w-0 flex-1">
                       <Text className="text-sm font-semibold text-foreground" numberOfLines={1}>{area.name}</Text>
@@ -199,7 +191,7 @@ export function TeamMemberSheet({ member, teamId, teamAreas, onClose, onSaved }:
             <Pressable
               accessibilityRole="button"
               onPress={removeFromTeam}
-              className="min-w-0 flex-1 flex-row items-center justify-center gap-1.5 rounded-xl border border-danger-200 bg-card py-3"
+              className="min-w-0 flex-1 flex-row items-center justify-center gap-1.5 rounded-xl border border-danger-200 bg-card py-3 dark:border-danger-800"
             >
               <HugeiconsIcon icon={UserRemove01Icon} size={16} color={colors.danger[500]} strokeWidth={2} />
               <Text className="text-sm font-bold text-danger-500" numberOfLines={1}>Remove</Text>

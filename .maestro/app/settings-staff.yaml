@@ -1,0 +1,51 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - staff
+  - settings
+---
+# Staff reuse the settings screen, minus the office-only Payments/UPI section.
+- runFlow: ../utils/login-staff.yaml
+- extendedWaitUntil:
+    visible: Field Officer
+    timeout: 30000
+- runFlow: ../utils/account-open-settings.yaml
+
+- assertVisible: Settings
+- assertVisible: Language
+- assertVisible: Theme
+- assertVisible: About
+- assertVisible: App Name
+# Role edge: no UPI handles for staff.
+- assertNotVisible: Payments
+- assertNotVisible: UPI handles
+
+# Language works for staff too: Telugu and back.
+- tapOn: Language
+- extendedWaitUntil:
+    visible:
+      id: settings-language-item-te
+    timeout: 10000
+- tapOn:
+    id: settings-language-item-te
+- extendedWaitUntil:
+    visible: సెట్టింగ్‌లు
+    timeout: 10000
+- tapOn: భాష
+- extendedWaitUntil:
+    visible:
+      id: settings-language-item-en
+    timeout: 10000
+- tapOn:
+    id: settings-language-item-en
+- extendedWaitUntil:
+    visible: General
+    timeout: 10000
+
+- scrollUntilVisible:
+    element: Logout
+- assertVisible: Privacy Policy
+- back
+- extendedWaitUntil:
+    visible: suresh.staff@sscn.com
+    timeout: 10000

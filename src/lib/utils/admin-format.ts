@@ -70,3 +70,18 @@ export function rupeesExact(value: number | string) {
   const abs = Math.abs(paise);
   return `${paise < 0 ? '-' : ''}₹${grouped(Math.trunc(abs / 100))}.${String(abs % 100).padStart(2, '0')}`;
 }
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+/** `02 Oct 2026`. */
+export function dayMonthYear(date: Date) {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${pad2(date.getDate())} ${months[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+/** `02 Oct 2026, 08:22 PM`. */
+export function dateTime(iso: string) {
+  const d = new Date(iso);
+  const h = d.getHours();
+  return `${dayMonthYear(d)}, ${pad2(h % 12 || 12)}:${pad2(d.getMinutes())} ${h < 12 ? 'AM' : 'PM'}`;
+}

@@ -10,18 +10,7 @@ import * as React from 'react';
 
 import { dialogs } from '@/components/common/dialogs';
 import { Card, ScreenHeader } from '@/components/common/shell';
-import {
-  ActivityIndicator,
-  Button,
-  colors,
-  Input,
-  Modal,
-  Pressable,
-  ScrollView,
-  Text,
-  useModal,
-  View,
-} from '@/components/ui';
+import { ActivityIndicator, Button, colors, Input, Modal, Pressable, ScrollView, Text, ThemedIcon, useModal, View } from '@/components/ui';
 import { useCreateApprovalRequest, useInventoryItem } from '@/lib/hooks/api/use-inventory';
 import { useAuthStore } from '@/lib/hooks/stores/use-auth-store';
 
@@ -111,9 +100,10 @@ export function InventoryItemDetailsScreen({
           <Pressable
             accessibilityRole="button"
             onPress={handleOpenEdit}
+            testID="item-details-menu-button"
             className="size-9 items-center justify-center rounded-lg border border-border bg-card active:bg-muted"
           >
-            <HugeiconsIcon icon={MoreVerticalIcon} size={20} color={colors.neutral[800]} strokeWidth={2} />
+            <ThemedIcon icon={MoreVerticalIcon} size={20} colorClassName="text-foreground" strokeWidth={2} />
           </Pressable>
         )}
       />
@@ -135,16 +125,16 @@ export function InventoryItemDetailsScreen({
             <Text className="text-xl font-black text-foreground">{item.name}</Text>
             <Text className="text-sm font-semibold text-muted-foreground">{item.code ?? 'SKU-000'}</Text>
           </View>
-          <View className="rounded-full bg-success-50 px-3 py-1">
-            <Text className="text-xs font-bold text-success-700">In Stock</Text>
+          <View className="rounded-full bg-success-50 px-3 py-1 dark:bg-success-900/40">
+            <Text className="text-xs font-bold text-success-700 dark:text-success-300">In Stock</Text>
           </View>
         </View>
 
         {/* Role permission info banner for Staff */}
         {!isAdmin && (
-          <View className="flex-row items-center gap-2 rounded-xl border border-primary-100 bg-primary-50 p-3">
+          <View className="flex-row items-center gap-2 rounded-xl border border-primary-100 bg-primary-50 p-3 dark:border-primary-900 dark:bg-primary-950/40">
             <HugeiconsIcon icon={CircleLock01Icon} size={18} color={colors.primary[600]} strokeWidth={2} />
-            <Text className="flex-1 text-xs text-primary-900">
+            <Text className="flex-1 text-xs text-primary-900 dark:text-primary-100">
               Staff access: You can issue this item. Catalog modifications require administrator approval.
             </Text>
           </View>
@@ -269,6 +259,7 @@ export function InventoryItemDetailsScreen({
             <Input
               value={requestReason}
               onChangeText={setRequestReason}
+              testID="item-request-reason-input"
               placeholder="e.g. Updating name to match latest supplier shipment"
               className="h-20 rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground"
               multiline

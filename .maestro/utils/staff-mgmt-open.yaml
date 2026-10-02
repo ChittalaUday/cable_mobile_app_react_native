@@ -1,0 +1,18 @@
+appId: ${APP_ID}
+tags:
+  - util
+---
+# From a signed-in admin shell: More tab -> Staff & Teams, waits for the roster.
+- tapOn: More
+- extendedWaitUntil:
+    visible: Staff & Teams
+    timeout: 20000
+- tapOn: Staff & Teams
+- extendedWaitUntil:
+    visible:
+      id: staff-search-input
+    timeout: 30000
+# Seeded roster has loaded (the admin is always on it).
+- extendedWaitUntil:
+    visible: SSCN Admin
+    timeout: 30000

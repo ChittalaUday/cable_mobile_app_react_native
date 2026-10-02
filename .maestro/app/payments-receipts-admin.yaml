@@ -1,0 +1,113 @@
+appId: ${APP_ID}
+env:
+  # Bojja Vijaya (SSCN-000076): one active ACT Digital line.
+  CUSTOMER_ID: 4ec0dec6-366d-4e9f-b4ff-bdd5a6c111d7
+  CUSTOMER: Bojja Vijaya
+tags:
+  - e2e
+  - admin
+  - payments
+  - receipts
+---
+# Receipts (admin): a part payment of exactly the ₹99,000 cap is accepted and
+# opens its receipt; the receipt shows every field; the admin-only reversal
+# can be cancelled and then posted (which also undoes the cap-sized payment);
+# and the receipt reads back from the Receipts list and the Payments tab.
+- evalScript: ${output.stamp = String(Date.now()).slice(-6)}
+- runFlow: ../utils/login-admin.yaml
+
+# --- Record exactly ₹99,000 by UPI ------------------------------------------
+- openLink: ${DEV_SCHEME}://admin/collect/${CUSTOMER_ID}
+- runFlow: ../utils/payments-open-collect.yaml
+- tapOn: Part
+- tapOn:
+    id: collect-amount
+- inputText: '99000'
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: UPI
+- scrollUntilVisible:
+    element:
+      id: collect-submit
+- assertVisible: Record ₹99,000.00
+- tapOn:
+    id: collect-submit
+- assertNotVisible: Invalid amount
+
+# --- The receipt it opens ------------------------------------------------------
+- extendedWaitUntil:
+    visible: Collected by
+    timeout: 30000
+- assertVisible: Receipt
+- assertVisible: ${CUSTOMER}
+- assertVisible: ₹99,000.00
+- assertVisible: '(?i)(paid in full|part payment)'
+- assertVisible: Account
+- assertVisible: 'C\d+'
+- assertVisible: Dues paid
+- assertVisible: Balance after
+- assertVisible: Method
+- assertVisible: upi
+- assertVisible: When
+- assertVisible: Area
+- assertNotVisible: Reversed
+
+# --- Reverse: cancel first, then post it -------------------------------------
+- scrollUntilVisible:
+    element: Reverse this receipt
+- tapOn: Reverse this receipt
+- assertVisible: '.*The original stays on the record and both are audited.*'
+- tapOn: Cancel
+- assertNotVisible: Reversed
+- assertVisible: Reverse this receipt
+
+- tapOn: Reverse this receipt
+- tapOn:
+    id: dialog-input
+- inputText: E2E cap check ${output.stamp}
+- tapOn: Reverse
+- extendedWaitUntil:
+    visible: Reversed
+    timeout: 20000
+- assertNotVisible: Reverse this receipt
+
+# --- Receipts list --------------------------------------------------------------
+- tapOn: Done
+- openLink: ${DEV_SCHEME}://admin/receipts
+- extendedWaitUntil:
+    visible: Every collection in your areas
+    timeout: 30000
+- assertVisible: Receipts
+- assertVisible: '(?i)collected'
+- assertVisible: '\d+ receipts'
+# Newest first: the reversal, then the receipt it reversed.
+- assertVisible: '₹-99,000.00'
+- assertVisible: reversed
+- tapOn: '₹-99,000.00'
+- extendedWaitUntil:
+    visible: Collected by
+    timeout: 20000
+- assertVisible: '(?i)reversal'
+- assertVisible:
+    text: E2E cap check ${output.stamp}
+# A reversal cannot itself be reversed.
+- assertNotVisible: Reverse this receipt
+- tapOn: Done
+
+# --- Payments tab: rollup on top of the same list, and into a receipt ---------
+- tapOn: Back
+- tapOn: Payments
+- extendedWaitUntil:
+    visible: Payments & Collections
+    timeout: 30000
+- assertVisible: Monitor daily collection batches and staff dues
+- assertVisible: Collected Today
+- assertVisible: Outstanding Dues
+- assertVisible: '\d+ receipts'
+- scrollUntilVisible:
+    element: reversed
+- tapOn: reversed
+- extendedWaitUntil:
+    visible: Collected by
+    timeout: 20000
+- assertVisible: ${CUSTOMER}
+- assertVisible: Reversed

@@ -17,13 +17,7 @@ import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { dialogs } from '@/components/common/dialogs';
 import { Card, Loading, ScreenHeader } from '@/components/common/shell';
 import { getProviderBrand } from '@/components/services/provider-brand-utils';
-import {
-  colors,
-  FocusAwareStatusBar,
-  Pressable,
-  Text,
-  View,
-} from '@/components/ui';
+import { colors, FocusAwareStatusBar, Pressable, Text, ThemedIcon, View } from '@/components/ui';
 import { coverageLabel, usePackages } from '@/lib/hooks/api/use-packages';
 import { useDeleteServiceProvider, useServiceProvider } from '@/lib/hooks/api/use-service-providers';
 import { usePackageFormStore } from '@/lib/hooks/stores/use-package-form-store';
@@ -161,7 +155,7 @@ export function ProviderDetailsScreen() {
   );
 
   const contact = provider?.contact as { phone?: string; website?: string; email?: string } | null;
-  const website = contact?.website ?? (provider?.metadata as { website?: string } | null)?.website;
+  const website = provider?.websiteUrl ?? contact?.website ?? (provider?.metadata as { website?: string } | null)?.website;
 
   const onAddPackage = () => {
     if (!provider)
@@ -238,7 +232,7 @@ export function ProviderDetailsScreen() {
               )}
               className="size-9 items-center justify-center rounded-lg border border-border bg-card"
             >
-              <HugeiconsIcon icon={Location01Icon} size={19} color={colors.neutral[700]} strokeWidth={2} />
+              <ThemedIcon icon={Location01Icon} size={19} colorClassName="text-foreground" strokeWidth={2} />
             </Pressable>
             <Pressable
               accessibilityRole="button"

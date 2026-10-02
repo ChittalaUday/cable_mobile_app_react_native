@@ -43,12 +43,15 @@ const STEPS: { key: Step; label: string; icon: typeof UserIcon }[] = [
   { key: 'package', label: 'Packages', icon: PackageIcon },
 ];
 
+const WEB_LINK = /^https?:\/\/\S+$/;
+
 const EMPTY_DRAFT: ProviderDraft = {
   name: '',
   serviceId: null,
   code: '',
   phone: '',
   website: '',
+  logoUrl: '',
   description: '',
   isDefault: false,
 };
@@ -159,6 +162,11 @@ export function AddProviderScreen() {
       errs.name = 'Provider name is required';
     if (!draft.serviceId)
       errs.service = 'Choose the service this provider delivers';
+    // The list opens and loads these, so web links only.
+    if (draft.website.trim() && !WEB_LINK.test(draft.website.trim()))
+      errs.website = 'Website must start with http:// or https://';
+    if (draft.logoUrl.trim() && !WEB_LINK.test(draft.logoUrl.trim()))
+      errs.logoUrl = 'Logo URL must start with http:// or https://';
 
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -168,10 +176,9 @@ export function AddProviderScreen() {
 
   // ── Step 1: create, or save edits to what was already created ─────────────
   const saveDetails = async () => {
-    const contact = {
-      ...(draft.phone.trim() ? { phone: draft.phone.trim() } : {}),
-      ...(draft.website.trim() ? { website: draft.website.trim() } : {}),
-    };
+    const contact = draft.phone.trim() ? { phone: draft.phone.trim() } : {};
+    const websiteUrl = draft.website.trim();
+    const logoUrl = draft.logoUrl.trim();
 
     try {
       const saved = provider
@@ -181,6 +188,8 @@ export function AddProviderScreen() {
               name: draft.name.trim(),
               code: draft.code.trim() || null,
               description: draft.description.trim() || null,
+              websiteUrl: websiteUrl || null,
+              logoUrl: logoUrl || null,
               contact: Object.keys(contact).length > 0 ? contact : null,
               isDefault: draft.isDefault,
             },
@@ -191,6 +200,8 @@ export function AddProviderScreen() {
               name: draft.name.trim(),
               code: draft.code.trim() || undefined,
               description: draft.description.trim() || undefined,
+              ...(websiteUrl ? { websiteUrl } : {}),
+              ...(logoUrl ? { logoUrl } : {}),
               contact: Object.keys(contact).length > 0 ? contact : undefined,
               isDefault: draft.isDefault,
             },

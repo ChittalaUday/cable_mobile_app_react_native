@@ -1,0 +1,106 @@
+appId: ${APP_ID}
+env:
+  NAME: Bhadakar Rao Motupalli
+  CODE: SSCN-000066
+  PHONE: '9603078128'
+tags:
+  - e2e
+  - staff
+  - customers
+  - rbac
+---
+# Field staff read the same customer book (narrowed by the server to their
+# areas), open a customer, and reach Collect / Issue from it. They can register
+# a subscriber, but the catalogue (plans, packages, services, channels, locations) is
+# office-only (deep links into it are checked in packages-permissions.yaml).
+- runFlow: ../utils/login-staff.yaml
+- runFlow: ../utils/customers-open.yaml
+- extendedWaitUntil:
+    visible: View
+    timeout: 30000
+
+# --- Search: name, code, phone, and a miss ----------------------------------
+- tapOn:
+    id: customer-search-input
+- inputText: Bhadakar
+- extendedWaitUntil:
+    visible: ${NAME}
+    timeout: 20000
+- eraseText: 20
+- inputText: ${PHONE}
+- extendedWaitUntil:
+    visible: ${NAME}
+    timeout: 20000
+- eraseText: 20
+- inputText: zzqqxxnone
+- extendedWaitUntil:
+    visible: No customers found
+    timeout: 20000
+- eraseText: 20
+- inputText: ${CODE}
+- extendedWaitUntil:
+    visible: ${NAME}
+    timeout: 20000
+- runFlow: ../utils/hide-keyboard.yaml
+
+# --- The customer page, with the staff actions --------------------------------
+- tapOn: View
+- extendedWaitUntil:
+    visible: Customer Details
+    timeout: 20000
+- assertVisible: ${NAME}
+- assertVisible: Outstanding Balance
+- assertVisible: 'SUBSCRIPTIONS \(1\)'
+- scrollUntilVisible:
+    element: Issue Equipment
+- assertVisible: Collect Payment
+- tapOn: Collect Payment
+- extendedWaitUntil:
+    visible: Collect payment
+    timeout: 20000
+- back
+- extendedWaitUntil:
+    visible: Customer Details
+    timeout: 20000
+- back
+- extendedWaitUntil:
+    visible: Customers & Lines
+    timeout: 10000
+
+# --- Staff can open the add-customer wizard; the catalogue in it is read-only
+- tapOn:
+    id: customers-add-button
+- extendedWaitUntil:
+    visible: Add New Customer
+    timeout: 10000
+- tapOn:
+    id: add-customer-name
+- inputText: E2E Staff Draft
+- tapOn:
+    id: add-customer-phone
+- inputText: '9000000001'
+- tapOn:
+    id: add-customer-address
+- inputText: Staff draft door
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Next Step
+- extendedWaitUntil:
+    visible: 'Area the line is fitted in.*'
+    timeout: 10000
+# The plans are readable to staff here; provider packages are not.
+- extendedWaitUntil:
+    visible: '.*/ monthly.*'
+    timeout: 20000
+- assertNotVisible: 'No active plans yet. Add one under Plans first.'
+- tapOn:
+    id: add-customer-close
+
+# --- More has no catalogue or location admin ----------------------------------
+- tapOn: More
+- extendedWaitUntil:
+    visible: Complaints
+    timeout: 10000
+- assertNotVisible: Services
+- assertNotVisible: Channels
+- assertNotVisible: Locations
+- assertNotVisible: Staff & Teams

@@ -1,9 +1,8 @@
 import { Notification03Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
 
-import { colors, Pressable, Text, View } from '@/components/ui';
+import { Pressable, Text, ThemedIcon, View } from '@/components/ui';
 import { useUnreadCount } from '@/lib/hooks/api/use-notifications';
 
 /**
@@ -22,7 +21,7 @@ export function NotificationBell({ className = 'bg-card' }: { className?: string
       onPress={() => router.push('/notifications')}
       className={`size-10 items-center justify-center rounded-full ${className}`}
     >
-      <HugeiconsIcon icon={Notification03Icon} size={19} color={colors.charcoal[800]} strokeWidth={2} />
+      <ThemedIcon icon={Notification03Icon} size={19} colorClassName="text-foreground" strokeWidth={2} />
 
       {unread > 0 && (
         <View className="absolute top-1 right-1 min-w-4 items-center justify-center rounded-full bg-primary-600 px-1">

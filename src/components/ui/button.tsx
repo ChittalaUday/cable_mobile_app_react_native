@@ -4,6 +4,7 @@ import type { VariantProps } from 'tailwind-variants';
 import * as React from 'react';
 import { ActivityIndicator, Pressable, Text } from 'react-native';
 import { tv } from 'tailwind-variants';
+import colors from './colors';
 
 const button = tv({
   slots: {
@@ -14,10 +15,12 @@ const button = tv({
 
   variants: {
     variant: {
+      // Brand orange in both themes. A `dark:` background here would beat any
+      // `bg-*` a caller passes, which is how buttons went white-on-white in dark.
       default: {
-        container: 'bg-black dark:bg-white',
-        label: 'text-white dark:text-black',
-        indicator: 'text-white dark:text-black',
+        container: 'bg-primary-600',
+        label: 'text-white',
+        indicator: 'text-white',
       },
       secondary: {
         container: 'bg-primary-600',
@@ -25,9 +28,9 @@ const button = tv({
         indicator: 'text-white',
       },
       outline: {
-        container: 'border border-neutral-400',
-        label: 'text-black dark:text-neutral-100',
-        indicator: 'text-black dark:text-neutral-100',
+        container: 'border border-border',
+        label: 'text-foreground',
+        indicator: 'text-foreground',
       },
       destructive: {
         container: 'bg-red-600',
@@ -36,13 +39,13 @@ const button = tv({
       },
       ghost: {
         container: 'bg-transparent',
-        label: 'text-black underline dark:text-white',
-        indicator: 'text-black dark:text-white',
+        label: 'text-foreground underline',
+        indicator: 'text-foreground',
       },
       link: {
         container: 'bg-transparent',
-        label: 'text-black',
-        indicator: 'text-black',
+        label: 'text-foreground',
+        indicator: 'text-foreground',
       },
     },
     size: {
@@ -110,7 +113,7 @@ export function Button({ ref, label: text, loading = false, variant = 'default',
             <ActivityIndicator
               size="small"
               className={styles.indicator()}
-              color={variant === 'outline' ? '#333' : '#fff'}
+              color={variant === 'outline' || variant === 'ghost' || variant === 'link' ? colors.neutral[400] : '#fff'}
               testID={testID ? `${testID}-activity-indicator` : undefined}
             />
           )

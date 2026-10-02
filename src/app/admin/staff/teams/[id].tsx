@@ -13,13 +13,7 @@ import { RefreshControl, ScrollView } from 'react-native';
 
 import { TeamMemberSheet } from '@/components/admin/team-member-sheet';
 import { Card, IconTile, Loading, ScreenHeader } from '@/components/common/shell';
-import {
-  colors,
-  FocusAwareStatusBar,
-  Pressable,
-  Text,
-  View,
-} from '@/components/ui';
+import { colors, FocusAwareStatusBar, Pressable, Text, ThemedIcon, View } from '@/components/ui';
 import { teamCoverageLabel, useTeam, useTeamMembers } from '@/lib/hooks/api/use-staff';
 import { initials } from '@/lib/utils/admin-format';
 
@@ -28,6 +22,7 @@ function MemberRow({ member, onPress }: { member: TeamMember; onPress: () => voi
 
   return (
     <Pressable
+      testID="team-member-row"
       accessibilityRole="button"
       onPress={onPress}
       className="flex-row items-center gap-3 rounded-xl p-3 active:bg-muted/40"
@@ -41,7 +36,7 @@ function MemberRow({ member, onPress }: { member: TeamMember; onPress: () => voi
           <Text className="text-sm font-bold text-foreground" numberOfLines={1}>{name}</Text>
           {member.isTeamLeader
             ? (
-                <View className="shrink-0 flex-row items-center gap-1 rounded-sm bg-amber-100 px-1.5 py-0.5 dark:bg-amber-950/60">
+                <View testID="team-member-leader-badge" className="shrink-0 flex-row items-center gap-1 rounded-sm bg-amber-100 px-1.5 py-0.5 dark:bg-amber-950/60">
                   <HugeiconsIcon icon={StarIcon} size={10} color="#B54708" strokeWidth={2.4} />
                   <Text className="text-[10px] font-bold text-amber-700 uppercase dark:text-amber-400">Leader</Text>
                 </View>
@@ -153,7 +148,7 @@ export function TeamDetailScreen() {
             : areas.map(area => (
                 <View key={area.id} className="flex-row items-center gap-2.5">
                   <View className="size-8 shrink-0 items-center justify-center rounded-lg bg-muted">
-                    <HugeiconsIcon icon={Location01Icon} size={15} color={colors.neutral[600]} strokeWidth={2} />
+                    <ThemedIcon icon={Location01Icon} size={15} colorClassName="text-muted-foreground" strokeWidth={2} />
                   </View>
                   <View className="min-w-0 flex-1">
                     <Text className="text-sm font-semibold text-foreground" numberOfLines={1}>{area.name}</Text>

@@ -1,0 +1,42 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - staff
+  - notifications
+---
+# Staff composer: staff may only write to their admins. Required-field check
+# only; nothing is sent from staff.
+- runFlow: ../utils/login-staff.yaml
+- extendedWaitUntil:
+    visible: Field Officer
+    timeout: 30000
+
+- tapOn: Global Search
+- inputText: notif
+- tapOn:
+    id: search-result-send-notification
+- extendedWaitUntil:
+    visible: Send a notification
+    timeout: 20000
+
+- assertVisible: Admins
+- assertVisible: Staff messages go to your admins.
+# Role edge: no tenant-wide or customer broadcast for staff.
+- assertNotVisible: Everyone
+- assertNotVisible: Customers
+
+- assertVisible:
+    id: notify-send
+    enabled: false
+- tapOn:
+    id: notify-body
+- inputText: E2E staff body
+- runFlow: ../utils/hide-keyboard.yaml
+- assertVisible:
+    id: notify-send
+    enabled: false
+
+- tapOn: Back
+- extendedWaitUntil:
+    visible: Field Officer
+    timeout: 20000

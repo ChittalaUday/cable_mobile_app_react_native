@@ -1,0 +1,104 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - dashboard
+---
+# Admin home Quick actions FAB: every action reaches its screen, and back returns home.
+- runFlow: ../utils/login-admin.yaml
+- extendedWaitUntil:
+    visible: Total Customers
+    timeout: 60000
+
+# The FAB unfolds the admin action list; Cancel folds it away again.
+- tapOn: Quick actions
+- extendedWaitUntil:
+    visible: Add Customer
+    timeout: 10000
+- assertVisible: Collect Payment
+- assertVisible: Issue Equipment
+- assertVisible: Send Notification
+- assertVisible: Add Package
+- assertVisible: Edit Packages
+- assertVisible: Delete Packages
+- takeScreenshot: .maestro/screenshots/admin-quick-actions
+- tapOn: Cancel
+- extendedWaitUntil:
+    notVisible: Add Customer
+    timeout: 10000
+
+# Add Customer opens the registration wizard; closing it returns home.
+- tapOn: Quick actions
+- tapOn: Add Customer
+- extendedWaitUntil:
+    visible: Add New Customer
+    timeout: 30000
+- tapOn:
+    id: add-customer-close
+- extendedWaitUntil:
+    visible: Total Customers
+    timeout: 20000
+
+# Collect Payment lands on the customer book to pick who pays.
+- tapOn: Quick actions
+- tapOn: Collect Payment
+- extendedWaitUntil:
+    visible: 'Customers & Lines'
+    timeout: 30000
+- tapOn: Home
+- extendedWaitUntil:
+    visible: Total Customers
+    timeout: 20000
+
+# Issue Equipment opens the scan/search step.
+- tapOn: Quick actions
+- tapOn: Issue Equipment
+- extendedWaitUntil:
+    visible: Issue to Customer
+    timeout: 30000
+- back
+- extendedWaitUntil:
+    visible: Total Customers
+    timeout: 20000
+
+# Send Notification opens the composer.
+- tapOn: Quick actions
+- tapOn: Send Notification
+- extendedWaitUntil:
+    visible: Send a notification
+    timeout: 30000
+- back
+- extendedWaitUntil:
+    visible: Total Customers
+    timeout: 20000
+
+# Add Package opens a blank package form.
+- tapOn: Quick actions
+- tapOn: Add Package
+- extendedWaitUntil:
+    visible: Create a new package
+    timeout: 30000
+- back
+- extendedWaitUntil:
+    visible: Total Customers
+    timeout: 20000
+
+# Edit and Delete Packages both land on the catalogue.
+- tapOn: Quick actions
+- tapOn: Edit Packages
+- extendedWaitUntil:
+    visible: 'Provider rates behind your plans — not shown to customers'
+    timeout: 30000
+- back
+- extendedWaitUntil:
+    visible: Total Customers
+    timeout: 20000
+- tapOn: Quick actions
+- tapOn: Delete Packages
+- extendedWaitUntil:
+    visible: 'Provider rates behind your plans — not shown to customers'
+    timeout: 30000
+- back
+- extendedWaitUntil:
+    visible: Total Customers
+    timeout: 20000

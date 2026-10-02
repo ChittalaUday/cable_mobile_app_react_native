@@ -9,8 +9,23 @@ export type ReceiptInput = {
   businessName: string;
   /** Printed under the total as a QR, so the next payment needs no cash. */
   upi: UpiAccount | null;
+  /** The plan the dues were for; the receipt row itself does not carry it. */
+  planName?: string | null;
+  /** 1 is the original; anything after it is stamped as a duplicate. */
+  copy?: number;
   paper?: PaperWidth;
 };
+
+/** The preview line the screen swaps for a drawn QR. */
+export const QR_MARKER = '[ QR ]';
+
+/**
+ * The payload both the UPI panel and the paper encode, so the code a customer
+ * scanned at the door is the one they take home.
+ */
+export function receiptUpiUri(upi: UpiAccount): string {
+  return upiUri(upi, upi.payeeName);
+}
 
 /** Rupees with paise, ASCII only — the printer has no ₹ glyph. */
 function money(value: string | number): string {
@@ -49,6 +64,11 @@ export function upiUri(account: UpiAccount, note?: string): string {
   return `upi://pay?${params.toString().replaceAll('+', '%20')}`;
 }
 
+/** The big line: what was paid, or that nothing was and the balance stands. */
+function headline(receipt: Collection): string {
+  return Number(receipt.totalCollected) === 0 ? 'PAYMENT DUE' : `PAID ${money(receipt.totalCollected)}`;
+}
+
 /**
  * Lays out one receipt.
  *
@@ -56,7 +76,7 @@ export function upiUri(account: UpiAccount, note?: string): string {
  * returned whole so the preview on screen and the paper come from the same
  * function — a preview that is assembled separately is a preview that lies.
  */
-export function buildReceipt({ receipt, businessName, upi, paper = 58 }: ReceiptInput): Uint8Array {
+export function buildReceipt({ receipt, businessName, upi, planName, copy = 1, paper = 58 }: ReceiptInput): Uint8Array {
   const columns = COLUMNS[paper];
   const doc = new EscPos(columns);
 
@@ -64,6 +84,8 @@ export function buildReceipt({ receipt, businessName, upi, paper = 58 }: Receipt
 
   doc.align('center').bold(true).text(businessName, 'center').bold(false);
   doc.text('PAYMENT RECEIPT', 'center');
+  if (copy > 1)
+    doc.bold(true).text(`DUPLICATE COPY ${copy}`, 'center').bold(false);
   doc.rule('=');
 
   doc.row('Receipt', receipt.id.replaceAll('-', '').slice(0, 10).toUpperCase());
@@ -78,10 +100,16 @@ export function buildReceipt({ receipt, businessName, upi, paper = 58 }: Receipt
   if (receipt.serviceAccountNumber != null)
     doc.row('Account', receipt.serviceAccountNumber);
 
+  if (planName != null)
+    doc.row('Plan', planName);
+
   if (receipt.collectorName != null)
     doc.row('Collected by', receipt.collectorName);
 
   doc.rule();
+
+  if (Number(receipt.planCharge) > 0)
+    doc.row('Plan charge', money(receipt.planCharge));
 
   if (Number(receipt.duesPaid) !== 0)
     doc.row('Subscription', money(receipt.duesPaid));
@@ -95,7 +123,7 @@ export function buildReceipt({ receipt, businessName, upi, paper = 58 }: Receipt
   doc.rule();
 
   doc.align('center').bold(true).double(true);
-  doc.text(`PAID ${money(receipt.totalCollected)}`, 'center');
+  doc.text(headline(receipt), 'center');
   doc.double(false).bold(false);
 
   if (receipt.method != null)
@@ -113,14 +141,14 @@ export function buildReceipt({ receipt, businessName, upi, paper = 58 }: Receipt
   if (upi !== null) {
     doc.rule();
     doc.text('Scan to pay next time', 'center');
-    doc.align('center').qr(upiUri(upi, businessName));
+    doc.align('center').qr(receiptUpiUri(upi));
     doc.feed(1);
     doc.text(upi.upiId, 'center');
     doc.text(upi.payeeName, 'center');
   }
 
   doc.rule('=');
-  doc.text('Keep this receipt. It cannot be re-issued.', 'center');
+  doc.text('Keep this receipt.', 'center');
   doc.cut();
 
   return doc.build();
@@ -133,7 +161,7 @@ export function buildReceipt({ receipt, businessName, upi, paper = 58 }: Receipt
  * collector approves is what the paper says. The QR is shown as a placeholder
  * line because the screen draws the real one as an image beside it.
  */
-export function previewReceipt({ receipt, businessName, upi, paper = 58 }: ReceiptInput): string {
+export function previewReceipt({ receipt, businessName, upi, planName, copy = 1, paper = 58 }: ReceiptInput): string {
   const columns = COLUMNS[paper];
   const lines: string[] = [];
 
@@ -146,6 +174,8 @@ export function previewReceipt({ receipt, businessName, upi, paper = 58 }: Recei
 
   centre(businessName);
   centre('PAYMENT RECEIPT');
+  if (copy > 1)
+    centre(`DUPLICATE COPY ${copy}`);
   rule('=');
 
   row('Receipt', receipt.id.replaceAll('-', '').slice(0, 10).toUpperCase());
@@ -160,10 +190,16 @@ export function previewReceipt({ receipt, businessName, upi, paper = 58 }: Recei
   if (receipt.serviceAccountNumber != null)
     row('Account', receipt.serviceAccountNumber);
 
+  if (planName != null)
+    row('Plan', planName);
+
   if (receipt.collectorName != null)
     row('Collected by', receipt.collectorName);
 
   rule();
+
+  if (Number(receipt.planCharge) > 0)
+    row('Plan charge', money(receipt.planCharge));
 
   if (Number(receipt.duesPaid) !== 0)
     row('Subscription', money(receipt.duesPaid));
@@ -175,7 +211,7 @@ export function previewReceipt({ receipt, businessName, upi, paper = 58 }: Recei
     row('Equipment', money(receipt.accessoryAmount));
 
   rule();
-  centre(`PAID ${money(receipt.totalCollected)}`);
+  centre(headline(receipt));
 
   if (receipt.method != null)
     row('Paid by', receipt.method.replace('_', ' ').toUpperCase());
@@ -190,13 +226,13 @@ export function previewReceipt({ receipt, businessName, upi, paper = 58 }: Recei
   if (upi !== null) {
     rule();
     centre('Scan to pay next time');
-    centre('[ QR ]');
+    centre(QR_MARKER);
     centre(upi.upiId);
     centre(upi.payeeName);
   }
 
   rule('=');
-  centre('Keep this receipt. It cannot be re-issued.');
+  centre('Keep this receipt.');
 
   return lines.join('\n');
 }

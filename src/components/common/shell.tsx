@@ -18,12 +18,15 @@ export type CustomerStatus = 'active' | 'inactive' | 'pending';
 export const NAVY = '#1E2A44';
 
 /** Icon-tile tints used by section headers, quick actions and activity rows. */
+// Tile backgrounds are the tint itself at ~12% opacity, not a fixed pastel:
+// on white that is the same soft wash, and on a dark card it stays a subtle
+// tint instead of a bright light square.
 export const TINT = {
-  orange: { bg: '#FFF1E6', fg: '#FF6C00' },
-  blue: { bg: '#E8F2FE', fg: '#2E90FA' },
-  green: { bg: '#E6F7EF', fg: '#12B76A' },
-  purple: { bg: '#F1EAFE', fg: '#7C4DFF' },
-  red: { bg: '#FDECEC', fg: '#EF4444' },
+  orange: { bg: '#FF6C001F', fg: '#FF6C00' },
+  blue: { bg: '#2E90FA1F', fg: '#2E90FA' },
+  green: { bg: '#12B76A1F', fg: '#12B76A' },
+  purple: { bg: '#7C4DFF1F', fg: '#7C4DFF' },
+  red: { bg: '#EF44441F', fg: '#EF4444' },
 } as const;
 
 export type TintKey = keyof typeof TINT;
@@ -134,3 +137,50 @@ export function BottomNav({ active, onSelect, bottomInset }: { active: TabKey; o
 
 export { ScreenHeader } from './screen-header';
 export type { ScreenHeaderProps } from './screen-header';
+
+const AVATAR_TINTS: TintKey[] = ['blue', 'green', 'red', 'orange', 'purple'];
+
+/** Initials on a tint picked from the name, so the same person keeps the same colour on every screen. */
+export function Avatar({ name, size = 44 }: { name?: string | null; size?: number }) {
+  const hash = [...(name ?? '')].reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+  const tint = TINT[AVATAR_TINTS[hash % AVATAR_TINTS.length]];
+  return (
+    <View className="items-center justify-center rounded-full" style={{ width: size, height: size, backgroundColor: tint.bg }}>
+      <Text className="font-extrabold" style={{ color: tint.fg, fontSize: size * 0.34 }}>
+        {(name ?? '').trim().split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase() || '?'}
+      </Text>
+    </View>
+  );
+}
+
+/** Equal-width tabs: the selected one filled orange, the rest outlined. */
+export function Segmented<K extends string>({ options, value, onChange }: {
+  options: readonly { key: K; label: string; count?: number }[];
+  value: K;
+  onChange: (key: K) => void;
+}) {
+  return (
+    <View className="flex-row gap-1.5" accessibilityRole="tablist">
+      {options.map((option) => {
+        const selected = option.key === value;
+        return (
+          <Pressable
+            key={option.key}
+            accessibilityRole="tab"
+            accessibilityState={{ selected }}
+            onPress={() => onChange(option.key)}
+            testID={`segment-${option.key}`}
+            className={`flex-1 flex-row items-center justify-center gap-1.5 rounded-xl py-2.5 ${selected ? 'bg-primary-500' : 'border border-border bg-card'}`}
+          >
+            <Text numberOfLines={1} className={`text-[13px] font-semibold ${selected ? 'text-white' : 'text-muted-foreground'}`}>
+              {option.label}
+            </Text>
+            {option.count === undefined
+              ? null
+              : <Text className={`text-[13px] font-bold ${selected ? 'text-white' : 'text-foreground'}`}>{option.count}</Text>}
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}

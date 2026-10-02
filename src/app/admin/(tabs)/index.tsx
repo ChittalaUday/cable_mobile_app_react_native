@@ -64,9 +64,9 @@ export function AdminHomeScreen() {
                           <Pressable
                             accessibilityRole="button"
                             onPress={() => void refetch()}
-                            className="rounded-xl border border-warning-200 bg-warning-50 p-3"
+                            className="rounded-xl border border-warning-200 bg-warning-50 p-3 dark:border-warning-800 dark:bg-warning-900/40"
                           >
-                            <Text className="text-xs font-semibold text-warning-700">{t('admin_dashboard.refresh_failed')}</Text>
+                            <Text className="text-xs font-semibold text-warning-700 dark:text-warning-300">{t('admin_dashboard.refresh_failed')}</Text>
                           </Pressable>
                         </MotiView>
                       )}

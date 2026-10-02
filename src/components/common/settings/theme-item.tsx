@@ -46,6 +46,7 @@ export function ThemeItem() {
         options={themes}
         onSelect={onSelect}
         value={theme?.value}
+        testID="settings-theme"
       />
     </>
   );

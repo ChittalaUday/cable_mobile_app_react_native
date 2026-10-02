@@ -1,0 +1,20 @@
+appId: ${APP_ID}
+tags:
+  - util
+---
+# Opens the Customers tab right after sign-in. The first tap can land while the
+# shell is still settling, so it retries until the list header is up.
+- extendedWaitUntil:
+    visible: Customers
+    timeout: 30000
+- repeat:
+    times: 4
+    while:
+      notVisible: Customers & Lines
+    commands:
+      - tapOn: Customers
+      - extendedWaitUntil:
+          visible: Customers & Lines
+          timeout: 10000
+          optional: true
+- assertVisible: Customers & Lines

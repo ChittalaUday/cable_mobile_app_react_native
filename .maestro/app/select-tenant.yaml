@@ -1,0 +1,89 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - tenant
+---
+# uday@sscn.com belongs to two operators, so sign-in stops at the tenant
+# picker. The choice drives the header, is dropped on sign-out (the picker is
+# back next time), and can be changed from the header switcher.
+- runFlow:
+    file: ../utils/fresh-login.yaml
+    env:
+      EMAIL: uday@sscn.com
+      PASSWORD: Admin@123456
+
+# --- Picker renders both memberships ----------------------------------------
+- extendedWaitUntil:
+    visible: Choose a network
+    timeout: 30000
+- assertVisible: '.*belong to 2 operators.*'
+- assertVisible: 'Sri Satya Cable Network, Administrator'
+- assertVisible: 'Nova Cable Network, Administrator'
+- assertVisible: Remember this network
+- assertVisible: Sign out
+- assertNotVisible: Operator Panel
+
+# --- Pick SSCN: the admin panel for that operator -----------------------------
+- tapOn: 'Sri Satya Cable Network, Administrator'
+- extendedWaitUntil:
+    visible: Operator Panel
+    timeout: 30000
+- assertVisible: 'Active network: Sri Satya Cable Network. Switch network'
+
+# --- Switch from the header without signing out -------------------------------
+- tapOn: 'Active network: .*'
+- extendedWaitUntil:
+    visible: Switch network
+    timeout: 10000
+- tapOn: 'Nova Cable Network, Administrator'
+- extendedWaitUntil:
+    visible: 'Active network: Nova Cable Network. Switch network'
+    timeout: 30000
+- assertVisible: Operator Panel
+
+# --- Sign out from Profile ----------------------------------------------------
+- tapOn: More
+- tapOn: 'Account details, settings, and security'
+- extendedWaitUntil:
+    visible: uday@sscn.com
+    timeout: 20000
+- tapOn: Sign out
+- extendedWaitUntil:
+    visible: Welcome Back
+    timeout: 30000
+
+# --- Sign in again: the picker asks again; pick NCB this time -----------------
+- tapOn:
+    id: email-input
+- inputText: uday@sscn.com
+- tapOn:
+    id: password-input
+- inputText: Admin@123456
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: login-button
+- extendedWaitUntil:
+    visible: Choose a network
+    timeout: 60000
+- tapOn: 'Nova Cable Network, Administrator'
+- extendedWaitUntil:
+    visible: Operator Panel
+    timeout: 30000
+- assertVisible: 'Active network: Nova Cable Network. Switch network'
+- assertNotVisible: 'Active network: Sri Satya Cable Network. Switch network'
+
+# --- The picker's own Sign out ------------------------------------------------
+# Back to the picker via a fresh sign-in, then leave from there.
+- runFlow:
+    file: ../utils/fresh-login.yaml
+    env:
+      EMAIL: uday@sscn.com
+      PASSWORD: Admin@123456
+- extendedWaitUntil:
+    visible: Choose a network
+    timeout: 30000
+- tapOn: Sign out
+- extendedWaitUntil:
+    visible: Welcome Back
+    timeout: 30000

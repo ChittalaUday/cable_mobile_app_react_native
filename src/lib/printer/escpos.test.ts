@@ -69,6 +69,7 @@ function collection(overrides: Partial<Collection> = {}): Collection {
     dueAmount: '500.00',
     duesPaid: '500.00',
     accessoryAmount: '0.00',
+    planCharge: '0.00',
     totalCollected: '500.00',
     balanceAfter: '0.00',
     transactionId: null,
@@ -223,5 +224,20 @@ describe('a printed receipt', () => {
 
     expect(previewReceipt(input)).toContain('PAID Rs.500.00');
     expect(readable(buildReceipt(input))).toContain('PAID Rs.500.00');
+  });
+
+  it('stamps every copy after the first as a duplicate', () => {
+    const input = { receipt: collection(), businessName: 'Satya Cable', upi } as const;
+
+    expect(previewReceipt(input)).not.toContain('DUPLICATE');
+    expect(previewReceipt({ ...input, copy: 2 })).toContain('DUPLICATE COPY 2');
+    expect(readable(buildReceipt({ ...input, copy: 3 }))).toContain('DUPLICATE COPY 3');
+  });
+
+  it('says the balance is due when nothing was collected', () => {
+    const input = { receipt: collection({ totalCollected: '0.00', duesPaid: '0.00', balanceAfter: '500.00' }), businessName: 'Satya Cable', upi } as const;
+
+    expect(previewReceipt(input)).toContain('PAYMENT DUE');
+    expect(readable(buildReceipt(input))).not.toContain('PAID Rs.0.00');
   });
 });

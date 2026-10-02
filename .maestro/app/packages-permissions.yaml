@@ -1,35 +1,91 @@
 appId: ${APP_ID}
 tags:
   - e2e
+  - staff
   - packages
+  - services
+  - locations
   - rbac
 ---
-# Staff hold packages.view at LOCATION scope and none of the write permissions,
-# so the catalogue is readable but every mutating affordance must be absent.
-- runFlow:
-    file: ../utils/fresh-login.yaml
-    env:
-      EMAIL: suresh.staff@sscn.com
-      PASSWORD: Staff@123456
+# Staff hold no catalogue write permissions and no admin role, so every
+# admin-only catalogue route (packages, services, locations) must bounce them
+# back to their own shell without exposing a single create / edit / delete
+# control, and global search must not offer those screens or actions.
+- runFlow: ../utils/login-staff.yaml
+- extendedWaitUntil:
+    visible: .*Suresh.*
+    timeout: 20000
 
-- runFlow: ../utils/open-packages.yaml
-- assertVisible: 'Packages & Plans'
+# --- Global search does not offer the catalogue ----------------------------------
+- tapOn: Global Search
+- extendedWaitUntil:
+    visible: 'Search screens, actions, commands...'
+    timeout: 20000
+- inputText: package
+- assertNotVisible: Provider Packages
+- assertNotVisible: Add Package
+- assertNotVisible: Edit Packages
+- assertNotVisible: Delete Packages
+- eraseText: 10
+- inputText: location
+- assertNotVisible: Add location
+- back
 
-# Read surface is present.
-- assertVisible: 'Filter: All'
-- assertVisible:
-    id: package-search-input
-
-# Write surface is not.
+# --- Deep links into admin-only routes ---------------------------------------
+# Each lands back on the staff dashboard; none of the admin controls render.
+- openLink: ${DEV_SCHEME}://admin/packages
+- extendedWaitUntil:
+    visible: .*Suresh.*
+    timeout: 20000
+- assertNotVisible: Provider Packages
 - assertNotVisible:
     id: add-package-button
-- assertNotVisible: Add Package
-- assertNotVisible: Edit
-- assertNotVisible: Delete
+- assertNotVisible: 'Delete .*'
 
-# The create action is not offered in global search either.
-- back
-- tapOn: Global Search
-- inputText: package
-- assertNotVisible: Add Package
-- assertNotVisible: Delete Packages
+- openLink: ${DEV_SCHEME}://admin/packages/add-edit
+- extendedWaitUntil:
+    visible: .*Suresh.*
+    timeout: 20000
+- assertNotVisible: Create a new package
+- assertNotVisible: Save Package
+
+- openLink: ${DEV_SCHEME}://admin/channels
+- extendedWaitUntil:
+    visible: .*Suresh.*
+    timeout: 20000
+- assertNotVisible: Channel Lineup
+
+- openLink: ${DEV_SCHEME}://admin/services
+- extendedWaitUntil:
+    visible: .*Suresh.*
+    timeout: 20000
+- assertNotVisible: Service Providers
+- assertNotVisible: Add provider
+
+- openLink: ${DEV_SCHEME}://admin/services/types
+- extendedWaitUntil:
+    visible: .*Suresh.*
+    timeout: 20000
+- assertNotVisible: Add service
+
+- openLink: ${DEV_SCHEME}://admin/services/add-provider
+- extendedWaitUntil:
+    visible: .*Suresh.*
+    timeout: 20000
+- assertNotVisible: Create Provider
+
+- openLink: ${DEV_SCHEME}://admin/locations
+- extendedWaitUntil:
+    visible: .*Suresh.*
+    timeout: 20000
+- assertNotVisible: Add location
+- assertNotVisible: Manage areas and sub-areas
+
+- openLink: ${DEV_SCHEME}://admin/locations/add
+- extendedWaitUntil:
+    visible: .*Suresh.*
+    timeout: 20000
+- assertNotVisible: Save Location
+
+# The staff shell is intact afterwards.
+- assertVisible: Field Officer

@@ -26,7 +26,7 @@ const appIconBadgeConfig: AppIconBadgeConfig = {
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  name: Env.EXPO_PUBLIC_NAME,
+  name: { development: '(dev) ', preview: '(stag) ', production: '' }[Env.EXPO_PUBLIC_APP_ENV] + Env.EXPO_PUBLIC_NAME,
   description: `${Env.EXPO_PUBLIC_NAME} Mobile App`,
   scheme: Env.EXPO_PUBLIC_SCHEME,
   slug: 'cable-mobile-app',
@@ -34,8 +34,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   version: Env.EXPO_PUBLIC_VERSION.toString(),
   orientation: 'portrait',
   icon: './assets/icon.png',
-  // TODO: dark theme temporarily disabled app-wide - revert to 'automatic' to re-enable.
-  userInterfaceStyle: 'light',
+  // Lets the in-app theme follow the phone when "System" is picked; the app's own default is dark.
+  userInterfaceStyle: 'automatic',
   newArchEnabled: true,
   assetBundlePatterns: ['**/*'],
   ios: {

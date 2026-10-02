@@ -1,0 +1,88 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - staff
+  - dashboard
+---
+# Staff More tab: the four staff entries open, and the office-only entries
+# (Services, Channels, Locations, Staff & Teams) are absent.
+- runFlow: ../utils/login-staff.yaml
+- extendedWaitUntil:
+    visible: My Status
+    timeout: 60000
+- tapOn: More
+- extendedWaitUntil:
+    visible: Complaints, inventory and your account
+    timeout: 30000
+
+- assertVisible: Complaints
+- assertVisible: Inventory
+- assertVisible: Message the office
+- assertVisible: Profile
+- assertVisible: Sign Out
+- takeScreenshot: .maestro/screenshots/staff-more
+
+# Role edge: admin-only menu entries never render for staff.
+- assertNotVisible: Services
+- assertNotVisible: Channels
+- assertNotVisible: Locations
+- assertNotVisible: 'Staff & Teams'
+- assertNotVisible: 'Manage services, network catalog, staff, and account'
+
+- tapOn: Complaints
+- extendedWaitUntil:
+    visible: Search a ticket number or subject
+    timeout: 30000
+- back
+- extendedWaitUntil:
+    visible: Complaints, inventory and your account
+    timeout: 20000
+
+- tapOn: Inventory
+- extendedWaitUntil:
+    visible: Stock overview & quick stats
+    timeout: 30000
+- back
+- extendedWaitUntil:
+    visible: Complaints, inventory and your account
+    timeout: 20000
+
+- tapOn: Message the office
+- extendedWaitUntil:
+    visible: Send a notification
+    timeout: 30000
+- back
+- extendedWaitUntil:
+    visible: Complaints, inventory and your account
+    timeout: 20000
+
+- tapOn: Profile
+- extendedWaitUntil:
+    notVisible: Complaints, inventory and your account
+    timeout: 30000
+- assertVisible: Account details, settings, and security
+- back
+- extendedWaitUntil:
+    visible: Complaints, inventory and your account
+    timeout: 20000
+
+# Global search agrees with the menu: office screens are not offered to staff.
+- tapOn: Home
+- extendedWaitUntil:
+    visible: Global Search
+    timeout: 20000
+- tapOn: Global Search
+- extendedWaitUntil:
+    visible: 'Search screens, actions, commands...'
+    timeout: 20000
+- inputText: staff
+- assertNotVisible:
+    id: search-result-staff
+- eraseText: 10
+- inputText: analytics
+- assertNotVisible:
+    id: search-result-analytics
+- eraseText: 10
+- inputText: settings
+- assertNotVisible:
+    id: search-result-settings

@@ -1,0 +1,55 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - customers
+---
+# Customers list with the network gone: a fresh query fails into the error
+# state with Retry, and once the network is back Retry loads the list.
+- runFlow: ../utils/login-admin.yaml
+- runFlow: ../utils/customers-open.yaml
+- extendedWaitUntil:
+    visible: View
+    timeout: 30000
+
+# --- Drop the network, then ask for something not in the cache --------------
+- setAirplaneMode: enabled
+- tapOn:
+    id: customer-search-input
+- inputText: nonetwork
+- runFlow: ../utils/hide-keyboard.yaml
+# React Query retries before giving up, so allow for the backoff.
+- extendedWaitUntil:
+    visible: Could not load customers
+    timeout: 60000
+- assertVisible: Retry
+
+# --- Network back: Retry re-runs the same query and it now succeeds ---------
+- setAirplaneMode: disabled
+# Wi-Fi takes a few seconds to come back; keep pressing Retry until the query
+# answers (an empty result for this nonsense term, not an error).
+- repeat:
+    times: 6
+    while:
+      notVisible: No customers found
+    commands:
+      - runFlow:
+          when:
+            visible: Retry
+          commands:
+            - tapOn: Retry
+      - extendedWaitUntil:
+          visible: No customers found
+          timeout: 10000
+          optional: true
+- assertVisible: No customers found
+- assertNotVisible: Could not load customers
+
+# --- And the unfiltered list loads again --------------------------------------
+- tapOn:
+    id: customer-search-input
+- eraseText: 20
+- runFlow: ../utils/hide-keyboard.yaml
+- extendedWaitUntil:
+    visible: View
+    timeout: 30000

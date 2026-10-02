@@ -86,6 +86,10 @@ export const PERMISSIONS = {
   PACKAGES_CREATE: 'packages.create',
   PACKAGES_UPDATE: 'packages.update',
   PACKAGES_DELETE: 'packages.delete',
+  PLANS_VIEW: 'plans.view',
+  PLANS_CREATE: 'plans.create',
+  PLANS_UPDATE: 'plans.update',
+  PLANS_DELETE: 'plans.delete',
 
   // Service catalogue
   SERVICES_VIEW: 'services.view',

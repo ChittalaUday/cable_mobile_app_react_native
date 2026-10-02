@@ -1,0 +1,48 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - staff-mgmt
+---
+# Network drop on the staff list: open it offline, see the failure, reconnect,
+# pull to refresh, and the roster loads.
+- runFlow: ../utils/login-admin.yaml
+- tapOn: More
+- extendedWaitUntil:
+    visible: Staff & Teams
+    timeout: 20000
+
+- setAirplaneMode: enabled
+- tapOn: Staff & Teams
+- extendedWaitUntil:
+    visible:
+      id: staff-search-input
+    timeout: 30000
+# React Query retries twice before giving up.
+# BUG: a failed load renders the "No staff yet" empty state (src/app/admin/staff/index.tsx:277,
+# ListEmptyComponent only checks isPending), telling the admin they have no staff
+# instead of offering an error and a retry. Expected:
+# - extendedWaitUntil: { visible: Couldn.t load staff.*, timeout: 30000 }
+# - assertVisible: Retry
+- extendedWaitUntil:
+    visible: No staff yet
+    timeout: 30000
+- assertNotVisible: SSCN Admin
+- assertVisible: 0 people · 0 teams
+
+- setAirplaneMode: disabled
+# Pull to refresh until the connection is back and the roster arrives.
+- repeat:
+    times: 6
+    while:
+      notVisible: SSCN Admin
+    commands:
+      - swipe:
+          start: 50%, 30%
+          end: 50%, 80%
+      - extendedWaitUntil:
+          visible: SSCN Admin
+          timeout: 8000
+          optional: true
+- assertVisible: SSCN Admin
+- assertVisible: Suresh Babu

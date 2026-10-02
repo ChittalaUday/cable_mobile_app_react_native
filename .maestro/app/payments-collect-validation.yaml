@@ -1,0 +1,165 @@
+appId: ${APP_ID}
+env:
+  # SRINIVASU VANKA (SSCN-000624): one active ACT Digital line, nothing due.
+  CUSTOMER_ID: 6ae8d79d-abb6-48e0-99ed-55cdb2239e5b
+  CUSTOMER: SRINIVASU VANKA
+tags:
+  - e2e
+  - admin
+  - payments
+---
+# Collect payment (admin): the screen renders, the three outcomes switch the
+# form, and every bad amount on a part payment is stopped by the client before
+# anything is sent. Nothing in this flow is recorded.
+- runFlow: ../utils/login-admin.yaml
+
+# --- Opened from the customer's page, the way an operator gets there --------
+- tapOn: Customers
+- tapOn:
+    id: customer-search-input
+- inputText: SSCN-000624
+- extendedWaitUntil:
+    visible: ${CUSTOMER}
+    timeout: 20000
+- tapOn: View
+- extendedWaitUntil:
+    visible: Customer Details
+    timeout: 20000
+- scrollUntilVisible:
+    element: Collect Payment
+- tapOn: Collect Payment
+- runFlow: ../utils/payments-open-collect.yaml
+
+# --- It renders --------------------------------------------------------------
+- assertVisible: ${CUSTOMER}
+- assertVisible: '(?i)outstanding'
+- assertVisible: Outcome
+- assertVisible: Full
+- assertVisible: Part
+- assertVisible: No payment
+- assertVisible: Amount collected
+- assertVisible: Paid by
+- assertVisible: Cash
+- assertVisible: UPI
+- assertVisible: Accessories bought
+- scrollUntilVisible:
+    element: Total to hand in
+- assertVisible: Total to hand in
+- assertVisible:
+    id: collect-submit
+
+# --- Full: the amount is the line's balance and cannot be typed over --------
+# Nothing is due, so Full pre-fills 0.00.
+- scrollUntilVisible:
+    element: Outcome
+    direction: UP
+- tapOn: Full
+- assertVisible:
+    id: collect-amount
+    text: '0.00'
+
+# --- Part: each bad amount raises the "Invalid amount" dialog ---------------
+- tapOn: Part
+
+# Empty.
+- tapOn:
+    id: collect-submit
+- assertVisible: Invalid amount
+- assertVisible: The total payment must be between ₹0 and ₹99,000.
+- tapOn: OK
+- assertNotVisible: Invalid amount
+
+# Zero passes the client's ₹0-₹99,000 range, so the server is the one that
+# refuses it: a zero-takings visit is a "No payment" and needs a reason.
+- tapOn:
+    id: collect-amount
+- inputText: '0'
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: collect-submit
+- extendedWaitUntil:
+    visible: Not recorded
+    timeout: 20000
+- assertVisible: '.*needs a reason.*'
+- tapOn: OK
+- tapOn:
+    id: collect-amount
+- eraseText: 20
+
+# Letters, and a minus sign: the field takes them, the submit refuses them.
+- tapOn:
+    id: collect-amount
+- inputText: abc
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: collect-submit
+- assertVisible: Invalid amount
+- tapOn: OK
+- tapOn:
+    id: collect-amount
+- eraseText: 20
+- inputText: '-5'
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: collect-submit
+- assertVisible: Invalid amount
+- tapOn: OK
+
+# More than two decimals.
+- tapOn:
+    id: collect-amount
+- eraseText: 20
+- inputText: '1.234'
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: collect-submit
+- assertVisible: Invalid amount
+- tapOn: OK
+
+# One rupee over the ₹99,000 cap.
+- tapOn:
+    id: collect-amount
+- eraseText: 20
+- inputText: '99001'
+- runFlow: ../utils/hide-keyboard.yaml
+- assertVisible: Record ₹99,001.00
+- tapOn:
+    id: collect-submit
+- assertVisible: Invalid amount
+- tapOn: OK
+
+# The cap itself plus an accessory pushes the takings over the cap too.
+- tapOn:
+    id: collect-amount
+- eraseText: 20
+- inputText: '99000'
+- runFlow: ../utils/hide-keyboard.yaml
+- assertVisible: Record ₹99,000.00
+- tapOn: Add
+- tapOn: SC-APC Fiber Patch Cord 3m
+- assertVisible: Record ₹99,150.00
+- tapOn:
+    id: collect-submit
+- assertVisible: Invalid amount
+- tapOn: OK
+- tapOn: Remove one SC-APC Fiber Patch Cord 3m
+- assertNotVisible: Remove one SC-APC Fiber Patch Cord 3m
+# Exactly ₹99,000 is allowed; payments-receipts-admin.yaml records it and
+# reverses it, so this flow stays read-only.
+- assertVisible: Record ₹99,000.00
+
+# --- No payment: a reason is required ----------------------------------------
+- tapOn: No payment
+- assertNotVisible:
+    id: collect-amount
+- assertVisible: Why nothing was collected
+- assertVisible: Record visit
+- tapOn:
+    id: collect-submit
+- assertVisible: Reason needed
+- tapOn: OK
+- assertVisible: Why nothing was collected
+
+# --- Back leaves without recording anything ---------------------------------
+- tapOn: Back
+- assertNotVisible: Collect payment

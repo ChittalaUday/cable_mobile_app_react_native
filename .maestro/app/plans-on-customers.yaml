@@ -1,0 +1,163 @@
+appId: ${APP_ID}
+env:
+  PROVIDER: Satya Fiber
+  PACKAGE: Fiber 50 Mbps Unlimited
+  AREA: Angara
+tags:
+  - e2e
+  - admin
+  - plans
+  - customers
+---
+# The plan link end to end: a plan created in Plans (₹961 less ₹50) is offered
+# in the Add Customer wizard at its amount, becomes that customer's line, and is
+# then retired from sale — the line keeps it, new customers no longer see it.
+- evalScript: ${output.stamp = String(Date.now()).slice(-6)}
+- evalScript: ${output.phone = '9556' + output.stamp}
+- runFlow: ../utils/login-admin.yaml
+
+# --- Create the plan -------------------------------------------------------------
+- openLink: ${DEV_SCHEME}://admin/plans
+- extendedWaitUntil:
+    visible: What customers are sold and billed
+    timeout: 30000
+- tapOn:
+    id: add-plan-button
+- extendedWaitUntil:
+    visible: Add Plan
+    timeout: 10000
+- tapOn:
+    id: plan-name-input
+- inputText: E2E Plan ${output.stamp}
+- tapOn: Choose provider
+- tapOn: ${PROVIDER}
+- tapOn:
+    id: plan-price-input
+- inputText: '961'
+- tapOn:
+    id: plan-discount-input
+- eraseText: 5
+- inputText: '50'
+- runFlow: ../utils/hide-keyboard.yaml
+- assertVisible: '₹911.00 / monthly'
+- scrollUntilVisible:
+    element: ${PACKAGE}
+    timeout: 30000
+- tapOn: ${PACKAGE}
+- tapOn: Save Plan
+- extendedWaitUntil:
+    visible:
+      id: dialog-confirm
+    timeout: 10000
+- tapOn:
+    id: dialog-confirm
+- extendedWaitUntil:
+    visible: What customers are sold and billed
+    timeout: 30000
+
+# --- Offered in the wizard at its amount, chosen, saved ---------------------------
+- tapOn: Back
+- runFlow: ../utils/customers-open.yaml
+- tapOn:
+    id: customers-add-button
+- extendedWaitUntil:
+    visible: Add New Customer
+    timeout: 10000
+- tapOn:
+    id: add-customer-name
+- inputText: E2E Plan Customer ${output.stamp}
+- tapOn:
+    id: add-customer-phone
+- inputText: ${output.phone}
+- tapOn:
+    id: add-customer-address
+- inputText: E2E plan door ${output.stamp}
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Next Step
+- extendedWaitUntil:
+    visible: 'Area the line is fitted in.*'
+    timeout: 10000
+- scrollUntilVisible:
+    element: E2E Plan ${output.stamp}
+    timeout: 90000
+    speed: 70
+- assertVisible: '₹911.00 / monthly'
+- tapOn: E2E Plan ${output.stamp}
+- scrollUntilVisible:
+    element:
+      id: add-customer-area-search
+    timeout: 90000
+- tapOn:
+    id: add-customer-area-search
+- inputText: Angar
+- extendedWaitUntil:
+    visible: ${AREA}
+    timeout: 20000
+- tapOn: ${AREA}
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Create Customer
+- extendedWaitUntil:
+    visible: Customer added successfully!
+    timeout: 30000
+# Open the new subscriber from the book, whichever screen the wizard returns to.
+- runFlow:
+    when:
+      notVisible: Customer Details
+    commands:
+      - tapOn:
+          id: customer-search-input
+      - inputText: ${output.phone}
+      - extendedWaitUntil:
+          visible: E2E Plan Customer ${output.stamp}
+          timeout: 20000
+      - tapOn: E2E Plan Customer ${output.stamp}
+- extendedWaitUntil:
+    visible: Customer Details
+    timeout: 30000
+
+# --- The plan reads back as the line; the provider package never shows -----------
+- assertVisible: E2E Plan Customer ${output.stamp}
+- assertVisible: '₹911.00'
+- tapOn: Services
+- scrollUntilVisible:
+    element: '.*E2E Plan ${output.stamp}.*'
+    timeout: 20000
+- assertVisible: '₹961.00 − ₹50.00 off'
+- assertVisible: '₹911.00'
+- assertNotVisible: ${PACKAGE}
+
+# --- Retire it from sale: a plan with a live line cannot be deleted -------------
+- openLink: ${DEV_SCHEME}://admin/plans
+- extendedWaitUntil:
+    visible: What customers are sold and billed
+    timeout: 30000
+- tapOn:
+    id: plan-search-input
+- inputText: E2E Plan ${output.stamp}
+- extendedWaitUntil:
+    visible: Delete E2E Plan ${output.stamp}
+    timeout: 20000
+- tapOn: Delete E2E Plan ${output.stamp}
+- tapOn:
+    id: dialog-confirm
+- extendedWaitUntil:
+    visible: Could not delete
+    timeout: 20000
+- tapOn: OK
+- tapOn: Edit E2E Plan ${output.stamp}
+- extendedWaitUntil:
+    visible: Edit Plan
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: plan-active-toggle
+    timeout: 30000
+- tapOn:
+    id: plan-active-toggle
+- tapOn: Save Changes
+- tapOn:
+    id: dialog-confirm
+- extendedWaitUntil:
+    visible: What customers are sold and billed
+    timeout: 30000
+- assertVisible: '(?i)inactive'

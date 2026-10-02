@@ -35,11 +35,11 @@ const PRIORITY_TINT: Record<TicketPriority, string> = {
 };
 
 const STATUS_TINT: Record<TicketStatus, string> = {
-  open: 'bg-orange-100 text-orange-700',
-  in_progress: 'bg-blue-100 text-blue-700',
-  resolved: 'bg-green-100 text-green-700',
-  closed: 'bg-neutral-200 text-neutral-700',
-  cancelled: 'bg-neutral-200 text-neutral-700',
+  open: 'bg-orange-100 dark:bg-orange-950/50 text-orange-700 dark:text-orange-300',
+  in_progress: 'bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300',
+  resolved: 'bg-green-100 dark:bg-green-950/50 text-green-700 dark:text-green-300',
+  closed: 'bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300',
+  cancelled: 'bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300',
 };
 
 /**
@@ -109,6 +109,7 @@ export function TicketsListScreen() {
                 accessibilityRole="radio"
                 accessibilityState={{ selected: filter === option.key }}
                 onPress={() => setFilter(option.key)}
+                testID={`ticket-filter-${option.key}`}
                 className={`flex-1 items-center rounded-xl border py-2 ${
                   filter === option.key ? 'border-primary-500 bg-primary-500' : 'border-border bg-card'
                 }`}

@@ -1,0 +1,79 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - staff
+  - auth
+---
+# Successful sign-ins through the real form, and index.tsx's role routing:
+# staff land on their dashboard, admin on the Operator Panel. The staff sign-in
+# first fails with the network dropped, then succeeds once it is back.
+- setAirplaneMode: disabled
+- clearState
+- runFlow: ../utils/open-dev-build.yaml
+- extendedWaitUntil:
+    visible: Welcome Back
+    timeout: 30000
+
+# --- Staff, with the network gone first ---------------------------------------
+- tapOn:
+    id: email-input
+- inputText: suresh.staff@sscn.com
+- tapOn:
+    id: password-input
+- inputText: Staff@123456
+- runFlow: ../utils/hide-keyboard.yaml
+- setAirplaneMode: enabled
+- tapOn:
+    id: login-button
+# The "check your connection" flash is gone before the request gives up, so
+# assert the durable outcome: the form is back and nobody got in.
+- extendedWaitUntil:
+    visible: Sign In
+    timeout: 60000
+- assertVisible: Welcome Back
+
+# Network back: the same form, untouched, now signs in.
+- setAirplaneMode: disabled
+- repeat:
+    times: 6
+    while:
+      visible: Welcome Back
+    commands:
+      - tapOn:
+          id: login-button
+      - extendedWaitUntil:
+          notVisible: Welcome Back
+          timeout: 15000
+          optional: true
+- runFlow: ../utils/dismiss-system-dialogs.yaml
+- extendedWaitUntil:
+    visible: Field Officer
+    timeout: 60000
+- assertVisible: .*Suresh.*
+- assertNotVisible: Operator Panel
+# One tenant only: no picker, and the header is plain text, not a switcher.
+- assertNotVisible: Choose a network
+- assertNotVisible: 'Active network: .*'
+
+# --- Admin --------------------------------------------------------------------
+- clearState
+- runFlow: ../utils/open-dev-build.yaml
+- extendedWaitUntil:
+    visible: Welcome Back
+    timeout: 30000
+- tapOn:
+    id: email-input
+- inputText: admin@sscn.com
+- tapOn:
+    id: password-input
+- inputText: Admin@123456
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: login-button
+- runFlow: ../utils/dismiss-system-dialogs.yaml
+- extendedWaitUntil:
+    visible: Operator Panel
+    timeout: 60000
+- assertVisible: Sri Satya Cable Network
+- assertNotVisible: Field Officer
+- assertNotVisible: Choose a network

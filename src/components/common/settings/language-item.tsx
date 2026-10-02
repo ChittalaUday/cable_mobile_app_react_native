@@ -43,6 +43,7 @@ export function LanguageItem() {
         options={langs}
         onSelect={onSelect}
         value={selectedLanguage?.value}
+        testID="settings-language"
       />
     </>
   );

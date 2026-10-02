@@ -12,12 +12,7 @@ export default function StaffPaymentsTab() {
       <CollectionsList
         basePath="/staff"
         mineOnly
-        header={(
-          <View className="gap-1 p-4">
-            <Text className="text-2xl font-bold text-foreground">My Collections</Text>
-            <Text className="text-sm text-muted-foreground">Every receipt you have issued, newest first</Text>
-          </View>
-        )}
+        header={<Text className="px-4 pt-2 pb-3 text-xl font-bold text-foreground">My Collections</Text>}
       />
     </View>
   );

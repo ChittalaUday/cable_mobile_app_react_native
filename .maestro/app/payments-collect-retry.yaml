@@ -1,0 +1,111 @@
+appId: ${APP_ID}
+env:
+  # Chollangi Varalakshmi (SSCN-000112): one active line, used only by this flow.
+  CUSTOMER_ID: 26cabb4e-2104-40ea-843f-0b1d7d91e5ea
+  CUSTOMER: Chollangi Varalakshmi
+tags:
+  - e2e
+  - admin
+  - payments
+  - receipts
+---
+# UDA-10: a submit that never hears back asks "Payment status unknown", and
+# Retry re-sends the SAME idempotency reference, so the customer ends up with
+# exactly one receipt however the first attempt went. Then "View receipts" on
+# the same dialog goes to the Receipts list instead.
+- evalScript: ${output.stamp = String(Date.now()).slice(-6)}
+# A unique ₹1.00-₹49.99 amount, so this run's receipt is recognisable.
+- evalScript: ${output.amount = ((Number(output.stamp) % 4900 + 100) / 100).toFixed(2)}
+- runScript:
+    file: ../utils/payments-receipt-count.js
+    env:
+      CUSTOMER_ID: ${CUSTOMER_ID}
+- evalScript: ${output.before = output.receiptCount}
+
+- runFlow: ../utils/login-admin.yaml
+- openLink: ${DEV_SCHEME}://admin/collect/${CUSTOMER_ID}
+- runFlow: ../utils/payments-open-collect.yaml
+- tapOn: Part
+- tapOn:
+    id: collect-amount
+- inputText: ${output.amount}
+- runFlow: ../utils/hide-keyboard.yaml
+- scrollUntilVisible:
+    element:
+      id: collect-submit
+
+# --- The network drops as the payment is submitted ---------------------------
+- setAirplaneMode: enabled
+- tapOn:
+    id: collect-submit
+- extendedWaitUntil:
+    visible: Payment status unknown
+    timeout: 60000
+- assertVisible: We couldn't confirm this payment. It may already be recorded — check Receipts before collecting again.
+- assertVisible: Retry
+- assertVisible: View receipts
+
+# --- Back online, Retry records it once ----------------------------------------
+- setAirplaneMode: disabled
+- tapOn: Retry
+# The radio can take a moment to come back; a second unknown is retried too,
+# still under the same reference.
+- extendedWaitUntil:
+    visible: '(Collected by|Payment status unknown)'
+    timeout: 60000
+- runFlow:
+    when:
+      visible: Payment status unknown
+    commands:
+      - tapOn: Retry
+- extendedWaitUntil:
+    visible: Collected by
+    timeout: 60000
+- assertVisible: ${CUSTOMER}
+- assertVisible: ₹${output.amount}
+
+- runScript:
+    file: ../utils/payments-receipt-count.js
+    env:
+      CUSTOMER_ID: ${CUSTOMER_ID}
+- assertTrue: ${output.receiptCount == output.before + 1}
+
+# The Receipts list carries this run's amount once.
+- openLink: ${DEV_SCHEME}://admin/receipts
+- extendedWaitUntil:
+    visible: Every collection in your areas
+    timeout: 30000
+- assertVisible: ₹${output.amount}
+- assertNotVisible:
+    text: ₹${output.amount}
+    index: 1
+
+# --- "View receipts" leaves for the list, and the dropped attempt never landed
+- evalScript: ${output.before = output.receiptCount}
+- openLink: ${DEV_SCHEME}://admin/collect/${CUSTOMER_ID}
+- runFlow: ../utils/payments-open-collect.yaml
+- tapOn: Part
+- tapOn:
+    id: collect-amount
+- inputText: '1'
+- runFlow: ../utils/hide-keyboard.yaml
+- scrollUntilVisible:
+    element:
+      id: collect-submit
+- setAirplaneMode: enabled
+- tapOn:
+    id: collect-submit
+- extendedWaitUntil:
+    visible: Payment status unknown
+    timeout: 60000
+- setAirplaneMode: disabled
+- tapOn: View receipts
+- extendedWaitUntil:
+    visible: Every collection in your areas
+    timeout: 60000
+- assertNotVisible: Collect payment
+- runScript:
+    file: ../utils/payments-receipt-count.js
+    env:
+      CUSTOMER_ID: ${CUSTOMER_ID}
+- assertTrue: ${output.receiptCount == output.before}

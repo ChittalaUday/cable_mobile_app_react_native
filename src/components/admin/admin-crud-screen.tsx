@@ -10,7 +10,7 @@ import { AdminRecordForm } from '@/components/admin/admin-record-form';
 import { dialogs } from '@/components/common/dialogs';
 
 import { Card, LoadError, Loading } from '@/components/common/shell';
-import { colors, FocusAwareStatusBar, Pressable, SafeAreaView, ScrollView, Text, View } from '@/components/ui';
+import { colors, FocusAwareStatusBar, Pressable, SafeAreaView, ScrollView, Text, ThemedIcon, View } from '@/components/ui';
 import { apiErrorMessage } from '@/lib/utils/api-error';
 
 export type AdminRecord = { id: string };
@@ -107,7 +107,7 @@ export function AdminCrudScreen<T extends AdminRecord>({
       <View className="gap-3 border-b border-border bg-surface px-4 py-3">
         <View className="flex-row items-center gap-3">
           <Pressable accessibilityRole="button" accessibilityLabel={t('admin.back')} onPress={() => router.back()} hitSlop={12}>
-            <HugeiconsIcon icon={ArrowLeft01Icon} size={22} color={colors.neutral[500]} />
+            <ThemedIcon icon={ArrowLeft01Icon} size={22} colorClassName="text-muted-foreground" />
           </Pressable>
           <Text className="flex-1 text-xl font-extrabold text-foreground">{title}</Text>
           <Pressable accessibilityRole="button" onPress={() => setEditing(null)} className="flex-row items-center gap-1 rounded-xl bg-primary-500 px-3 py-2">
@@ -145,7 +145,7 @@ export function AdminCrudScreen<T extends AdminRecord>({
                         <HugeiconsIcon icon={PencilEdit02Icon} size={15} color={colors.primary[600]} />
                         <Text className="text-xs font-bold text-primary-600">{t('admin.edit')}</Text>
                       </Pressable>
-                      <Pressable accessibilityRole="button" onPress={() => remove(item)} className="flex-row items-center gap-1 rounded-lg border border-danger-200 px-3 py-2">
+                      <Pressable accessibilityRole="button" onPress={() => remove(item)} className="flex-row items-center gap-1 rounded-lg border border-danger-200 px-3 py-2 dark:border-danger-800">
                         <HugeiconsIcon icon={Delete02Icon} size={15} color={colors.danger[500]} />
                         <Text className="text-xs font-bold text-danger-500">{t('admin.delete')}</Text>
                       </Pressable>

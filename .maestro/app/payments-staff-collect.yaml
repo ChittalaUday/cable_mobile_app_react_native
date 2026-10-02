@@ -1,0 +1,134 @@
+appId: ${APP_ID}
+env:
+  # Vattikuti Suryakumari (SSCN-000711): in Suresh's areas, one active line.
+  CODE: SSCN-000711
+  CUSTOMER: Vattikuti Suryakumari
+tags:
+  - e2e
+  - staff
+  - payments
+  - receipts
+---
+# Collect payment (field staff): accessories add and step with the total
+# following; the payment methods; a "No payment" visit needs a reason and then
+# records one; a small part payment records and opens its receipt. Staff never
+# see the admin-only "Reverse this receipt", and the receipts land on My
+# Collections and the staff Receipts list.
+- evalScript: ${output.stamp = String(Date.now()).slice(-6)}
+- runFlow: ../utils/login-staff.yaml
+
+# The home dashboard also has a "Customers" tile, so go to the tab by link.
+- openLink: ${DEV_SCHEME}://staff/customers
+- extendedWaitUntil:
+    visible:
+      id: customer-search-input
+    timeout: 30000
+- tapOn:
+    id: customer-search-input
+- inputText: ${CODE}
+- extendedWaitUntil:
+    visible: ${CUSTOMER}
+    timeout: 20000
+- tapOn: View
+- extendedWaitUntil:
+    visible: Customer Details
+    timeout: 20000
+- scrollUntilVisible:
+    element: Collect Payment
+- tapOn: Collect Payment
+- runFlow: ../utils/payments-open-collect.yaml
+
+# --- Accessories: add from the catalogue, step up and down ------------------
+- tapOn: Add
+- assertVisible: SC-APC Fiber Patch Cord 3m
+- tapOn: SC-APC Fiber Patch Cord 3m
+- assertVisible: ₹150.00 each
+- scrollUntilVisible:
+    element: Total to hand in
+- assertVisible: Record ₹150.00
+- tapOn: Add one SC-APC Fiber Patch Cord 3m
+- assertVisible: '2'
+- assertVisible: Record ₹300.00
+- tapOn: Remove one SC-APC Fiber Patch Cord 3m
+- assertVisible: Record ₹150.00
+# Down to zero removes the line.
+- tapOn: Remove one SC-APC Fiber Patch Cord 3m
+- assertNotVisible: ₹150.00 each
+- assertVisible: Record ₹0.00
+
+# --- No payment: blocked without a reason, recorded with one ----------------
+- scrollUntilVisible:
+    element: No payment
+    direction: UP
+- tapOn: No payment
+- tapOn:
+    id: collect-submit
+- assertVisible: Reason needed
+- tapOn: OK
+- tapOn:
+    id: collect-reason
+- inputText: E2E nobody home ${output.stamp}
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Record visit
+- extendedWaitUntil:
+    visible: Collected by
+    timeout: 30000
+- assertVisible: ₹0.00
+- assertVisible: '(?i)nothing collected'
+- assertVisible: '(?i)reason'
+- assertVisible: E2E nobody home ${output.stamp}
+- assertVisible: Suresh.*
+# Admin-only action.
+- assertNotVisible: Reverse this receipt
+- tapOn: Done
+
+# --- Part payment by UPI, then Cash ------------------------------------------
+- runFlow:
+    when:
+      notVisible: Collect payment
+    commands:
+      - tapOn: Collect Payment
+      - runFlow: ../utils/payments-open-collect.yaml
+- tapOn: Part
+- tapOn:
+    id: collect-amount
+- inputText: '3'
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: UPI
+- tapOn: Cash
+- scrollUntilVisible:
+    element:
+      id: collect-submit
+- assertVisible: Record ₹3.00
+- tapOn:
+    id: collect-submit
+- extendedWaitUntil:
+    visible: Collected by
+    timeout: 30000
+- assertVisible: ₹3.00
+- assertVisible: cash
+- assertVisible: Dues paid
+- assertNotVisible: Reverse this receipt
+- tapOn: Done
+
+# --- My Collections tab and the staff Receipts list --------------------------
+- openLink: ${DEV_SCHEME}://staff/payments
+- extendedWaitUntil:
+    visible: My Collections
+    timeout: 30000
+- assertVisible: Every receipt you have issued, newest first
+- assertVisible: '\d+ receipts'
+- assertVisible: ${CUSTOMER}
+- tapOn: ₹3.00
+- extendedWaitUntil:
+    visible: Collected by
+    timeout: 20000
+- assertNotVisible: Reverse this receipt
+- tapOn: Done
+
+- openLink: ${DEV_SCHEME}://staff/receipts
+- extendedWaitUntil:
+    visible: Your round
+    timeout: 30000
+- assertVisible: ${CUSTOMER}
+- assertVisible: ₹3.00

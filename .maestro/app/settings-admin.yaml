@@ -1,0 +1,103 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - settings
+---
+# Admin settings: every row renders, Language switches the app's copy and
+# back, Theme is offered but pinned to Light, and Logout signs out.
+- runFlow: ../utils/login-admin.yaml
+- extendedWaitUntil:
+    visible: Operator Panel
+    timeout: 30000
+- runFlow: ../utils/account-open-settings.yaml
+
+# --- Renders ------------------------------------------------------------------
+- assertVisible: Settings
+- assertVisible: Language
+- assertVisible: English
+- assertVisible: Theme
+- assertVisible: 'Light.*'
+# Payments section is admin-only (settings.update).
+- assertVisible: Payments
+- assertVisible: UPI handles
+- assertVisible: About
+- assertVisible: App Name
+- assertVisible: Version
+- scrollUntilVisible:
+    element: Logout
+- assertVisible: Support Us
+- assertVisible: Share
+- assertVisible: Rate
+- assertVisible: Support
+- assertVisible: Links
+- assertVisible: Privacy Policy
+- assertVisible: Terms of Service
+- assertVisible: Github
+- assertVisible: Website
+- assertVisible: Logout
+- scrollUntilVisible:
+    element: Language
+    direction: UP
+
+# --- Language: Telugu translates the screen, English restores it --------------
+- tapOn: Language
+- extendedWaitUntil:
+    visible:
+      id: settings-language-item-te
+    timeout: 10000
+- tapOn:
+    id: settings-language-item-te
+- extendedWaitUntil:
+    visible: సెట్టింగ్‌లు
+    timeout: 10000
+- assertVisible: భాష
+- assertVisible: థీమ్
+- assertNotVisible: General
+- tapOn: భాష
+- extendedWaitUntil:
+    visible:
+      id: settings-language-item-en
+    timeout: 10000
+- tapOn:
+    id: settings-language-item-en
+- extendedWaitUntil:
+    visible: General
+    timeout: 10000
+- assertVisible: Settings
+- assertVisible: English
+
+# --- Theme: all three are offered; dark is disabled app-wide for now
+# (use-selected-theme.tsx TODO), so any pick stays on Light.
+- tapOn: Theme
+- extendedWaitUntil:
+    visible:
+      id: settings-theme-item-dark
+    timeout: 10000
+- assertVisible:
+    id: settings-theme-item-system
+- tapOn:
+    id: settings-theme-item-dark
+- extendedWaitUntil:
+    notVisible:
+      id: settings-theme-item-system
+    timeout: 10000
+- assertVisible: 'Light.*'
+
+# --- UPI handles opens its own screen; Back returns ---------------------------
+- tapOn: UPI handles
+- extendedWaitUntil:
+    visible: Where collected money arrives
+    timeout: 20000
+- tapOn: Back
+- extendedWaitUntil:
+    visible: General
+    timeout: 10000
+
+# --- Logout at the bottom signs out -------------------------------------------
+- scrollUntilVisible:
+    element: Logout
+- tapOn: Logout
+- extendedWaitUntil:
+    visible: Welcome Back
+    timeout: 30000

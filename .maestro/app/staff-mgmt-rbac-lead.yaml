@@ -1,0 +1,35 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - staff
+  - staff-mgmt
+  - rbac
+---
+# A team lead is a `staff` membership with isTeamLeader. The mobile app gates
+# /admin on role only (src/app/admin/_layout.tsx) and the staff More menu is a
+# fixed list, so a lead gets exactly the field-officer surface: no Staff & Teams,
+# and the deep link to /admin/staff bounces home like any staff member.
+- runFlow:
+    file: ../utils/fresh-login.yaml
+    env:
+      EMAIL: ramesh.lead@sscn.com
+      PASSWORD: Staff@123456
+- extendedWaitUntil:
+    visible: Field Officer
+    timeout: 30000
+- assertVisible: .*Ramesh.*
+
+- tapOn: More
+- assertVisible: Complaints
+- assertVisible: Inventory
+- assertNotVisible: Staff & Teams
+
+- openLink: ${DEV_SCHEME}://admin/staff/teams
+- runFlow: ../utils/dismiss-system-dialogs.yaml
+- extendedWaitUntil:
+    visible: Field Officer
+    timeout: 30000
+- assertNotVisible:
+    id: staff-search-input
+- assertNotVisible: Add team
+- assertNotVisible: Staff & Teams

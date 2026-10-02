@@ -76,11 +76,13 @@ function line(id: string, account: string, due: string): CustomerSubscription {
     endDate: null,
     billingCycle: 'monthly' as const,
     price: '350.00',
+    chargedThrough: null,
+    nextPlanCharge: '0.00',
     outstandingBalance: due,
     installationAddress: null,
     service: { id: 's1', name: account.startsWith('NET') ? 'Broadband' : 'Cable TV', slug: 'svc', icon: null },
     provider: { id: 'p1', name: 'ACT', slug: 'act' },
-    package: { id: 'pkg1', name: 'Gold', slug: 'gold', packageType: 'base' },
+    plan: { id: 'plan1', name: 'Gold', slug: 'gold', price: '400.00', discount: '50.00', amount: '350.00', billingCycle: 'monthly' as const },
   };
 }
 
@@ -91,7 +93,6 @@ function customer(lines: CustomerDetail['subscriptions']): CustomerDetail {
     name: 'Kavitha Devi',
     phone: '9848012345',
     alternatePhone: null,
-    whatsappNumber: null,
     status: 'active',
     outstandingBalance: '500.00',
     userId: null,
@@ -216,24 +217,21 @@ describe('collecting a payment', () => {
     fireEvent.press(screen.getByTestId('collect-submit'));
 
     const payload = payloadOf();
-    expect(payload).toMatchObject({ amount: '0', reason: 'Nobody home' });
+    expect(payload).toMatchObject({ amount: null, reason: 'Nobody home' });
     expect(payload.method).toBeUndefined();
 
     alert.mockRestore();
   });
 
-  it('adds accessories to what has to be handed in, priced from the catalogue', async () => {
+  it('sends no amount for a visit that collected nothing, against the chosen line', async () => {
     await mount();
 
-    fireEvent.press(screen.getByText('Add'));
-    fireEvent.press(screen.getByText('Remote Control'));
-    fireEvent.press(screen.getByLabelText('Add one Remote Control'));
-
-    // 500 dues + two remotes at 150.
-    expect(screen.getByText('₹800.00')).toBeTruthy();
-
+    fireEvent.press(screen.getByText('No payment'));
+    fireEvent.changeText(screen.getByTestId('collect-reason'), 'Nobody home');
     fireEvent.press(screen.getByTestId('collect-submit'));
-    expect(payloadOf().accessories).toEqual([{ catalogId: 'cat-1', quantity: 2, unitPrice: '150.00' }]);
+
+    expect(payloadOf()).toMatchObject({ amount: null, subscriptionId: 'sub-1', reason: 'Nobody home' });
+    expect('accessories' in payloadOf()).toBe(false);
   });
 
   it('keeps one reference across a retry, so a failed tap cannot double-charge', async () => {

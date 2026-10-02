@@ -1,0 +1,101 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - analytics
+---
+# Admin analytics: every section renders, the range switches and period cycle work,
+# empty/zero states read sensibly, and the pushed bottom nav returns to the tabs.
+- runFlow: ../utils/login-admin.yaml
+- extendedWaitUntil:
+    visible: Total Customers
+    timeout: 60000
+
+# Reached from Recent Activity's See All.
+- scrollUntilVisible:
+    element: See All
+    direction: DOWN
+- tapOn: See All
+- extendedWaitUntil:
+    visible: Collections Overview
+    timeout: 30000
+- assertVisible: Dashboard
+- assertVisible: '(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4}'
+- takeScreenshot: .maestro/screenshots/admin-analytics
+
+# Range segmented control: Monthly is the default, each option can be selected.
+- assertVisible:
+    text: Monthly
+    selected: true
+- tapOn: Daily
+- assertVisible:
+    text: Daily
+    selected: true
+- assertVisible:
+    text: Monthly
+    selected: false
+- tapOn: Weekly
+- assertVisible:
+    text: Weekly
+    selected: true
+
+# The period pill cycles daily -> weekly -> monthly without a picker.
+- tapOn: '(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4}'
+- assertVisible:
+    text: Monthly
+    selected: true
+- tapOn: '(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4}'
+- assertVisible:
+    text: Daily
+    selected: true
+
+# Collections tiles always show a rupee figure, ₹0 included (zero state, not blank).
+- assertVisible: Collections
+- assertVisible: Collected This Week
+- assertVisible: Revenue / Connection
+- assertVisible: 'Since Sunday'
+
+# Donuts, areas, staff and recent customers; each either has rows or its empty copy.
+- scrollUntilVisible:
+    element: Connection Status
+    direction: DOWN
+- assertVisible: Total Connections
+- scrollUntilVisible:
+    element: Service Distribution
+    direction: DOWN
+- scrollUntilVisible:
+    element: Top Areas by Customers
+    direction: DOWN
+- scrollUntilVisible:
+    element: Staff Activity
+    direction: DOWN
+- scrollUntilVisible:
+    element: Recent Customers
+    direction: DOWN
+- runFlow:
+    when:
+      notVisible: No customers have been created yet.
+    commands:
+      - assertVisible: View All
+
+# View Details on the service donut drills into Services; back returns here.
+- scrollUntilVisible:
+    element: Service Distribution
+    direction: UP
+- tapOn:
+    text: View Details
+    below: Service Distribution
+- extendedWaitUntil:
+    visible: Service Providers
+    timeout: 30000
+- back
+- extendedWaitUntil:
+    visible: Service Distribution
+    timeout: 20000
+
+# The bottom nav on this pushed screen returns to the tab bar on that tab.
+- tapOn: Payments
+- extendedWaitUntil:
+    visible: 'Payments & Collections'
+    timeout: 30000
+- assertNotVisible: Collections Overview

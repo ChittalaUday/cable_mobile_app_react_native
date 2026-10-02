@@ -22,7 +22,6 @@ const mockCustomerItems: CustomerListItem[] = [
     services: ['Cable TV'],
     createdAt: '2026-09-01T00:00:00.000Z',
     alternatePhone: null,
-    whatsappNumber: null,
     address: null,
     locations: [{ locationId: 'loc-1', path: 'Governorpet', codes: ['GOV'], source: 'customer' }],
     serviceAccounts: [],
@@ -42,7 +41,6 @@ const mockCustomerItems: CustomerListItem[] = [
     services: ['Broadband'],
     createdAt: '2026-09-02T00:00:00.000Z',
     alternatePhone: null,
-    whatsappNumber: null,
     address: null,
     locations: [{ locationId: 'loc-2', path: 'Labbipet', codes: ['LAB'], source: 'customer' }],
     serviceAccounts: [],
@@ -62,7 +60,6 @@ const mockCustomerItems: CustomerListItem[] = [
     services: ['Cable TV'],
     createdAt: '2026-09-03T00:00:00.000Z',
     alternatePhone: null,
-    whatsappNumber: null,
     address: null,
     locations: [{ locationId: 'loc-1', path: 'Governorpet', codes: ['GOV'], source: 'customer' }],
     serviceAccounts: [
@@ -70,6 +67,10 @@ const mockCustomerItems: CustomerListItem[] = [
         subscriptionId: 'sub-1',
         accountNumber: 'ACC-001',
         installationAddress: null,
+        outstandingBalance: '0.00',
+        providerName: 'ACT Fibernet',
+        providerLogoUrl: null,
+        providerWebsiteUrl: null,
         locationId: 'loc-1',
         locationPath: 'Governorpet',
       },
@@ -77,6 +78,10 @@ const mockCustomerItems: CustomerListItem[] = [
         subscriptionId: 'sub-2',
         accountNumber: 'ACC-002',
         installationAddress: null,
+        outstandingBalance: '0.00',
+        providerName: 'ACT Fibernet',
+        providerLogoUrl: null,
+        providerWebsiteUrl: null,
         locationId: 'loc-1',
         locationPath: 'Governorpet',
       },
@@ -94,6 +99,8 @@ jest.mock('expo-router', () => ({
   }),
 }));
 
+let mockLastVariables: { balance?: string } | undefined;
+
 jest.mock('@/lib/hooks/api/use-customers', () => ({
   useCustomers: (options?: {
     variables?: {
@@ -104,8 +111,12 @@ jest.mock('@/lib/hooks/api/use-customers', () => ({
       createdFrom?: string;
       createdTo?: string;
       multiBox?: boolean;
+      balance?: string;
     };
   }) => {
+    // Only the list's own query carries `balance`; other callers (e.g. the add sheet) do not.
+    if (options?.variables && 'balance' in options.variables)
+      mockLastVariables = options.variables;
     let items = mockCustomerItems;
     const q = options?.variables?.q?.toLowerCase();
     const status = options?.variables?.status;
@@ -212,7 +223,7 @@ describe('customersView', () => {
     renderWithClient(<CustomersView basePath="/admin" />);
 
     expect(screen.getByText('Customers & Lines')).toBeTruthy();
-    expect(screen.getByText('Add')).toBeTruthy();
+    expect(screen.getByLabelText('Add customer')).toBeTruthy();
     expect(screen.getByText('Anil Reddy')).toBeTruthy();
     expect(screen.getByText('Bhavani Prasad')).toBeTruthy();
   });
@@ -240,20 +251,34 @@ describe('customersView', () => {
     expect(screen.queryByText('Bhavani Prasad')).toBeNull();
   });
 
-  it('filters customers by Multi-Box (2+) chip', () => {
+  it('counts each status tab from the server total', () => {
     renderWithClient(<CustomersView basePath="/admin" />);
 
-    fireEvent.press(screen.getByText('Multi-Box (2+)'));
+    expect(screen.getByTestId('segment-all')).toHaveTextContent('All3');
+    expect(screen.getByTestId('segment-active')).toHaveTextContent('Active2');
+    expect(screen.getByTestId('segment-inactive')).toHaveTextContent('Inactive0');
+  });
 
-    expect(screen.getByText('Chandra Sekhar')).toBeTruthy();
-    expect(screen.queryByText('Anil Reddy')).toBeNull();
-    expect(screen.queryByText('Bhavani Prasad')).toBeNull();
+  it('asks the server for due, advance or all-clear customers from the balance chips', () => {
+    renderWithClient(<CustomersView basePath="/admin" />);
+
+    fireEvent.press(screen.getByTestId('customers-balance-due'));
+    expect(mockLastVariables?.balance).toBe('due');
+
+    fireEvent.press(screen.getByTestId('customers-balance-advance'));
+    expect(mockLastVariables?.balance).toBe('advance');
+
+    fireEvent.press(screen.getByTestId('customers-balance-clear'));
+    expect(mockLastVariables?.balance).toBe('clear');
+
+    fireEvent.press(screen.getByTestId('customers-balance-any'));
+    expect(mockLastVariables?.balance).toBeUndefined();
   });
 
   it('opens the add-customer sheet in place when + Add is pressed', () => {
     renderWithClient(<CustomersView basePath="/admin" />);
 
-    fireEvent.press(screen.getByText('Add'));
+    fireEvent.press(screen.getByLabelText('Add customer'));
 
     expect(screen.getByText('Register the subscriber and their first connection')).toBeTruthy();
   });

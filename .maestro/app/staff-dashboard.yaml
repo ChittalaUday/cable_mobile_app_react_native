@@ -2,37 +2,134 @@ appId: ${APP_ID}
 tags:
   - e2e
   - staff
+  - dashboard
 ---
-# Field staff land on their scoped operational dashboard, not the admin panel.
-- runFlow:
-    file: ../utils/fresh-login.yaml
-    env:
-      EMAIL: suresh.staff@sscn.com
-      PASSWORD: Staff@123456
+# Field staff home: My Status, week/month figures, Workload, Recent Collections,
+# the staff-scoped Quick actions and the tab bar.
+- runFlow: ../utils/login-staff.yaml
 
-- assertVisible: .*Suresh.*
-- assertVisible: Field Officer
+# Header says Field Officer, never the admin Operator Panel.
+- extendedWaitUntil:
+    visible: Field Officer
+    timeout: 60000
+- assertVisible: '.*Suresh.*'
 - assertNotVisible: Operator Panel
-- assertVisible: Quick Actions
-- assertVisible: Personal
+- assertVisible: Global Search
+- assertVisible: 'Notifications.*'
+
+# Personal status card and the period metrics.
+- assertVisible: My Status
 - assertVisible: Collected today
-- assertVisible: Workload
+- assertVisible: This week
+- assertVisible: This month
+- assertVisible: Receipts today
+- assertVisible: Receipts this month
 - takeScreenshot: .maestro/screenshots/staff-home
 
-# Tab bar: same five destinations as the office, scoped to this officer.
-- tapOn: Payments
-- assertVisible: My Collections
-- tapOn: More
-- assertVisible: Complaints
-- assertVisible: Inventory
-- assertNotVisible: Staff & Teams
-- tapOn: Home
-- assertVisible: Collected today
+# Workload block for the officer's areas.
+- scrollUntilVisible:
+    element: Workload
+    direction: DOWN
+- assertVisible: Customers with dues
+- assertVisible: Outstanding
+- assertVisible: Active Connections
 
-# Search only offers what a field officer can open.
-- tapOn: Global Search
-- inputText: issue
+# Recent Collections: either rows or the empty copy, never neither.
+- scrollUntilVisible:
+    element: Recent Collections
+    direction: DOWN
+- runFlow:
+    when:
+      notVisible: No recent collections
+    commands:
+      - assertVisible: '.* ago'
+
+# Admin-only KPI tiles never reach the staff home.
+- assertNotVisible: Total Customers
+- assertNotVisible: Outstanding Dues
+
+# Quick actions: exactly the four staff actions, no package admin.
+- tapOn: Quick actions
+- extendedWaitUntil:
+    visible: Add Customer
+    timeout: 10000
+- assertVisible: Collect Payment
 - assertVisible: Issue Equipment
-- eraseText: 5
-- inputText: package
-- assertNotVisible: Packages & Plans
+- assertVisible: Send Notification
+- assertNotVisible: Add Package
+- assertNotVisible: Edit Packages
+- assertNotVisible: Delete Packages
+- takeScreenshot: .maestro/screenshots/staff-quick-actions
+
+# Each action reaches its screen and comes back home.
+- tapOn: Add Customer
+- extendedWaitUntil:
+    visible: Add New Customer
+    timeout: 30000
+- tapOn:
+    id: add-customer-close
+- extendedWaitUntil:
+    visible: My Status
+    timeout: 20000
+
+- tapOn: Quick actions
+- extendedWaitUntil:
+    visible: Collect Payment
+    timeout: 10000
+- tapOn: Collect Payment
+- extendedWaitUntil:
+    visible: 'Customers & Lines'
+    timeout: 30000
+- tapOn: Home
+- extendedWaitUntil:
+    visible: My Status
+    timeout: 20000
+
+- tapOn: Quick actions
+- extendedWaitUntil:
+    visible: Issue Equipment
+    timeout: 10000
+- tapOn: Issue Equipment
+- extendedWaitUntil:
+    visible: Issue to Customer
+    timeout: 30000
+- back
+- extendedWaitUntil:
+    visible: My Status
+    timeout: 20000
+
+- tapOn: Quick actions
+- extendedWaitUntil:
+    visible: Send Notification
+    timeout: 10000
+- tapOn: Send Notification
+- extendedWaitUntil:
+    visible: Send a notification
+    timeout: 30000
+- back
+- extendedWaitUntil:
+    visible: My Status
+    timeout: 20000
+
+# Tab bar: same five destinations as the office, scoped to this officer.
+- tapOn: Customers
+- extendedWaitUntil:
+    visible: 'Customers & Lines'
+    timeout: 30000
+- tapOn: Payments
+- extendedWaitUntil:
+    visible: My Collections
+    timeout: 30000
+- assertNotVisible: 'Payments & Collections'
+- tapOn: Remote
+- extendedWaitUntil:
+    visible: Choose a remote
+    timeout: 30000
+- tapOn: More
+- extendedWaitUntil:
+    visible: Complaints, inventory and your account
+    timeout: 30000
+- tapOn: Home
+- extendedWaitUntil:
+    visible: My Status
+    timeout: 30000

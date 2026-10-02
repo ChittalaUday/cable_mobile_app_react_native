@@ -118,28 +118,46 @@ describe('the recharge flow state', () => {
 
     store().next();
     store().next();
+    store().next();
+    store().next();
     expect(store().step).toBe('done');
   });
 
-  it('will not record without money on it', () => {
+  it('never steps back past the printer once the money is recorded', () => {
     store().begin({ customerId: 'cust-1' });
-    expect(canRecord(store())).toBe(false);
+    store().recorded('rcpt-1');
+    expect(store().step).toBe('printer');
+
+    store().next();
+    store().back();
+    store().back();
+    expect(store().step).toBe('printer');
+  });
+
+  it('records dues with no amount as left due, but not equipment', () => {
+    store().begin({ customerId: 'cust-1' });
+    expect(canRecord(store())).toBe(true);
 
     store().setField('amount', '0');
-    expect(canRecord(store())).toBe(false);
+    expect(canRecord(store())).toBe(true);
 
     store().setField('amount', '500');
     expect(canRecord(store())).toBe(true);
+
+    store().setField('amount', '');
+    store().setCharge('equipment');
+    store().setTarget({ kind: 'issue', units: [{ equipmentId: 'eq-1', catalogId: 'cat-1', name: 'Remote Control', serialNumber: 'RC-1', price: '150.00' }] });
+    expect(canRecord(store())).toBe(false);
   });
 
   it('will not record an equipment charge with no equipment picked', () => {
     store().begin({ customerId: 'cust-1' });
-    store().setField('amount', '250');
     store().setCharge('equipment');
+    store().setField('amount', '250');
 
     expect(canRecord(store())).toBe(false);
 
-    store().setTarget({ kind: 'issue', catalogId: 'cat-1' });
+    store().setTarget({ kind: 'issue', units: [{ equipmentId: 'eq-1', catalogId: 'cat-1', name: 'Remote Control', serialNumber: 'RC-1', price: '150.00' }] });
     expect(canRecord(store())).toBe(true);
   });
 
@@ -172,7 +190,7 @@ describe('the recharge flow state', () => {
     store().recorded('rcpt-1');
 
     expect(hasUnsavedWork(store())).toBe(false);
-    expect(store().step).toBe('done');
+    expect(store().step).toBe('printer');
   });
 
   it('clears everything on reset, including the receipt', () => {

@@ -1,0 +1,108 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - services
+---
+# Services (More > Services > Manage services): add with validation, a
+# duplicate name, rename, and delete where Cancel keeps it and confirm removes it.
+- evalScript: ${output.stamp = String(Date.now()).slice(-6)}
+- runFlow: ../utils/login-admin.yaml
+- tapOn: More
+- extendedWaitUntil:
+    visible: Services
+    timeout: 10000
+- tapOn: Services
+- extendedWaitUntil:
+    visible: Service Providers
+    timeout: 20000
+- tapOn: Manage services
+- extendedWaitUntil:
+    visible: What subscribers buy, not who supplies it
+    timeout: 20000
+
+# --- Renders: the seeded services, each with its actions ----------------------
+- extendedWaitUntil:
+    visible: Cable TV
+    timeout: 20000
+- assertVisible: Broadband
+- assertVisible: Edit Cable TV
+- assertVisible: Delete Cable TV
+- assertVisible: Set where Cable TV is sold
+
+# --- Add: an empty name is refused -----------------------------------------------
+- tapOn: Add service
+- extendedWaitUntil:
+    visible:
+      id: service-name
+    timeout: 10000
+- tapOn:
+    id: service-save
+- assertVisible: Give the service a name
+
+# --- Add: a name already in use is refused by the API -----------------------------
+- tapOn:
+    id: service-name
+- inputText: Cable TV
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: service-save
+- extendedWaitUntil:
+    visible: Could not add service
+    timeout: 20000
+- tapOn: OK
+
+# --- Add: a new unique service ----------------------------------------------------
+- tapOn:
+    id: service-name
+- eraseText: 20
+- inputText: E2E Service ${output.stamp}
+- tapOn: Wi-Fi
+- tapOn:
+    id: service-description
+- inputText: Created by Maestro
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: service-save
+- extendedWaitUntil:
+    visible: E2E Service ${output.stamp}
+    timeout: 20000
+- assertVisible: '.*No providers yet.*'
+
+# --- Rename it ------------------------------------------------------------------------
+- tapOn: Edit E2E Service ${output.stamp}
+- extendedWaitUntil:
+    visible: Edit service
+    timeout: 10000
+- tapOn:
+    id: service-name
+- eraseText: 30
+- inputText: E2E Service ${output.stamp} R
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: service-save
+- extendedWaitUntil:
+    visible: E2E Service ${output.stamp} R
+    timeout: 20000
+
+# --- Delete: Cancel keeps it ----------------------------------------------------------
+- tapOn: Delete E2E Service ${output.stamp} R
+- extendedWaitUntil:
+    visible: Delete service
+    timeout: 10000
+- assertVisible: '.*Nothing supplies it.*'
+- tapOn:
+    id: dialog-cancel
+- assertVisible: E2E Service ${output.stamp} R
+
+# --- Delete: confirm removes it -------------------------------------------------------
+- tapOn: Delete E2E Service ${output.stamp} R
+- extendedWaitUntil:
+    visible: Delete service
+    timeout: 10000
+- tapOn:
+    id: dialog-confirm
+- extendedWaitUntil:
+    notVisible: E2E Service ${output.stamp} R
+    timeout: 20000
+- assertVisible: Cable TV

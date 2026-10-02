@@ -4,9 +4,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MotiView } from 'moti';
 import * as React from 'react';
 import { useWindowDimensions } from 'react-native';
+import { useCSSVariable } from 'uniwind';
 
 import { LanguageToggle } from '@/components/common/language-toggle';
-import { colors, Image, SafeAreaView, Text, View } from '@/components/ui';
+import { Image, SafeAreaView, Text, View } from '@/components/ui';
 import { IMAGES } from '@/constants';
 import { translate } from '@/lib/i18n';
 
@@ -23,12 +24,15 @@ export function LoginHero() {
    * the window instead keeps the hero the same size whatever the keyboard does.
    */
   const { height } = useWindowDimensions();
+  // The fade behind the headline is the screen's own surface, so it reads in
+  // either theme; the art is a transparent PNG and sits on it directly.
+  const surface = String(useCSSVariable('--color-surface') ?? '#EDEFF3');
 
   return (
     <View
       testID="login-hero"
       style={{ height: Math.max(height * HERO_SCREEN_FRACTION, HERO_MIN_HEIGHT) }}
-      className="overflow-hidden bg-neutral-100"
+      className="overflow-hidden bg-surface"
     >
       <Image
         source={IMAGES.loginHero}
@@ -38,7 +42,7 @@ export function LoginHero() {
       />
       <LinearGradient
         className="absolute inset-0"
-        colors={[colors.neutral[50], `${colors.neutral[50]}D9`, 'transparent']}
+        colors={[surface, `${surface}D9`, `${surface}00`]}
         locations={[0, 0.34, 0.68]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}

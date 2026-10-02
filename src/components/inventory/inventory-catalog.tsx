@@ -141,6 +141,7 @@ export function InventoryCatalogScreen({ basePath }: { basePath: '/admin/invento
         rightAction={(
           <Pressable
             accessibilityRole="button"
+            testID="catalog-add-button"
             onPress={() => itemModal.present()}
             className="size-9 items-center justify-center rounded-lg bg-primary-600 active:bg-primary-700"
           >
@@ -156,6 +157,7 @@ export function InventoryCatalogScreen({ basePath }: { basePath: '/admin/invento
           <Input
             value={search}
             onChangeText={setSearch}
+            testID="catalog-search-input"
             placeholder="Search items by name or SKU..."
             className="flex-1 py-1 text-sm text-foreground"
             placeholderTextColor={colors.neutral[400]}
@@ -163,9 +165,9 @@ export function InventoryCatalogScreen({ basePath }: { basePath: '/admin/invento
         </View>
 
         {!isAdmin && (
-          <View className="flex-row items-center gap-2 rounded-xl border border-primary-100 bg-primary-50 p-3">
+          <View className="flex-row items-center gap-2 rounded-xl border border-primary-100 bg-primary-50 p-3 dark:border-primary-900 dark:bg-primary-950/40">
             <HugeiconsIcon icon={CircleLock01Icon} size={18} color={colors.primary[600]} strokeWidth={2} />
-            <Text className="flex-1 text-xs text-primary-900">
+            <Text className="flex-1 text-xs text-primary-900 dark:text-primary-100">
               Staff permissions: Catalog items cannot be modified directly. Tap + to request new items.
             </Text>
           </View>
@@ -194,7 +196,7 @@ export function InventoryCatalogScreen({ basePath }: { basePath: '/admin/invento
                       className="flex-row items-center justify-between border-b border-border/40 py-2.5 last:border-b-0"
                     >
                       <View className="flex-row items-center gap-3">
-                        <View className="size-10 items-center justify-center rounded-xl bg-orange-50">
+                        <View className="size-10 items-center justify-center rounded-xl bg-orange-50 dark:bg-orange-950/40">
                           <HugeiconsIcon icon={Package01Icon} size={22} color={colors.primary[600]} strokeWidth={2} />
                         </View>
                         <View className="flex-1">
@@ -239,6 +241,7 @@ export function InventoryCatalogScreen({ basePath }: { basePath: '/admin/invento
             <Input
               value={name}
               onChangeText={setName}
+              testID="catalog-name-input"
               placeholder="e.g. WiFi Router Dual Band"
               className="rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground"
             />
@@ -250,6 +253,7 @@ export function InventoryCatalogScreen({ basePath }: { basePath: '/admin/invento
               <Input
                 value={code}
                 onChangeText={setCode}
+                testID="catalog-code-input"
                 placeholder="e.g. RTR-001"
                 className="rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground"
               />
@@ -271,6 +275,7 @@ export function InventoryCatalogScreen({ basePath }: { basePath: '/admin/invento
               <Input
                 value={price}
                 onChangeText={setPrice}
+                testID="catalog-price-input"
                 placeholder="0.00"
                 keyboardType="numeric"
                 className="rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground"
@@ -294,6 +299,7 @@ export function InventoryCatalogScreen({ basePath }: { basePath: '/admin/invento
               <Input
                 value={reason}
                 onChangeText={setReason}
+                testID="catalog-reason-input"
                 placeholder="Why does the inventory need this item added?"
                 className="h-16 rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground"
                 multiline
@@ -312,6 +318,7 @@ export function InventoryCatalogScreen({ basePath }: { basePath: '/admin/invento
               }
               className="bg-primary-600"
               disabled={isCreating || isRequesting}
+              testID="catalog-submit-button"
               onPress={handleSubmit}
             />
           </View>

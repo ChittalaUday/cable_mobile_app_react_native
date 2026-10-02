@@ -1,4 +1,4 @@
-import type { NormalizedPackage } from '@/lib/hooks/api/use-packages';
+import type { Plan } from '@/lib/api/types';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -7,22 +7,16 @@ import { dialogs } from '@/components/common/dialogs';
 import { Card, LoadError, Loading, ScreenHeader } from '@/components/common/shell';
 import { Input, Pressable, Text, View } from '@/components/ui';
 import { useAddSubscription, useChangePlan, useCustomer } from '@/lib/hooks/api/use-customers';
-import { usePackages } from '@/lib/hooks/api/use-packages';
+import { usePlans } from '@/lib/hooks/api/use-plans';
 import { useRechargeStore } from '@/lib/hooks/stores/use-recharge-store';
-import { rupeesExact } from '@/lib/utils/admin-format';
-import { ChoiceRow, Field } from './parts';
+import { ChoiceRow, Field, planLabel } from './parts';
 
-/**
- * The package kinds a line sits *on*. Everything else — a bouquet, a single
- * channel, an addon — is sold alongside one and never replaces it.
- */
-const PLAN_TYPES = new Set(['base', 'combo']);
 type PlanSection = {
   key: 'plans' | 'addons';
   title: string;
   empty: string;
   trailing: string;
-  data: NormalizedPackage[];
+  data: Plan[];
 };
 
 /**
@@ -42,7 +36,6 @@ export function ChangePlanScreen() {
 
   const [query, setQuery] = React.useState('');
   const [activeCategory, setActiveCategory] = React.useState<'plans' | 'addons'>('plans');
-  const listRef = React.useRef<SectionList<NormalizedPackage, PlanSection>>(null);
 
   const { data: customer, isPending, error, refetch } = useCustomer({
     variables: { id: customerId ?? '' },
@@ -54,7 +47,7 @@ export function ChangePlanScreen() {
 
   // Only what this line's own provider sells — the server refuses anything
   // else, because crossing providers is a new connection, not a plan change.
-  const { data: offered, isPending: isLoading } = usePackages({
+  const { data: offered, isPending: isLoading } = usePlans({
     variables: { serviceProviderId: line?.provider.id, status: 'active' },
     enabled: line !== null,
   });
@@ -64,38 +57,28 @@ export function ChangePlanScreen() {
   const busy = isChanging || isAdding;
 
   const needle = query.trim().toLowerCase();
+  // Plans are the only thing sold: a switch moves this line, an add puts the
+  // plan on a line of its own beside it (an addon or a second box).
   const sellable = (offered ?? []).filter(item =>
-    item.active
-    && item.id !== line?.package.id
+    item.status === 'active'
     && (needle === '' || item.name.toLowerCase().includes(needle)),
   );
-  const plans = sellable.filter(item => PLAN_TYPES.has(item.packageType));
-  const addons = sellable.filter(item => !PLAN_TYPES.has(item.packageType));
+  const plans = sellable.filter(item => item.id !== line?.plan.id);
   const sections: PlanSection[] = [
-    { key: 'plans', title: 'Packages', empty: needle === '' ? 'No other plan from this provider.' : 'No plan matches that.', trailing: 'Switch', data: plans },
-    { key: 'addons', title: t('recharge.add_ons'), empty: needle === '' ? 'No addons from this provider.' : 'No addon matches that.', trailing: 'Add', data: addons },
+    { key: 'plans', title: 'Change plan', empty: needle === '' ? 'No other plan from this provider.' : 'No plan matches that.', trailing: 'Switch', data: plans },
+    { key: 'addons', title: 'Add as another line', empty: needle === '' ? 'No plans from this provider.' : 'No plan matches that.', trailing: 'Add', data: sellable },
   ];
 
-  const moveTo = (category: 'plans' | 'addons') => {
-    setActiveCategory(category);
-    const sectionIndex = category === 'plans' ? 0 : 1;
-    if (sections[sectionIndex]!.data.length > 0)
-      listRef.current?.scrollToLocation({ sectionIndex, itemIndex: 0, animated: true });
-  };
+  // The tab picks what a tap does: move this line, or add a line beside it.
+  const shown = sections.filter(section => section.key === activeCategory);
 
-  const onViewableItemsChanged = React.useRef(({ viewableItems }: { viewableItems: { section?: { key?: string } }[] }) => {
-    const key = viewableItems[0]?.section?.key;
-    if (key === 'plans' || key === 'addons')
-      setActiveCategory(key);
-  }).current;
-
-  const switchTo = async (item: NormalizedPackage) => {
+  const switchTo = async (item: Plan) => {
     if (line === null || customer === undefined)
       return;
 
     const agreed = await dialogs.confirm({
       title: `Move to ${item.name}?`,
-      message: `This connection goes to ${rupeesExact(item.price)} / ${item.billingCycle}. It takes no money now and leaves the balance where it is.`,
+      message: `This connection goes to ${planLabel(item)} from its next charge. It takes no money now and leaves the balance and the paid cycle where they are.`,
       confirmLabel: 'Change plan',
       tone: 'default',
     });
@@ -104,7 +87,7 @@ export function ChangePlanScreen() {
       return;
 
     changePlan(
-      { customerId: customer.id, subscriptionId: line.id, payload: { packageId: item.id } },
+      { customerId: customer.id, subscriptionId: line.id, payload: { planId: item.id } },
       {
         onSuccess: () => router.back(),
         onError: failure => void dialogs.notify('Not changed', failure.message),
@@ -112,12 +95,12 @@ export function ChangePlanScreen() {
     );
   };
 
-  const addAddon = (item: NormalizedPackage) => {
+  const addAddon = (item: Plan) => {
     if (line === null || customer === undefined)
       return;
 
     addSubscription(
-      { customerId: customer.id, payload: { packageId: item.id, basedOn: line.id } },
+      { customerId: customer.id, payload: { planId: item.id, basedOn: line.id } },
       {
         // It lands as a line of its own, so the flow comes back to a customer
         // with one more connection, and that new line is what it acts on.
@@ -140,7 +123,7 @@ export function ChangePlanScreen() {
     <View className="flex-1 bg-surface">
       <ScreenHeader
         title="Plans & addons"
-        subtitle={line === null ? (customer.name ?? 'Customer') : `${line.provider.name} • on ${line.package.name}`}
+        subtitle={line === null ? (customer.name ?? 'Customer') : `${line.provider.name} • on ${line.plan.name}`}
         showBack
         withSafeArea
       >
@@ -160,7 +143,7 @@ export function ChangePlanScreen() {
                 accessibilityRole="tab"
                 accessibilityLabel={`${section.key === 'plans' ? t('recharge.plans') : t('recharge.add_ons')} (${section.data.length})`}
                 accessibilityState={{ selected: activeCategory === section.key }}
-                onPress={() => moveTo(section.key)}
+                onPress={() => setActiveCategory(section.key)}
                 className={`flex-1 items-center rounded-xl border py-2.5 ${activeCategory === section.key ? 'border-primary-500 bg-primary-500' : 'border-border bg-card'}`}
               >
                 <Text className={`text-xs font-bold ${activeCategory === section.key ? 'text-white' : 'text-foreground'}`}>
@@ -173,16 +156,15 @@ export function ChangePlanScreen() {
       </ScreenHeader>
 
       <SectionList
-        ref={listRef}
         style={{ flex: 1 }}
         contentContainerStyle={{ padding: 16, paddingBottom: 96 }}
-        sections={line === null || isLoading ? [] : sections}
+        sections={line === null || isLoading ? [] : shown}
         keyExtractor={item => item.id}
         renderItem={({ item, section }) => (
           <View className="pb-2">
             <ChoiceRow
               title={item.name}
-              subtitle={`${rupeesExact(item.price)} / ${item.billingCycle}${item.channelCount > 0 ? ` • ${item.channelCount} channels` : ''}`}
+              subtitle={planLabel(item)}
               trailing={section.trailing}
               disabled={busy}
               onPress={() => section.key === 'plans' ? void switchTo(item) : addAddon(item)}
@@ -206,15 +188,11 @@ export function ChangePlanScreen() {
           : (
               <Card className="mb-4 gap-1 border border-primary-500 bg-primary-50 p-4 dark:bg-primary-950/40">
                 <Text className="text-xs font-semibold tracking-wider text-primary-600 uppercase">{t('recharge.current_plan')}</Text>
-                <Text className="text-base font-extrabold text-foreground">{line.package.name}</Text>
-                <Text className="text-xs text-muted-foreground">{`${line.provider.name} • ${rupeesExact(line.price)} / ${line.billingCycle}`}</Text>
+                <Text className="text-base font-extrabold text-foreground">{line.plan.name}</Text>
+                <Text className="text-xs text-muted-foreground">{`${line.provider.name} • ${planLabel(line.plan)}`}</Text>
               </Card>
             )}
         ListEmptyComponent={isLoading ? <Loading /> : null}
-        onViewableItemsChanged={onViewableItemsChanged}
-        onScrollToIndexFailed={({ averageItemLength, index }) => {
-          listRef.current?.getScrollResponder()?.scrollTo({ y: averageItemLength * index, animated: true });
-        }}
         stickySectionHeadersEnabled={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"

@@ -10,16 +10,7 @@ import { RefreshControl, TextInput } from 'react-native';
 import { ResolutionBadge } from '@/components/common/resolution-badge';
 import { ScreenHeader } from '@/components/common/screen-header';
 import { Card, Loading } from '@/components/common/shell';
-import {
-  ActivityIndicator,
-  colors,
-  FocusAwareStatusBar,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  Text,
-  View,
-} from '@/components/ui';
+import { ActivityIndicator, colors, FocusAwareStatusBar, Pressable, SafeAreaView, ScrollView, Text, ThemedIcon, View } from '@/components/ui';
 import { useChannels } from '@/lib/hooks/api/use-channels';
 import { useDebounced } from '@/lib/hooks/common/use-debounced';
 
@@ -105,7 +96,7 @@ export function ChannelsScreen() {
               onPress={() => refetchChannels()}
               className="size-9 items-center justify-center rounded-lg border border-border bg-card active:bg-muted"
             >
-              <HugeiconsIcon icon={RefreshIcon} size={18} color={colors.neutral[600]} strokeWidth={2} />
+              <ThemedIcon icon={RefreshIcon} size={18} colorClassName="text-muted-foreground" strokeWidth={2} />
             </Pressable>
           )}
         >

@@ -1,4 +1,5 @@
-import type { RecordCollectionPayload, RecordEquipmentPaymentPayload } from '@/lib/hooks/api/use-payments';
+import type { CustomerSubscription } from '@/lib/api/types';
+import type { RecordCollectionPayload, RecordEquipmentPaymentPayload, ReplaceEquipmentPayload } from '@/lib/hooks/api/use-payments';
 import { useIsFocused } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
@@ -10,35 +11,82 @@ import { Button, View } from '@/components/ui';
 import { MAX_COLLECTION_AMOUNT } from '@/lib/constants/billing';
 import { useCustomer } from '@/lib/hooks/api/use-customers';
 import {
+  listCollections,
   useCollection,
   useRecordCollection,
   useRecordEquipmentPayment,
+  useReplaceEquipment,
 } from '@/lib/hooks/api/use-payments';
 import {
   canRecord,
   hasUnsavedWork,
+  isFreeSwap,
+  isMarkedDue,
   paise,
-  stepsFor,
+  STEPS,
   useRechargeStore,
 } from '@/lib/hooks/stores/use-recharge-store';
 import { translate } from '@/lib/i18n/utils';
 import { isPaymentReferenceConflict, isPaymentResultUnknown } from '@/lib/payments/payment-errors';
 import { renew as renewPendingReference } from '@/lib/payments/pending-reference';
-import { rupeesExact } from '@/lib/utils/admin-format';
+import { usePrinter } from '@/lib/printer/use-printer';
+import { rupeesExact, shortDate } from '@/lib/utils/admin-format';
 import { apiErrorMessage } from '@/lib/utils/api-error';
 import { isPaymentAmount } from '@/lib/utils/payment-amount';
 import { ChargePicker, StepTrail } from './parts';
 import { StepAmount } from './step-amount';
 import { StepDone } from './step-done';
+import { StepEquipment } from './step-equipment';
 import { StepPlan } from './step-plan';
+import { StepPreview } from './step-preview';
+import { StepPrinter } from './step-printer';
+
+const at = (iso: string) => `${shortDate(new Date(iso))}, ${new Date(iso).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })}`;
 
 /**
- * Recharge, as steps that each finish before the next begins.
+ * Asks before a second "due" in a cycle that is already charged, naming when it
+ * was marked due and by whom, plus any visits logged since. The history is a
+ * nicety: if it cannot be read, the warning still shows without it.
+ */
+async function warnAlreadyDue(customerId: string, line: CustomerSubscription): Promise<boolean> {
+  // ponytail: first page of the customer's receipts only; a cycle with 30+ receipts shows the newest.
+  const page = await listCollections({ customerId, limit: 30 }).catch(() => null);
+  const visits = [];
+  for (const receipt of page?.items ?? []) {
+    if (receipt.subscriptionId !== line.id)
+      continue;
+    if (receipt.outcome !== 'due' && receipt.outcome !== 'none')
+      break;
+    visits.push(receipt);
+    if (receipt.outcome === 'due')
+      break;
+  }
+  const history = visits.map(visit => `• ${visit.outcome === 'due' ? 'Marked due' : 'Visit logged'} ${at(visit.collectedAt)} by ${visit.collectorName ?? 'a collector'}`);
+
+  return dialogs.confirm({
+    title: visits.length > 1 ? `Already marked due · ${visits.length} times` : 'Already marked due',
+    message: [
+      `${line.plan.name} · ${line.serviceAccountNumber}`,
+      `Plan ${rupeesExact(line.price)} already charged${line.chargedThrough === null ? '' : ` through ${shortDate(new Date(line.chargedThrough))}`}`,
+      `Balance due: ${rupeesExact(line.outstandingBalance)}`,
+      ...(history.length === 0 ? [] : ['', ...history]),
+      '',
+      'Recording again only logs a visit — nothing more is added to the balance.',
+    ].join('\n'),
+    tone: 'default',
+    confirmLabel: 'Record visit',
+    cancelLabel: 'Cancel',
+  });
+}
+
+/**
+ * Payment, as steps that each finish before the next begins.
  *
- * Subscription money walks plan, then amount, then receipt. The order is the
- * point: what the customer is on decides what they owe, what they owe decides
- * what is typed, and only then is money recorded. Equipment walks a shorter
- * road — it is sold against no plan at all, so it opens straight on the amount.
+ * Select, then payment, then printer, preview and done. Select has two tabs:
+ * Subscription (pick the connection, or change its subscription) and Equipment
+ * (replace a unit the customer has, or add one). The payment step only takes
+ * the money for what was picked — paper is printed from the recorded receipt,
+ * never before it exists.
  *
  * All of it lives in `useRechargeStore` rather than here, because the receipt
  * has to outlive the step that produced it and the printer handshake that
@@ -68,11 +116,17 @@ export function RechargeFlowScreen({ customerId, subscriptionId, basePath }: {
   const next = useRechargeStore(state => state.next);
   const stepBack = useRechargeStore(state => state.back);
   const recorded = useRechargeStore(state => state.recorded);
+  const goTo = useRechargeStore(state => state.goTo);
   const reset = useRechargeStore(state => state.reset);
+  // One printer for the steps after the amount, so a connection made on the
+  // printer step is the one the preview prints through.
+  const printer = usePrinter();
 
   const { mutate: recordDues, isPending: isSavingDues } = useRecordCollection();
   const { mutate: recordEquipment, isPending: isSavingEquipment } = useRecordEquipmentPayment();
-  const isSaving = isSavingDues || isSavingEquipment;
+  const { mutate: replaceEquipment, isPending: isReplacing } = useReplaceEquipment();
+  const isSaving = isSavingDues || isSavingEquipment || isReplacing;
+  const target = useRechargeStore(state => state.target);
 
   // The receipt is re-read by id rather than kept from the mutation, so the
   // Done step draws the same row the receipts list will.
@@ -122,12 +176,10 @@ export function RechargeFlowScreen({ customerId, subscriptionId, basePath }: {
 
   const handleBack = React.useCallback(async () => {
     const state = useRechargeStore.getState();
-    const walk = stepsFor(state.charge);
-
-    // Inside the flow, back is one step. On the step this charge opens on — or
-    // once the money is recorded and there is nothing to step back into — it
-    // leaves. Equipment opens on the amount, so for it that step is the exit.
-    if (state.step !== 'done' && state.step !== walk[0]) {
+    // Inside the flow, back is one step. On the select step — or once the money
+    // is recorded and there is nothing to step back into — it leaves.
+    const floor = state.receiptId === null ? STEPS[0] : 'printer';
+    if (state.step !== 'done' && state.step !== floor) {
       stepBack();
       return;
     }
@@ -152,11 +204,11 @@ export function RechargeFlowScreen({ customerId, subscriptionId, basePath }: {
     return () => subscription.remove();
   }, [handleBack, isFocused]);
 
+  // The done step already is the receipt; opening the receipt page after it
+  // would show the same thing twice.
   const finish = () => {
-    const id = useRechargeStore.getState().receiptId;
-
     reset();
-    router.replace(id === null ? `${basePath}/receipts` : `${basePath}/receipts/${id}`);
+    router.back();
   };
 
   const record = () => {
@@ -176,14 +228,18 @@ export function RechargeFlowScreen({ customerId, subscriptionId, basePath }: {
       return;
     }
 
-    const common: RecordCollectionPayload = {
+    // Nothing collected: the server books it as a no-payment visit, which takes
+    // a reason and no method. The collector's note is the reason when there is one.
+    // A free swap is the same, with the swap as its reason.
+    const markedDue = isMarkedDue(state);
+    const freeSwap = isFreeSwap(state);
+    const common = {
       customerId,
       amount: (paise(state.amount) / 100).toFixed(2),
-      method: state.method,
       reference: state.reference,
-      // Hardware belongs to the customer, not to one of their lines, and the
-      // server books it as a deposit that no subscription balance ever sees.
-      ...(line === null || state.charge === 'equipment' ? {} : { subscriptionId: line.id }),
+      ...(markedDue
+        ? { reason: state.notes.trim() === '' ? 'Not paid — balance left due' : state.notes.trim() }
+        : freeSwap ? {} : { method: state.method }),
       ...(state.notes.trim() === '' ? {} : { notes: state.notes.trim() }),
     };
 
@@ -236,25 +292,49 @@ export function RechargeFlowScreen({ customerId, subscriptionId, basePath }: {
     };
 
     if (state.charge === 'subscription') {
-      recordDues({ payload: common }, {
+      // Dues are always against a line: it fixes the package, price and balance
+      // the server does the maths with. Null amount is "nothing paid, left due".
+      if (line === null) {
+        void dialogs.notify('No connection', 'This customer has no connection to collect dues against.');
+        return;
+      }
+      const payload: RecordCollectionPayload = { ...common, subscriptionId: line.id, amount: markedDue ? null : common.amount };
+      const send = () => recordDues({ payload }, {
         onSuccess: made => recorded(made.id, { customerId, charge: state.charge }),
         onError,
       });
+
+      // No plan to add means this cycle is already charged: it was marked due
+      // (or paid) before, so a second "due" only logs a visit.
+      if (markedDue && paise(line.nextPlanCharge) === 0) {
+        void warnAlreadyDue(customerId, line).then((agreed) => {
+          if (agreed)
+            send();
+        });
+        return;
+      }
+
+      send();
       return;
     }
 
-    const target = state.target!;
+    const onSuccess = (made: { id: string }) => recorded(made.id, { customerId, charge: state.charge });
+    if (state.target?.kind === 'replace') {
+      const payload: ReplaceEquipmentPayload = {
+        ...common,
+        amount: freeSwap ? null : common.amount,
+        customerEquipmentId: state.target.customerEquipmentId,
+      };
+      replaceEquipment({ payload }, { onSuccess, onError });
+      return;
+    }
+
     const payload: RecordEquipmentPaymentPayload = {
       ...common,
-      ...(target.kind === 'existing'
-        ? { customerEquipmentId: target.customerEquipmentId }
-        : {
-            catalogId: target.catalogId,
-            ...(state.serialNumber.trim() === '' ? {} : { serialNumber: state.serialNumber.trim() }),
-          }),
+      items: state.target!.units.map(unit => ({ catalogId: unit.catalogId, equipmentId: unit.equipmentId })),
     };
 
-    recordEquipment({ payload }, { onSuccess: made => recorded(made.id, { customerId, charge: state.charge }), onError });
+    recordEquipment({ payload }, { onSuccess, onError });
   };
 
   if (isPending)
@@ -266,14 +346,14 @@ export function RechargeFlowScreen({ customerId, subscriptionId, basePath }: {
   return (
     <View className="flex-1 bg-surface">
       <ScreenHeader
-        title={step === 'done' ? 'Receipt' : 'Recharge'}
+        title={receiptId === null ? 'Payment' : 'Receipt'}
         subtitle={customer.name ?? customer.customerCode ?? 'Customer'}
         showBack
         onBack={() => void handleBack()}
         withSafeArea
       >
         <View className="pt-3">
-          <StepTrail step={step} charge={charge} />
+          <StepTrail step={step} />
         </View>
       </ScreenHeader>
 
@@ -285,7 +365,8 @@ export function RechargeFlowScreen({ customerId, subscriptionId, basePath }: {
         bottomOffset={24}
         showsVerticalScrollIndicator={false}
       >
-        {step !== 'done' && (
+        {/* The two tabs of the select step — not asked again on the payment step. */}
+        {step === 'plan' && (
           <ChargePicker
             charge={charge}
             onChange={(nextCharge) => {
@@ -295,18 +376,39 @@ export function RechargeFlowScreen({ customerId, subscriptionId, basePath }: {
           />
         )}
 
-        {step === 'plan' && <StepPlan customer={customer} line={line} basePath={basePath} />}
+        {step === 'plan' && charge === 'subscription' && <StepPlan customer={customer} line={line} basePath={basePath} />}
+        {step === 'plan' && charge === 'equipment' && <StepEquipment customer={customer} basePath={basePath} />}
         {step === 'amount' && <StepAmount customer={customer} line={line} />}
-        {step === 'done' && (
-          receipt === undefined
-            ? <Loading />
-            : <StepDone receipt={receipt} onFinish={finish} />
+        {step === 'printer' && (
+          <StepPrinter printer={printer} onNext={next} onSkip={() => goTo('done')} />
+        )}
+        {(step === 'preview' || step === 'done') && receipt === undefined && <Loading />}
+        {step === 'preview' && receipt !== undefined && (
+          <StepPreview
+            receipt={receipt}
+            printer={printer}
+            planName={charge === 'subscription' ? (line?.plan.name ?? null) : null}
+            onSkip={() => goTo('done')}
+          />
+        )}
+        {step === 'done' && receipt !== undefined && (
+          <StepDone
+            receipt={receipt}
+            onPrintAgain={() => goTo(printer.connectedAddress === null ? 'printer' : 'preview')}
+            onFinish={finish}
+          />
         )}
 
         {step === 'plan' && (
           <Button
-            label="Next — enter the amount"
-            onPress={next}
+            label="Next — enter the payment"
+            onPress={() => {
+              if (charge === 'equipment' && target === null) {
+                void dialogs.notify('Pick the equipment', 'Choose a unit to replace, or one to add.');
+                return;
+              }
+              next();
+            }}
             className="bg-primary-600"
             testID="recharge-next"
           />
@@ -314,7 +416,7 @@ export function RechargeFlowScreen({ customerId, subscriptionId, basePath }: {
 
         {step === 'amount' && (
           <Button
-            label={isSaving ? 'Recording…' : `Record ${rupeesExact(paise(amount) / 100)}`}
+            label={isSaving ? 'Recording…' : isMarkedDue({ charge, amount }) ? 'Mark as due' : isFreeSwap({ charge, amount, target }) ? 'Record free swap' : `Record ${rupeesExact(paise(amount) / 100)}`}
             disabled={isSaving}
             onPress={record}
             className="bg-primary-600"

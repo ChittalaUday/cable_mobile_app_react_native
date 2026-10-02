@@ -79,19 +79,19 @@ export function InventoryApprovalsScreen({ basePath: _basePath }: { basePath: '/
                           <View
                             className={`rounded-full px-2.5 py-0.5 ${
                               req.status === 'approved'
-                                ? 'bg-success-50'
+                                ? 'bg-success-50 dark:bg-success-900/40'
                                 : req.status === 'rejected'
-                                  ? 'bg-danger-50'
-                                  : 'bg-warning-50'
+                                  ? 'bg-danger-50 dark:bg-danger-950/40'
+                                  : 'bg-warning-50 dark:bg-warning-900/40'
                             }`}
                           >
                             <Text
                               className={`text-[11px] font-bold uppercase ${
                                 req.status === 'approved'
-                                  ? 'text-success-700'
+                                  ? 'text-success-700 dark:text-success-300'
                                   : req.status === 'rejected'
                                     ? 'text-danger-600'
-                                    : 'text-warning-700'
+                                    : 'text-warning-700 dark:text-warning-300'
                               }`}
                             >
                               {req.status}

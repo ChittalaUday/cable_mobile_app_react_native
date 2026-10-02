@@ -9,8 +9,11 @@ import { dialogs } from '@/components/common/dialogs';
 import { Card, LoadError, Loading, ScreenHeader } from '@/components/common/shell';
 import { Button, colors, ScrollView, Text, View } from '@/components/ui';
 import { PERMISSIONS } from '@/constants/permissions';
+import { useCustomer } from '@/lib/hooks/api/use-customers';
 import { useCollection, useReverseCollection } from '@/lib/hooks/api/use-payments';
 import { usePermissions } from '@/lib/hooks/common/use-permissions';
+import { usePrinter } from '@/lib/printer/use-printer';
+import { PrinterPanel, ReceiptPreview, useReceiptPrint } from './receipt-print';
 
 const rupees = (value: string | number) => `₹${Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -18,6 +21,7 @@ const OUTCOME_LABEL: Record<Collection['outcome'], string> = {
   full: 'Paid in full',
   partial: 'Part payment',
   none: 'Nothing collected',
+  due: 'Nothing collected · plan due',
   refund: 'Reversal',
   others: 'Other',
 };
@@ -97,7 +101,7 @@ export function ReceiptView({ id }: { id: string }) {
           <HugeiconsIcon
             icon={receipt.outcome === 'refund' ? Rotate01Icon : CheckmarkCircle02Icon}
             size={32}
-            color={receipt.outcome === 'none' ? colors.neutral[400] : colors.primary[500]}
+            color={receipt.outcome === 'none' || receipt.outcome === 'due' ? colors.neutral[400] : colors.primary[500]}
             strokeWidth={1.8}
           />
           <Text className="text-3xl font-black text-foreground">{rupees(receipt.totalCollected)}</Text>
@@ -141,6 +145,8 @@ export function ReceiptView({ id }: { id: string }) {
           </Card>
         )}
 
+        {!isReversed && receipt.outcome !== 'refund' && <Reprint receipt={receipt} />}
+
         {canReverse && (
           <Button
             label={isReversing ? 'Reversing…' : 'Reverse this receipt'}
@@ -152,6 +158,54 @@ export function ReceiptView({ id }: { id: string }) {
 
         <Button label="Done" variant="secondary" onPress={() => router.back()} />
       </ScrollView>
+    </View>
+  );
+}
+
+/**
+ * Printing after the round, from the receipt itself. Opened on a tap so merely
+ * viewing a receipt never raises the Bluetooth permission prompt; every print
+ * after the first is stamped a duplicate.
+ */
+function Reprint({ receipt }: { receipt: Collection }) {
+  const [open, setOpen] = React.useState(false);
+  const printer = usePrinter();
+  // The receipt names its line, not its plan; the customer's lines say which plan that is.
+  const { data: customer } = useCustomer({ variables: { id: receipt.customerId }, enabled: open && receipt.subscriptionId !== null });
+  const planName = customer?.subscriptions.find(line => line.id === receipt.subscriptionId)?.plan.name ?? null;
+  const { input, copies, print } = useReceiptPrint(receipt, printer, null, planName);
+  const printed = copies > 0;
+
+  if (!open) {
+    return (
+      <Button
+        label={printed ? 'Print a duplicate' : 'Print receipt'}
+        variant="outline"
+        onPress={() => {
+          setOpen(true);
+          void printer.refresh();
+        }}
+        testID="receipt-print-open"
+      />
+    );
+  }
+
+  return (
+    <View className="gap-3">
+      <Text className="text-xs text-muted-foreground">
+        {printed ? `Printed ${copies} time${copies === 1 ? '' : 's'} on this phone.` : 'Not printed on this phone yet.'}
+      </Text>
+      <ReceiptPreview input={input} />
+      <PrinterPanel printer={printer} />
+      {printer.connectedAddress !== null && (
+        <Button
+          label={printer.phase === 'printing' ? 'Printing…' : printed ? `Print duplicate (copy ${copies + 1})` : 'Print receipt'}
+          disabled={printer.phase === 'printing'}
+          onPress={() => void print()}
+          className="bg-primary-600"
+          testID="receipt-print"
+        />
+      )}
     </View>
   );
 }

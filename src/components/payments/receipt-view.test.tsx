@@ -11,8 +11,20 @@ jest.mock('expo-router', () => ({
 }));
 
 jest.mock('@/lib/hooks/api/use-payments', () => ({
+  newCollectionReference: () => 'ref',
   useCollection: jest.fn(),
   useReverseCollection: () => ({ mutate: mockReverse, isPending: false }),
+}));
+
+jest.mock('@/lib/hooks/api/use-tenant-upi', () => ({
+  useTenantUpiAccounts: () => ({ data: [] }),
+  chooseUpiAccount: () => null,
+}));
+
+jest.mock('react-native-qrcode-svg', () => 'QRCode');
+
+jest.mock('@/lib/hooks/api/use-customers', () => ({
+  useCustomer: () => ({ data: undefined }),
 }));
 
 jest.mock('@/lib/hooks/common/use-permissions', () => ({
@@ -41,6 +53,7 @@ function receipt(overrides: Partial<Collection> = {}): Collection {
     dueAmount: '500.00',
     duesPaid: '500.00',
     accessoryAmount: '0.00',
+    planCharge: '0.00',
     totalCollected: '500.00',
     balanceAfter: '0.00',
     transactionId: null,

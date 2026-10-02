@@ -1,0 +1,30 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - staff
+  - staff-mgmt
+  - rbac
+---
+# Field staff cannot reach staff management: no entry in More, and a deep link
+# to /admin/staff is bounced by the admin layout's role gate to their own home.
+- runFlow: ../utils/login-staff.yaml
+- extendedWaitUntil:
+    visible: Field Officer
+    timeout: 30000
+
+- tapOn: More
+- assertVisible: Complaints
+- assertNotVisible: Staff & Teams
+- assertNotVisible: People, crews & the areas each of them covers
+
+# Deep link straight at the admin screen.
+- openLink: ${DEV_SCHEME}://admin/staff
+- runFlow: ../utils/dismiss-system-dialogs.yaml
+- extendedWaitUntil:
+    visible: Field Officer
+    timeout: 30000
+- assertNotVisible:
+    id: staff-search-input
+- assertNotVisible: Add staff member
+- assertNotVisible: Staff & Teams
+- takeScreenshot: .maestro/screenshots/staff-mgmt-rbac-staff

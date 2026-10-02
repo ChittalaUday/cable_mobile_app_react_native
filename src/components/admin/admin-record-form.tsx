@@ -1,11 +1,10 @@
 import type { OptionType } from '@/components/ui';
 import { Cancel01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, Switch, TextInput } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
-import { Button, colors, Pressable, Text, View } from '@/components/ui';
+import { Button, colors, Pressable, Text, ThemedIcon, View } from '@/components/ui';
 
 import { useDismissKeyboardOnExit } from '@/lib/hooks/common/use-dismiss-keyboard';
 
@@ -85,7 +84,7 @@ export function AdminRecordForm({ title, fields, initialValues, saving, error, o
           <View className="flex-row items-center gap-3 border-b border-border px-5 py-4">
             <Text className="flex-1 text-xl font-extrabold text-foreground">{title}</Text>
             <Pressable accessibilityRole="button" accessibilityLabel={t('admin.close')} onPress={onClose} hitSlop={12}>
-              <HugeiconsIcon icon={Cancel01Icon} size={22} color={colors.neutral[500]} />
+              <ThemedIcon icon={Cancel01Icon} size={22} colorClassName="text-muted-foreground" />
             </Pressable>
           </View>
           <KeyboardAwareScrollView

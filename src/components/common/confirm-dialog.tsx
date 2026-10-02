@@ -116,6 +116,7 @@ export function ConfirmDialog({
                 accessibilityRole="button"
                 disabled={busy}
                 onPress={onCancel}
+                testID="dialog-cancel"
                 className="flex-1 items-center justify-center rounded-xl border border-border bg-surface py-3 active:bg-muted/40"
               >
                 <Text className="text-sm font-bold text-foreground">{cancelLabel}</Text>
@@ -125,6 +126,7 @@ export function ConfirmDialog({
               accessibilityRole="button"
               disabled={busy}
               onPress={() => onConfirm(typed)}
+              testID="dialog-confirm"
               className={`flex-1 flex-row items-center justify-center gap-2 rounded-xl py-3 ${
                 isDanger ? 'bg-danger-500 active:bg-danger-600' : 'bg-primary-600 active:bg-primary-700'
               } ${busy ? 'opacity-70' : ''}`}

@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import * as React from 'react';
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
 import { Image } from '@/components/ui';
 import { queryClient } from '@/lib/api';
@@ -153,8 +153,10 @@ function usePendingInAppMessages(signedIn: boolean): void {
       // iOS hands back its APNs token whenever it is ready, which can be after
       // the wait at startup has already given up. Coming back to the app is a
       // free moment to ask again, so a token that arrived late still lands
-      // without needing a relaunch.
-      if (!isPushUsable())
+      // without needing a relaunch. iOS only: on Android the token does not
+      // arrive late, and asking again here raised the permission prompt on
+      // every return to the app — which itself is a return to the app.
+      if (Platform.OS === 'ios' && !isPushUsable())
         syncPushToken().catch(() => {});
     });
 

@@ -1,0 +1,14 @@
+appId: ${APP_ID}
+tags:
+  - util
+---
+# Signed-in admin or staff: More tab -> Profile -> Settings.
+- tapOn: More
+- tapOn: 'Account details, settings, and security'
+- extendedWaitUntil:
+    visible: Sign out all devices
+    timeout: 20000
+- tapOn: Settings
+- extendedWaitUntil:
+    visible: General
+    timeout: 20000

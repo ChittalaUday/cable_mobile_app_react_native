@@ -15,11 +15,11 @@ executionOrder:
     # Admin surface.
     - admin-dashboard
     - global-search
-    # Packages & Plans: CRUD, RBAC, and the link onto customers.
+    # Plans and provider packages: CRUD, RBAC, and the plan link onto customers.
     - packages-crud
     - packages-permissions
     - add-customer-flow
-    - packages-on-customers
+    - plans-on-customers
     # Other roles and sign-out last (sign-out clears the session).
     - customer-dashboard
     - staff-dashboard

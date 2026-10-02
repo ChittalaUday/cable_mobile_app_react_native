@@ -34,6 +34,23 @@ tags:
     commands:
       - back
 
+# Either the login screen or a signed-in shell; both carry the brand name.
 - extendedWaitUntil:
-    visible: Satya Cable
+    visible: '.*Satya.*'
     timeout: 120000
+
+# The developer-menu intro can land after the app has rendered, on top of it.
+- extendedWaitUntil:
+    visible: This is the developer menu. It gives you access to useful tools in your development builds.
+    timeout: 4000
+    optional: true
+- runFlow:
+    when:
+      visible: This is the developer menu. It gives you access to useful tools in your development builds.
+    commands:
+      - tapOn: Continue
+- runFlow:
+    when:
+      visible: Performance monitor
+    commands:
+      - back

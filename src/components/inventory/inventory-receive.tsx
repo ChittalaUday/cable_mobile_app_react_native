@@ -11,16 +11,7 @@ import * as React from 'react';
 import { dialogs } from '@/components/common/dialogs';
 import { Card, ScreenHeader } from '@/components/common/shell';
 import { LocationPickerSheet } from '@/components/locations/location-picker-sheet';
-import {
-  Button,
-  colors,
-  Input,
-  Pressable,
-  ScrollView,
-  Text,
-  useModal,
-  View,
-} from '@/components/ui';
+import { Button, colors, Input, Pressable, ScrollView, Text, ThemedIcon, useModal, View } from '@/components/ui';
 import {
   useInventoryStock,
   useInwardStock,
@@ -117,10 +108,11 @@ export function InventoryReceiveScreen({ basePath }: { basePath: '/admin/invento
           <Pressable
             accessibilityRole="button"
             onPress={() => setItemPickerOpen(prev => !prev)}
+            testID="receive-item-picker"
             className="flex-row items-center justify-between rounded-xl border border-border bg-card p-3.5"
           >
             <View className="flex-row items-center gap-3">
-              <View className="size-9 items-center justify-center rounded-lg bg-orange-50">
+              <View className="size-9 items-center justify-center rounded-lg bg-orange-50 dark:bg-orange-950/40">
                 <HugeiconsIcon icon={Package01Icon} size={20} color={colors.primary[600]} strokeWidth={2} />
               </View>
               <View>
@@ -132,7 +124,7 @@ export function InventoryReceiveScreen({ basePath }: { basePath: '/admin/invento
                 )}
               </View>
             </View>
-            <HugeiconsIcon icon={ArrowDown01Icon} size={18} color={colors.neutral[500]} strokeWidth={2} />
+            <ThemedIcon icon={ArrowDown01Icon} size={18} colorClassName="text-muted-foreground" strokeWidth={2} />
           </Pressable>
 
           {/* Inline Item Picker Dropdown */}
@@ -180,14 +172,14 @@ export function InventoryReceiveScreen({ basePath }: { basePath: '/admin/invento
             className="flex-row items-center justify-between rounded-xl border border-border bg-card p-3.5"
           >
             <View className="flex-row items-center gap-3">
-              <View className="size-9 items-center justify-center rounded-lg bg-blue-50">
+              <View className="size-9 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950/40">
                 <HugeiconsIcon icon={Location01Icon} size={20} color="#2563EB" strokeWidth={2} />
               </View>
               <Text className="text-sm font-semibold text-foreground">
                 {selectedLocation ? selectedLocation.name : 'Central Warehouse (Default)'}
               </Text>
             </View>
-            <HugeiconsIcon icon={ArrowDown01Icon} size={18} color={colors.neutral[500]} strokeWidth={2} />
+            <ThemedIcon icon={ArrowDown01Icon} size={18} colorClassName="text-muted-foreground" strokeWidth={2} />
           </Pressable>
         </View>
 
@@ -202,6 +194,7 @@ export function InventoryReceiveScreen({ basePath }: { basePath: '/admin/invento
               <Input
                 value={serialInput}
                 onChangeText={setSerialInput}
+                testID="receive-serial-input"
                 placeholder="Scan or enter serial code..."
                 className="font-mono text-xs text-foreground"
                 placeholderTextColor={colors.neutral[400]}
@@ -221,10 +214,10 @@ export function InventoryReceiveScreen({ basePath }: { basePath: '/admin/invento
               {serials.map((s, idx) => (
                 <View
                   key={s}
-                  className="flex-row items-center gap-1.5 rounded-lg border border-primary-200 bg-primary-50 px-2.5 py-1"
+                  className="flex-row items-center gap-1.5 rounded-lg border border-primary-200 bg-primary-50 px-2.5 py-1 dark:border-primary-800 dark:bg-primary-950/40"
                 >
                   <HugeiconsIcon icon={QrCodeIcon} size={14} color={colors.primary[600]} strokeWidth={2} />
-                  <Text className="font-mono text-xs font-semibold text-primary-900">{s}</Text>
+                  <Text className="font-mono text-xs font-semibold text-primary-900 dark:text-primary-100">{s}</Text>
                   <Pressable accessibilityRole="button" onPress={() => handleRemoveSerial(idx)} className="ml-1">
                     <Text className="text-xs font-bold text-danger-600">×</Text>
                   </Pressable>
@@ -242,6 +235,7 @@ export function InventoryReceiveScreen({ basePath }: { basePath: '/admin/invento
               <Input
                 value={quantity}
                 onChangeText={setQuantity}
+                testID="receive-quantity-input"
                 keyboardType="numeric"
                 className="text-sm text-foreground"
               />
@@ -295,6 +289,7 @@ export function InventoryReceiveScreen({ basePath }: { basePath: '/admin/invento
           <Button
             label={isPending ? 'Logging Inward...' : 'Confirm Stock Receipt'}
             disabled={isPending || !selectedCatalogId}
+            testID="receive-submit-button"
             className="bg-primary-600"
             onPress={handleSubmit}
           />

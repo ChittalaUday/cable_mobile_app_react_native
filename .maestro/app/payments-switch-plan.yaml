@@ -1,0 +1,128 @@
+appId: ${APP_ID}
+env:
+  # SUSEELA PALLETI (SSCN-000653): one active ACT Digital line on Satya Basic.
+  # Both plans are seeded by `pnpm db:seed:plans` in cable-backend.
+  CODE: SSCN-000653
+  CUSTOMER: SUSEELA PALLETI
+  HOME_PLAN: Satya Basic
+  OTHER_PLAN: Satya Basic 3 Months
+tags:
+  - e2e
+  - admin
+  - recharge
+---
+# Switch plan, off the recharge flow's plan step: the page renders with the
+# current plan, search narrows both sections (and says so when nothing
+# matches), cancelling the confirm changes nothing, and a confirmed switch
+# comes straight back to the flow on the new plan. The flow then switches back,
+# so the customer ends where it started and the flow can be rerun.
+- runFlow: ../utils/login-admin.yaml
+
+- tapOn: Customers
+- tapOn:
+    id: customer-search-input
+- inputText: ${CODE}
+- extendedWaitUntil:
+    visible: ${CUSTOMER}
+    timeout: 20000
+- tapOn: Recharge
+- extendedWaitUntil:
+    visible:
+      id: recharge-change-plan
+    timeout: 30000
+
+# A previous run that died mid-way may have left the other plan on; put it back.
+- runFlow:
+    when:
+      visible: ${OTHER_PLAN}
+    commands:
+      - tapOn:
+          id: recharge-change-plan
+      - extendedWaitUntil:
+          visible: '(?i)current plan'
+          timeout: 20000
+      - tapOn:
+          id: plan-search
+      - inputText: ${HOME_PLAN}
+      - runFlow: ../utils/hide-keyboard.yaml
+      - tapOn: Switch
+      - tapOn: Change plan
+      - extendedWaitUntil:
+          visible:
+            id: recharge-next
+          timeout: 20000
+- assertVisible: ${HOME_PLAN}
+- assertVisible: Switch plan or add a pack
+
+# --- The page renders ---------------------------------------------------------
+- tapOn:
+    id: recharge-change-plan
+- extendedWaitUntil:
+    visible: '(?i)current plan'
+    timeout: 20000
+- assertVisible: Plans & addons
+- assertVisible: ACT Digital • on ${HOME_PLAN}
+- assertVisible: 'Plans \(\d+\)'
+- assertVisible: 'Add-ons \(\d+\)'
+- assertVisible:
+    id: plan-search
+
+# --- Search with no match shows both empty states -------------------------------
+- tapOn:
+    id: plan-search
+- inputText: zzqqxx-no-such-pack
+- runFlow: ../utils/hide-keyboard.yaml
+- assertVisible: No plan matches that.
+- assertVisible: No addon matches that.
+- assertVisible: Plans (0)
+- assertVisible: Add-ons (0)
+
+# --- Search narrows to the other plan; cancel keeps the current one -----------
+- tapOn:
+    id: plan-search
+- eraseText: 30
+- inputText: ${OTHER_PLAN}
+- runFlow: ../utils/hide-keyboard.yaml
+- assertVisible: ${OTHER_PLAN}, .*
+- tapOn: Switch
+- assertVisible: Move to ${OTHER_PLAN}?
+- assertVisible: '.*goes to ₹700.00 / quarterly .*takes no money now.*'
+- tapOn: Cancel
+- assertNotVisible: Move to ${OTHER_PLAN}?
+- assertVisible: Plans & addons
+
+# --- Confirm: back on the flow, on the new plan --------------------------------
+- tapOn: Switch
+- tapOn: Change plan
+- extendedWaitUntil:
+    visible:
+      id: recharge-next
+    timeout: 20000
+- assertVisible: ${OTHER_PLAN}
+- assertVisible: On ${OTHER_PLAN} • .*
+
+# --- And back again, so reruns start from the same plan -----------------------
+- tapOn:
+    id: recharge-change-plan
+- extendedWaitUntil:
+    visible: '(?i)current plan'
+    timeout: 20000
+- assertVisible: ${OTHER_PLAN}
+- tapOn:
+    id: plan-search
+- inputText: ${HOME_PLAN}
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Switch
+- tapOn: Change plan
+- extendedWaitUntil:
+    visible:
+      id: recharge-next
+    timeout: 20000
+- assertVisible: ${HOME_PLAN}
+
+# The switch took no money, so leaving asks nothing.
+- tapOn: Back
+- assertNotVisible: Leave this recharge?
+- extendedWaitUntil:
+    visible: ${CUSTOMER}
+    timeout: 10000

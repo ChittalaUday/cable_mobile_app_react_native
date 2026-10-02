@@ -7,7 +7,7 @@ import { MotiView } from 'moti';
 import * as React from 'react';
 import { showMessage } from 'react-native-flash-message';
 
-import { Button, Checkbox, colors, Pressable, Text, View } from '@/components/ui';
+import { Button, Checkbox, Pressable, Text, ThemedIcon, View } from '@/components/ui';
 import { offersMode, openingMode } from '@/lib/auth/login-methods';
 import { translate } from '@/lib/i18n';
 import { LoginField } from './login-field';
@@ -69,7 +69,7 @@ function ChannelPicker({ channels, value, onChange, disabled }: {
             testID={`channel-${channel}`}
             className={channel === value
               ? 'flex-1 items-center rounded-2xl border border-primary-600 bg-primary-50 py-2.5 dark:bg-neutral-800'
-              : 'flex-1 items-center rounded-2xl border border-neutral-200 py-2.5'}
+              : 'flex-1 items-center rounded-2xl border border-border py-2.5'}
           >
             <Text className={channel === value ? 'text-sm font-bold text-primary-600' : 'text-sm font-medium text-foreground'}>
               {translate(CHANNEL_LABELS[channel])}
@@ -166,7 +166,7 @@ export function CredentialsCard(props: CredentialsCardProps) {
                 hitSlop={12}
                 onPress={() => setShowPassword(!showPassword)}
               >
-                <HugeiconsIcon icon={showPassword ? ViewIcon : ViewOffSlashIcon} size={20} color={colors.neutral[500]} strokeWidth={1.8} />
+                <ThemedIcon icon={showPassword ? ViewIcon : ViewOffSlashIcon} size={20} colorClassName="text-muted-foreground" strokeWidth={1.8} />
               </Pressable>
             )}
           />
@@ -225,7 +225,7 @@ export function CredentialsCard(props: CredentialsCardProps) {
 
       {/* Half-way through a code, the only other move is to back out. */}
       {waiting && (
-        <Button testID="start-over" variant="outline" disabled={loading} onPress={onStartOver} className="mt-5 h-12 rounded-2xl border-neutral-200">
+        <Button testID="start-over" variant="outline" disabled={loading} onPress={onStartOver} className="mt-5 h-12 rounded-2xl border-border">
           <Text className="text-sm font-bold text-foreground">{translate('login.start_over')}</Text>
         </Button>
       )}
@@ -234,9 +234,9 @@ export function CredentialsCard(props: CredentialsCardProps) {
       {!waiting && alternatives.length > 0 && (
         <>
           <View className="my-5 flex-row items-center gap-3">
-            <View className="h-px flex-1 bg-neutral-200" />
-            <Text className="text-xs font-semibold text-neutral-400">{translate('login.or')}</Text>
-            <View className="h-px flex-1 bg-neutral-200" />
+            <View className="h-px flex-1 bg-border" />
+            <Text className="text-xs font-semibold text-muted-foreground">{translate('login.or')}</Text>
+            <View className="h-px flex-1 bg-border" />
           </View>
 
           {alternatives.map(item => (
@@ -246,7 +246,7 @@ export function CredentialsCard(props: CredentialsCardProps) {
               variant="outline"
               disabled={loading}
               onPress={() => setMode(item.mode)}
-              className="mb-3 h-12 rounded-2xl border-neutral-200"
+              className="mb-3 h-12 rounded-2xl border-border"
             >
               <Text className="text-sm font-bold text-foreground">{translate(item.label)}</Text>
             </Button>
@@ -261,7 +261,7 @@ export function CredentialsCard(props: CredentialsCardProps) {
           variant="outline"
           disabled={loading}
           onPress={onContinueWithGoogle}
-          className={alternatives.length > 0 ? 'h-12 rounded-2xl border-neutral-200' : 'mt-5 h-12 rounded-2xl border-neutral-200'}
+          className={alternatives.length > 0 ? 'h-12 rounded-2xl border-border' : 'mt-5 h-12 rounded-2xl border-border'}
         >
           <Text className="text-sm font-bold text-foreground">{translate('login.continue_with_google')}</Text>
         </Button>

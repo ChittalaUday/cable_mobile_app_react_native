@@ -1,0 +1,25 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - auth
+---
+# [...messing].tsx: a deep link to a path the app does not have renders the
+# not-found screen, and its link goes home (the admin's Operator Panel).
+- runFlow: ../utils/login-admin.yaml
+- extendedWaitUntil:
+    visible: Operator Panel
+    timeout: 30000
+
+- openLink: ${DEV_SCHEME}://does-not-exist
+- extendedWaitUntil:
+    visible: "This screen doesn't exist."
+    timeout: 20000
+- assertVisible: Go to home screen!
+- assertNotVisible: Operator Panel
+
+- tapOn: Go to home screen!
+- extendedWaitUntil:
+    visible: Operator Panel
+    timeout: 20000
+- assertNotVisible: "This screen doesn't exist."

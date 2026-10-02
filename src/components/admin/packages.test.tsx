@@ -134,7 +134,7 @@ describe('packagesScreen', () => {
     render(<PackagesScreen />);
 
     // Services are the tenant's own, so the searchable label is the name.
-    fireEvent.changeText(screen.getByPlaceholderText('Search plan name, service, provider…'), 'internet');
+    fireEvent.changeText(screen.getByPlaceholderText('Search package name, service, provider…'), 'internet');
     expect(screen.getByText('Fiber 100Mbps')).toBeOnTheScreen();
     expect(screen.queryByText('HD Starter Pack')).toBeNull();
   });
@@ -143,7 +143,7 @@ describe('packagesScreen', () => {
     grant('packages.view');
     render(<PackagesScreen />);
 
-    fireEvent.changeText(screen.getByPlaceholderText('Search plan name, service, provider…'), 'fiber');
+    fireEvent.changeText(screen.getByPlaceholderText('Search package name, service, provider…'), 'fiber');
     expect(screen.getByText('Fiber 100Mbps')).toBeOnTheScreen();
     expect(screen.queryByText('HD Starter Pack')).toBeNull();
   });

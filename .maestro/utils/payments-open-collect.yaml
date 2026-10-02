@@ -1,0 +1,18 @@
+appId: ${APP_ID}
+tags:
+  - util
+---
+# Waits for the Collect payment screen. The screen asks for location the first
+# time (it tags the receipt with where it was collected); grant it, since the
+# prompt is not under test and covers the form.
+- extendedWaitUntil:
+    visible: '(Collect payment|.*access this device.s location.*)'
+    timeout: 30000
+- runFlow:
+    when:
+      visible: '.*access this device.s location.*'
+    commands:
+      - tapOn: While using the app
+- extendedWaitUntil:
+    visible: Collect payment
+    timeout: 30000

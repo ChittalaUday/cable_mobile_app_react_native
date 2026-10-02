@@ -43,7 +43,7 @@ const selectTv = tv({
     },
     disabled: {
       true: {
-        input: 'bg-neutral-200',
+        input: 'bg-neutral-200 dark:bg-neutral-800',
       },
     },
   },

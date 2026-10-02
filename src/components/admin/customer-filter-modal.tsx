@@ -15,7 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { ScrollView } from 'react-native';
 
 import { HierarchicalLocationSelector } from '@/components/common/hierarchical-location-selector';
-import { colors, Modal, Pressable, Text, useModal, View } from '@/components/ui';
+import { colors, Modal, Pressable, Text, ThemedIcon, useModal, View } from '@/components/ui';
 import { useServiceProviders } from '@/lib/hooks/api/use-service-providers';
 
 export type CustomerFilterValues = {
@@ -166,7 +166,7 @@ export function CustomerFilterModal({
               }}
               className="size-8 items-center justify-center rounded-full border border-border bg-surface active:bg-muted"
             >
-              <HugeiconsIcon icon={Cancel01Icon} size={16} color={colors.neutral[600]} />
+              <ThemedIcon icon={Cancel01Icon} size={16} colorClassName="text-muted-foreground" />
             </Pressable>
           </View>
         </View>
@@ -265,10 +265,10 @@ export function CustomerFilterModal({
                   {selectedProvider ? selectedProvider.name : t('customers_list.all_providers')}
                 </Text>
               </View>
-              <HugeiconsIcon
+              <ThemedIcon
                 icon={providerDropdownOpen ? ArrowUp01Icon : ArrowDown01Icon}
                 size={16}
-                color={colors.neutral[500]}
+                colorClassName="text-muted-foreground"
               />
             </Pressable>
 

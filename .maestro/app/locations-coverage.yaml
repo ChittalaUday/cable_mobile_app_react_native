@@ -1,0 +1,130 @@
+appId: ${APP_ID}
+env:
+  SERVICE: Broadband
+  AREA: Angara
+tags:
+  - e2e
+  - admin
+  - locations
+  - services
+---
+# Coverage marks on a throwaway provider (so no real coverage is touched):
+# tick an area while adding the provider, see it come back on the provider's
+# coverage screen, clear it again, then delete the provider. Also checks the
+# service-level coverage entry renders.
+- evalScript: ${output.stamp = String(Date.now()).slice(-6)}
+- runFlow: ../utils/login-admin.yaml
+- tapOn: More
+- extendedWaitUntil:
+    visible: Services
+    timeout: 10000
+- tapOn: Services
+- extendedWaitUntil:
+    visible: Service Providers
+    timeout: 20000
+
+# --- Service coverage entry renders ----------------------------------------------
+- tapOn: Manage services
+- extendedWaitUntil:
+    visible: Set where ${SERVICE} is sold
+    timeout: 20000
+- tapOn: Set where ${SERVICE} is sold
+- extendedWaitUntil:
+    visible: Service Coverage
+    timeout: 20000
+- assertVisible: '.*AREAS SERVED.*'
+- tapOn: Back
+- extendedWaitUntil:
+    visible: What subscribers buy, not who supplies it
+    timeout: 10000
+- tapOn: Back
+- extendedWaitUntil:
+    visible: Service Providers
+    timeout: 10000
+
+# --- Throwaway provider; coverage step: tick, cycle, tick, save -------------------
+- tapOn: Add provider
+- extendedWaitUntil:
+    visible: Register a service provider
+    timeout: 10000
+- tapOn:
+    id: provider-name-input
+- inputText: E2E Cov ${output.stamp}
+- tapOn: Choose service
+- tapOn: ${SERVICE}
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Create Provider
+- extendedWaitUntil:
+    visible:
+      id: dialog-confirm
+    timeout: 10000
+- tapOn:
+    id: dialog-confirm
+- extendedWaitUntil:
+    visible: '${AREA}: not set'
+    timeout: 30000
+
+# A root area cycles served -> not served -> unset.
+- tapOn: '${AREA}: not set'
+- assertVisible: '${AREA}: served'
+- tapOn: '${AREA}: served'
+- assertVisible: '${AREA}: excluded'
+- tapOn: '${AREA}: excluded'
+- assertVisible: '${AREA}: not set'
+- tapOn: '${AREA}: not set'
+- assertVisible: '${AREA}: served'
+- tapOn: Save Coverage
+- extendedWaitUntil:
+    visible: '.*Apply 1 coverage rule to E2E Cov ${output.stamp}\?.*'
+    timeout: 10000
+- tapOn:
+    id: dialog-confirm
+- extendedWaitUntil:
+    visible: E2E Cov ${output.stamp} is set up
+    timeout: 20000
+
+# --- The saved mark comes back on the provider's coverage screen ----------------
+- tapOn: Finish
+- runFlow:
+    when:
+      notVisible: Service Providers
+    commands:
+      - back
+- extendedWaitUntil:
+    visible: Service Providers
+    timeout: 20000
+- tapOn: Search providers...
+- inputText: E2E Cov ${output.stamp}
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: E2E Cov ${output.stamp}
+- extendedWaitUntil:
+    visible: Provider Details
+    timeout: 20000
+- tapOn: Edit coverage
+- extendedWaitUntil:
+    visible: Provider Coverage
+    timeout: 20000
+- extendedWaitUntil:
+    visible: '${AREA}: served'
+    timeout: 20000
+
+# --- Revert: clear the mark and save "sold everywhere" ---------------------------
+- tapOn: '${AREA}: served'
+- tapOn: '${AREA}: excluded'
+- assertVisible: '${AREA}: not set'
+- tapOn: Save (sold everywhere)
+- extendedWaitUntil:
+    visible: Provider Details
+    timeout: 20000
+
+# --- Clean up the provider ---------------------------------------------------------
+- tapOn: Delete provider
+- extendedWaitUntil:
+    visible:
+      id: dialog-confirm
+    timeout: 10000
+- tapOn:
+    id: dialog-confirm
+- extendedWaitUntil:
+    visible: Service Providers
+    timeout: 20000

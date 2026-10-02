@@ -1,0 +1,48 @@
+appId: ${APP_ID}
+tags:
+  - util
+---
+# Admin only, from the Inventory hub. Makes sure the shared E2E catalog item
+# "E2E Stock Unit" exists, so flows receive and move their own units and
+# never consume seeded stock. Ends back on the hub.
+- tapOn: Item Catalog
+- extendedWaitUntil:
+    visible:
+      id: catalog-search-input
+    timeout: 20000
+- extendedWaitUntil:
+    notVisible: No catalog items found
+    timeout: 20000
+- tapOn:
+    id: catalog-search-input
+- inputText: E2E Stock Unit
+- runFlow:
+    when:
+      visible: No catalog items found
+    commands:
+      - tapOn:
+          id: catalog-add-button
+      - extendedWaitUntil:
+          visible: Add Catalog Item
+          timeout: 10000
+      - tapOn:
+          id: catalog-name-input
+      - inputText: E2E Stock Unit
+      # A SKU is required in practice: the API allows only one code-less item.
+      - tapOn:
+          id: catalog-code-input
+      - inputText: E2E-STOCK-UNIT
+      - runFlow: hide-keyboard.yaml
+      - tapOn:
+          id: catalog-submit-button
+      - extendedWaitUntil:
+          visible: Item created in catalog successfully.
+          timeout: 20000
+      - tapOn: OK
+- extendedWaitUntil:
+    visible: E2E Stock Unit
+    timeout: 20000
+- back
+- extendedWaitUntil:
+    visible: Search inventory...
+    timeout: 20000

@@ -1,0 +1,122 @@
+appId: ${APP_ID}
+env:
+  PROVIDER: Satya Fiber
+  # 121 characters: one over the API's 120-character package name limit.
+  LONG_NAME: E2E Overlong Package Name Padding Padding Padding Padding Padding Padding Padding Padding Padding Padding Padding Paddingx
+tags:
+  - e2e
+  - admin
+  - packages
+---
+# Add Package form, the edges: required name / provider / price, a negative and
+# a non-numeric price, zero (allowed: free-to-air a-la-carte plans are 0.00 in
+# the seed), an over-long name, back without saving, and an empty search.
+- runFlow: ../utils/login-admin.yaml
+- openLink: ${DEV_SCHEME}://admin/packages
+- extendedWaitUntil:
+    visible: Provider Packages
+    timeout: 30000
+
+# --- An empty search result ------------------------------------------------------
+- tapOn:
+    id: package-search-input
+- inputText: zzqq-no-such-plan
+- extendedWaitUntil:
+    visible: No packages found
+    timeout: 20000
+- assertVisible: 'No package matched "zzqq-no-such-plan".'
+- eraseText: 20
+- runFlow: ../utils/hide-keyboard.yaml
+
+# --- Everything empty: name, provider and price all complain ---------------------
+- tapOn:
+    id: add-package-button
+- extendedWaitUntil:
+    visible: Create a new package
+    timeout: 10000
+- assertVisible: Choose a provider first
+- tapOn: Save Package
+- assertVisible: Package name is required
+- assertVisible: Choose the provider that sells this package
+- assertVisible: Valid price is required
+
+# --- Negative price -----------------------------------------------------------------
+- tapOn:
+    id: package-name-input
+- inputText: E2E Invalid Pack
+- tapOn: Choose provider
+- tapOn: ${PROVIDER}
+- assertVisible: Select channels (optional)
+- tapOn:
+    id: package-price-input
+- inputText: '-50'
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Save Package
+- assertVisible: Valid price is required
+- assertNotVisible: Package name is required
+- assertNotVisible: Choose the provider that sells this package
+- assertNotVisible: Create package
+
+# --- Non-numeric price ------------------------------------------------------------
+- tapOn:
+    id: package-price-input
+- eraseText: 10
+- inputText: abc
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Save Package
+- assertVisible: Valid price is required
+
+# --- Zero is a valid (free) price: the form moves on to its confirm step ---------
+- tapOn:
+    id: package-price-input
+- eraseText: 10
+- inputText: '0'
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Save Package
+- extendedWaitUntil:
+    visible: '.*E2E Invalid Pack — ₹0 monthly.*'
+    timeout: 10000
+# Cancel keeps the form as it was; nothing is created.
+- tapOn:
+    id: dialog-cancel
+- assertVisible: E2E Invalid Pack
+
+# --- Over-long name: the API refuses it and the form says so ---------------------
+- tapOn:
+    id: package-name-input
+- eraseText: 30
+- inputText: ${LONG_NAME}
+- tapOn:
+    id: package-price-input
+- eraseText: 10
+- inputText: '10'
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Save Package
+- extendedWaitUntil:
+    visible:
+      id: dialog-confirm
+    timeout: 10000
+- tapOn:
+    id: dialog-confirm
+- extendedWaitUntil:
+    visible: Could not save package
+    timeout: 20000
+- tapOn: OK
+- assertVisible: Create a new package
+
+# --- Back leaves without creating anything ---------------------------------------
+- tapOn: Back
+- extendedWaitUntil:
+    visible: Provider Packages
+    timeout: 10000
+- tapOn:
+    id: package-search-input
+- inputText: E2E Invalid Pack
+- extendedWaitUntil:
+    visible: No packages found
+    timeout: 20000
+- eraseText: 20
+- inputText: E2E Overlong
+- extendedWaitUntil:
+    visible: No packages found
+    timeout: 20000

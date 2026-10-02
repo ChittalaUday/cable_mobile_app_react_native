@@ -28,10 +28,10 @@ export function StepPlan({ customer, line, basePath }: {
     <>
       <Card className="gap-1 border border-border p-4">
         <Text className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-          Previous balance
+          {duePaise < 0 ? 'Advance in hand' : 'Previous balance'}
         </Text>
-        <Text testID="recharge-previous-balance" className="text-3xl font-black text-foreground">
-          {rupeesExact(duePaise / 100)}
+        <Text testID="recharge-previous-balance" className={`text-3xl font-black ${duePaise < 0 ? 'text-green-600' : 'text-foreground'}`}>
+          {rupeesExact(Math.abs(duePaise) / 100)}
         </Text>
         {customer.locationPath != null && (
           <Text className="text-xs text-muted-foreground">{customer.locationPath}</Text>
@@ -56,8 +56,8 @@ export function StepPlan({ customer, line, basePath }: {
                 />
                 {line !== null && (
                   <ChoiceRow
-                    title="Switch plan or add a pack"
-                    subtitle={`On ${line.package.name} • ${cycleLabel(line)}`}
+                    title="Change subscription"
+                    subtitle={`On ${line.plan.name} • ${cycleLabel(line)}`}
                     trailing="Change"
                     onPress={() => router.push(`${basePath}/recharge/switch-plan`)}
                     testID="recharge-change-plan"

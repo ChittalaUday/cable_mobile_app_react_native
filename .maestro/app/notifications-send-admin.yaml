@@ -1,0 +1,92 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - notifications
+---
+# Admin composer: Send stays disabled until title and message are filled,
+# text is capped at the field limits, and a real send goes ONLY to Admins and
+# in-app only (no push to any phone), then shows up in the admin's own inbox.
+- evalScript: ${output.stamp = String(Date.now()).slice(-6)}
+- runFlow: ../utils/login-admin.yaml
+- extendedWaitUntil:
+    visible: Operator Panel
+    timeout: 30000
+
+# Reached from global search ("Send Notification" action).
+- tapOn: Global Search
+- inputText: notif
+- tapOn:
+    id: search-result-send-notification
+- extendedWaitUntil:
+    visible: Send a notification
+    timeout: 20000
+
+# --- Renders: every audience an admin can address ----------------------------
+- assertVisible: Who
+- assertVisible: Everyone
+- assertVisible: Admins
+- assertVisible: Staff
+- assertVisible: Customers
+- assertVisible: Category
+- assertVisible: How it shows
+- assertVisible: Notification only
+- assertVisible: In-app only
+
+# --- Required fields: disabled empty, and with only one of the two -----------
+- assertVisible:
+    id: notify-send
+    enabled: false
+- tapOn:
+    id: notify-title
+- inputText: E2E notice ${output.stamp}
+- runFlow: ../utils/hide-keyboard.yaml
+- assertVisible:
+    id: notify-send
+    enabled: false
+
+# --- Over-long title: capped at 120 characters --------------------------------
+- tapOn:
+    id: notify-title
+- eraseText: 40
+- inputText: E2E-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+- runFlow: ../utils/hide-keyboard.yaml
+- assertVisible: E2E-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+- assertNotVisible: 'E2E-x{117,}'
+
+# --- Safe real send: Admins, in-app only --------------------------------------
+- tapOn:
+    id: notify-title
+- eraseText: 130
+- inputText: E2E notice ${output.stamp}
+- tapOn:
+    id: notify-body
+- inputText: E2E body ${output.stamp}
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: Admins
+- tapOn: In-app only
+- assertVisible:
+    id: notify-send
+    enabled: true
+- tapOn:
+    id: notify-send
+# Durable outcome: the form clears (the "Sent to N" flash is too brief).
+- extendedWaitUntil:
+    notVisible: E2E notice ${output.stamp}
+    timeout: 20000
+- assertVisible:
+    id: notify-send
+    enabled: false
+
+# --- It lands in the admin's inbox --------------------------------------------
+- tapOn: Back
+- extendedWaitUntil:
+    visible: Operator Panel
+    timeout: 20000
+- tapOn: 'Notifications.*'
+- extendedWaitUntil:
+    visible: E2E notice ${output.stamp}
+    timeout: 30000
+- assertVisible: E2E body ${output.stamp}
+# Opening it (tap) marks it read.
+- tapOn: E2E notice ${output.stamp}

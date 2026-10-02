@@ -25,10 +25,14 @@ function SHARED(base: '/admin' | '/staff'): Entry[] {
 
 const ADMIN_ONLY: Entry[] = [
   ['payments', 'screen', 'Payments & Collections', '/admin/(tabs)/payments', P.PAYMENTS_VIEW, 'credit-card', ['collections', 'revenue', 'dues'], 'Daily collection batches and staff dues'],
-  ['packages', 'screen', 'Packages & Plans', '/admin/packages', P.PACKAGES_VIEW, 'package', ['plans', 'tariff', 'pricing', 'package'], 'Plans offered to subscribers'],
-  ['add-package', 'action', 'Add Package', '/admin/packages/add-edit', P.PACKAGES_CREATE, 'package-add', ['new', 'create', 'plan', 'package'], 'Create a new plan'],
-  ['edit-packages', 'action', 'Edit Packages', '/admin/packages', P.PACKAGES_UPDATE, 'package-edit', ['update', 'change', 'plan', 'package'], 'Change a plan’s price or channels'],
-  ['delete-packages', 'action', 'Delete Packages', '/admin/packages', P.PACKAGES_DELETE, 'package-delete', ['remove', 'retire', 'plan', 'package'], 'Retire a plan'],
+  ['plans', 'screen', 'Plans', '/admin/plans', P.PLANS_VIEW, 'package', ['plans', 'tariff', 'pricing', 'discount', 'subscription'], 'What customers are sold and billed'],
+  ['add-plan', 'action', 'Add Plan', '/admin/plans/add-edit', P.PLANS_CREATE, 'package-add', ['new', 'create', 'plan', 'tariff'], 'Create a plan over provider packages'],
+  ['edit-plans', 'action', 'Edit Plans', '/admin/plans', P.PLANS_UPDATE, 'package-edit', ['update', 'change', 'reprice', 'discount', 'plan'], 'Change a plan’s price, discount or packages'],
+  ['delete-plans', 'action', 'Delete Plans', '/admin/plans', P.PLANS_DELETE, 'package-delete', ['remove', 'retire', 'plan'], 'Retire a plan'],
+  ['packages', 'screen', 'Provider Packages', '/admin/packages', P.PACKAGES_VIEW, 'package', ['tariff', 'mso', 'package', 'bouquet'], 'The provider’s packages and rates behind each plan'],
+  ['add-package', 'action', 'Add Package', '/admin/packages/add-edit', P.PACKAGES_CREATE, 'package-add', ['new', 'create', 'package'], 'Add a provider package'],
+  ['edit-packages', 'action', 'Edit Packages', '/admin/packages', P.PACKAGES_UPDATE, 'package-edit', ['update', 'change', 'package', 'channels'], 'Change a package’s provider rate or channels'],
+  ['delete-packages', 'action', 'Delete Packages', '/admin/packages', P.PACKAGES_DELETE, 'package-delete', ['remove', 'retire', 'package'], 'Retire a provider package'],
   ['analytics', 'report', 'Analytics', '/admin/analytics', P.REPORTS_VIEW, 'bar-chart', ['reports', 'revenue', 'growth'], 'Revenue, growth and staff activity'],
   ['staff', 'screen', 'Staff & Teams', '/admin/staff', P.STAFF_VIEW, 'users', ['employees', 'crew', 'team', 'collectors'], 'People, crews and their areas'],
   ['locations', 'screen', 'Locations', '/admin/locations', P.LOCATIONS_VIEW, 'settings', ['areas', 'villages', 'coverage'], 'Hierarchy and coverage nodes'],

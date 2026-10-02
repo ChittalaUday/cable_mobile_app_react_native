@@ -47,9 +47,11 @@ export const useCustomers = createInfiniteQuery<
  *
  * On demand only: the list deliberately does not carry any of it.
  */
-export const useCustomer = createQuery<CustomerDetail, { id: string }, Error>({
+export const useCustomer = createQuery<CustomerDetail, { id: string; transactions?: number }, Error>({
   queryKey: ['customer'],
-  fetcher: async ({ id }) => (await client.get<ApiResponse<'/api/v1/customers/{id}', 'get', 200>>(`/customers/${id}`)).data,
+  fetcher: async ({ id, transactions }) => (await client.get<ApiResponse<'/api/v1/customers/{id}', 'get', 200>>(`/customers/${id}`, {
+    params: transactions === undefined ? undefined : { transactions },
+  })).data,
   staleTime: 60 * 1000,
 });
 
@@ -82,6 +84,18 @@ export const useCreateCustomer = createMutation<
   Error
 >({
   mutationFn: async ({ payload }) => (await client.post<ApiResponse<'/api/v1/customers', 'post', 201>>('/customers', payload)).data,
+  onSuccess: refreshAfterSubscriptionWrite,
+});
+
+export type UpdateCustomerPayload = ApiBody<'/api/v1/customers/{id}', 'patch'>;
+
+/** Correct the subscriber's own record. Only the fields sent change; `null` clears an optional one. */
+export const useUpdateCustomer = createMutation<
+  CustomerDetail,
+  { id: string; payload: UpdateCustomerPayload },
+  Error
+>({
+  mutationFn: async ({ id, payload }) => (await client.patch<ApiResponse<'/api/v1/customers/{id}', 'patch', 200>>(`/customers/${id}`, payload)).data,
   onSuccess: refreshAfterSubscriptionWrite,
 });
 
@@ -143,11 +157,13 @@ export function customerItemToConsolidated(item: CustomerListItem) {
             serviceType,
             serviceTypeName: serviceName,
             provider: '',
-            providerName: serviceName,
+            providerName: account.providerName || serviceName,
+            providerLogoUrl: account.providerLogoUrl ?? undefined,
+            providerWebsiteUrl: account.providerWebsiteUrl ?? undefined,
             stbNumber: box.serialNumber ?? undefined,
             vcNumber: box.vcNumber ?? undefined,
             packageName: `${account.accountNumber} (Box ${idx + 1})`,
-            monthlyPrice: Number(item.outstandingBalance) || 0,
+            balance: Number(account.outstandingBalance) || 0,
             status: item.status === 'active' ? ('active' as const) : ('pending' as const),
             locationLabel: account.locationPath?.split(' / ').pop(),
           }));
@@ -160,11 +176,13 @@ export function customerItemToConsolidated(item: CustomerListItem) {
           serviceType,
           serviceTypeName: serviceName,
           provider: '',
-          providerName: serviceName,
+          providerName: account.providerName || serviceName,
+          providerLogoUrl: account.providerLogoUrl ?? undefined,
+          providerWebsiteUrl: account.providerWebsiteUrl ?? undefined,
           stbNumber: box?.serialNumber ?? undefined,
           vcNumber: box?.vcNumber ?? undefined,
           packageName: account.accountNumber,
-          monthlyPrice: Number(item.outstandingBalance) || 0,
+          balance: Number(account.outstandingBalance) || 0,
           status: item.status === 'active' ? ('active' as const) : ('pending' as const),
           locationLabel: account.locationPath?.split(' / ').pop(),
         }];
@@ -177,7 +195,7 @@ export function customerItemToConsolidated(item: CustomerListItem) {
         provider: '',
         providerName: service,
         packageName: item.customerCode ? `${item.customerCode} • ${service}` : service,
-        monthlyPrice: Number(item.outstandingBalance) || 0,
+        balance: Number(item.outstandingBalance) || 0,
         status: item.status === 'active' ? ('active' as const) : ('pending' as const),
         locationLabel: item.locationPath ? item.locationPath.split(' / ').pop() : undefined,
       }));
@@ -186,8 +204,8 @@ export function customerItemToConsolidated(item: CustomerListItem) {
     id: item.id,
     customerCode: item.customerCode,
     name: item.name || item.customerCode || 'Customer',
-    phone: item.phone || item.alternatePhone || item.whatsappNumber || '',
-    address: item.locations?.[0]?.path || item.locationPath || item.address || '',
+    phone: item.phone || item.alternatePhone || '',
+    address: [item.locations?.[0]?.path || item.locationPath, item.address].filter(Boolean).join(', '),
     status: item.status,
     connections,
     createdAt: item.createdAt,

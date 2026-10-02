@@ -1,0 +1,80 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - staff
+  - tickets
+---
+# Complaints, staff side: staff can raise from a customer card and work the queue,
+# but cannot hand complaints over (no tickets.assign) and only see their own scope.
+- runFlow: ../utils/login-staff.yaml
+- evalScript: ${output.stamp = String(Date.now()).slice(-6)}
+- extendedWaitUntil:
+    visible: My Status
+    timeout: 60000
+
+# Raise from the officer's own customer book.
+- tapOn: Customers
+- extendedWaitUntil:
+    visible: Raise Ticket
+    timeout: 30000
+- tapOn:
+    text: Raise Ticket
+    index: 0
+- extendedWaitUntil:
+    visible: Raise a complaint
+    timeout: 10000
+- tapOn:
+    id: ticket-subject
+- inputText: E2E staff ticket ${output.stamp}
+- tapOn: Urgent
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn:
+    id: ticket-submit
+- extendedWaitUntil:
+    visible: Complaint raised
+    timeout: 20000
+- tapOn: OK
+
+# The queue renders with the three filters and the search box.
+- tapOn: More
+- tapOn: Complaints
+- extendedWaitUntil:
+    visible: Search a ticket number or subject
+    timeout: 30000
+- assertVisible:
+    id: ticket-filter-open
+- assertVisible:
+    id: ticket-filter-mine
+- assertVisible:
+    id: ticket-filter-all
+- takeScreenshot: .maestro/screenshots/staff-tickets
+
+# Role edge: no row offers the Assign control to staff.
+- assertNotVisible: 'Assign .*, currently .*'
+- assertNotVisible:
+    id: 'assign-.*'
+
+# Every filter loads (rows or the empty copy) without an error state.
+- tapOn:
+    id: ticket-filter-mine
+- extendedWaitUntil:
+    visible: '.* in this view'
+    timeout: 20000
+- assertNotVisible: Could not load your network data
+- tapOn:
+    id: ticket-filter-all
+- extendedWaitUntil:
+    visible: '.* in this view'
+    timeout: 20000
+- assertNotVisible: Could not load your network data
+- assertNotVisible: 'Assign .*, currently .*'
+
+# Empty state: a search that matches nothing.
+- tapOn:
+    id: ticket-search
+- inputText: zz-no-such-ticket
+- runFlow: ../utils/hide-keyboard.yaml
+- extendedWaitUntil:
+    visible: No complaint matches that.
+    timeout: 20000
+- assertVisible: '0 in this view'

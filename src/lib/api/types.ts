@@ -76,8 +76,8 @@ export type CustomerTransaction = CustomerDetail['recentTransactions'][number];
 /**
  * Everything a customer details page draws, from ONE request.
  *
- * Each subscription already carries its service, provider and package, so the
- * screen never fans out to `/packages/:id` or `/service-providers/:id`.
+ * Each subscription already carries its service, provider and plan, so the
+ * screen never fans out to `/plans/:id` or `/service-providers/:id`.
  */
 export type CustomerDetail = ApiResponse<'/api/v1/customers/{id}', 'get', 200>;
 
@@ -96,6 +96,18 @@ export type CreateServiceProviderInput = ApiBody<'/api/v1/service-providers', 'p
 export type UpdateServiceProviderInput = ApiBody<'/api/v1/service-providers/{id}', 'patch'>;
 
 export type Package = ApiResponse<'/api/v1/packages', 'post', 201>;
+
+/**
+ * What the operator sells: its own price and flat discount over one or more
+ * provider packages. `amount` (price − discount) is what one cycle charges.
+ * `packages` only arrives for callers who hold `packages.view`.
+ */
+export type Plan = ApiResponse<'/api/v1/plans/{id}', 'get', 200>;
+
+export type CreatePlanInput = ApiBody<'/api/v1/plans', 'post'>;
+
+/** `serviceProviderId` is absent on purpose — a plan stays with its provider. */
+export type UpdatePlanInput = ApiBody<'/api/v1/plans/{id}', 'patch'>;
 
 /** The `channel_resolution` enum — a channel is one of exactly these three. */
 
@@ -170,6 +182,8 @@ export type InventoryLocation = ApiResponse<'/api/v1/inventory/locations', 'get'
 export type InventoryDashboard = ApiResponse<'/api/v1/inventory/dashboard', 'get', 200>;
 
 export type StockItem = ApiResponse<'/api/v1/inventory/stock', 'get', 200>[number];
+
+export type AvailableUnit = ApiResponse<'/api/v1/inventory/units/available', 'get', 200>[number];
 
 export type CatalogItemPayload = ApiBody<'/api/v1/inventory/catalog', 'post'>;
 

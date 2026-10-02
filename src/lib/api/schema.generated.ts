@@ -1209,7 +1209,6 @@ export interface paths {
                                 /** @description Decimal string, e.g. "349.00" */
                                 outstandingBalance: string;
                                 alternatePhone: string | null;
-                                whatsappNumber: string | null;
                                 locationId: string | null;
                                 address: string | null;
                                 subscriptions: {
@@ -1227,6 +1226,9 @@ export interface paths {
                                     price: string;
                                     /** @description Decimal string, e.g. "349.00" */
                                     outstandingBalance: string;
+                                    chargedThrough: string | null;
+                                    /** @description Decimal string, e.g. "349.00" */
+                                    nextPlanCharge: string;
                                     /** Format: uuid */
                                     locationId: string;
                                     installationAddress: string | null;
@@ -1243,13 +1245,19 @@ export interface paths {
                                         name: string;
                                         slug: string;
                                     };
-                                    package: {
+                                    plan: {
                                         /** Format: uuid */
                                         id: string;
                                         name: string;
                                         slug: string;
+                                        /** @description Decimal string, e.g. "349.00" */
+                                        price: string;
+                                        /** @description Decimal string, e.g. "349.00" */
+                                        discount: string;
+                                        /** @description Decimal string, e.g. "349.00" */
+                                        amount: string;
                                         /** @enum {string} */
-                                        packageType: "base" | "bouquet" | "addon" | "ala_carte" | "combo";
+                                        billingCycle: "monthly" | "quarterly" | "semi_annual" | "annual";
                                     };
                                 }[];
                                 summary: {
@@ -1310,12 +1318,14 @@ export interface paths {
                     locationId?: string;
                     serviceProviderId?: string;
                     packageId?: string;
+                    planId?: string;
                     /** @description Filter customers created on or after this timestamp (ISO-8601 string) */
                     createdFrom?: string;
                     /** @description Filter customers created on or before this timestamp (ISO-8601 string) */
                     createdTo?: string;
                     /** @description Filter customers with 2 or more subscriptions or boxes of the same service */
                     multiBox?: boolean;
+                    balance?: "due" | "advance" | "clear";
                 };
                 header?: never;
                 path?: never;
@@ -1348,7 +1358,6 @@ export interface paths {
                                 /** Format: date-time */
                                 createdAt: string;
                                 alternatePhone: string | null;
-                                whatsappNumber: string | null;
                                 address: string | null;
                                 locations: {
                                     /** Format: uuid */
@@ -1363,10 +1372,15 @@ export interface paths {
                                     subscriptionId: string;
                                     accountNumber: string;
                                     installationAddress: string | null;
+                                    /** @description Decimal string, e.g. "349.00" */
+                                    outstandingBalance: string;
                                     /** Format: uuid */
                                     locationId: string;
                                     locationPath: string | null;
                                     service?: string;
+                                    providerName: string;
+                                    providerLogoUrl: string | null;
+                                    providerWebsiteUrl: string | null;
                                 }[];
                                 equipment: {
                                     /** Format: uuid */
@@ -1450,19 +1464,16 @@ export interface paths {
                         name: string;
                         phone: string;
                         alternatePhone?: string;
-                        whatsappNumber?: string;
                         /** @enum {string} */
                         status?: "active" | "inactive" | "pending";
                         address?: string;
                         notes?: string;
                         connection?: {
                             /** Format: uuid */
-                            packageId: string;
+                            planId: string;
                             /** Format: uuid */
                             locationId: string;
                             installationAddress?: string;
-                            /** @description Decimal string, never negative, e.g. "349.00" */
-                            price?: string;
                         };
                     };
                 };
@@ -1481,7 +1492,6 @@ export interface paths {
                             name: string | null;
                             phone: string | null;
                             alternatePhone: string | null;
-                            whatsappNumber: string | null;
                             /** @enum {string} */
                             status: "active" | "inactive" | "pending";
                             /** @description Decimal string, e.g. "349.00" */
@@ -1506,6 +1516,9 @@ export interface paths {
                                 price: string;
                                 /** @description Decimal string, e.g. "349.00" */
                                 outstandingBalance: string;
+                                chargedThrough: string | null;
+                                /** @description Decimal string, e.g. "349.00" */
+                                nextPlanCharge: string;
                                 /** Format: uuid */
                                 locationId: string;
                                 installationAddress: string | null;
@@ -1522,13 +1535,19 @@ export interface paths {
                                     name: string;
                                     slug: string;
                                 };
-                                package: {
+                                plan: {
                                     /** Format: uuid */
                                     id: string;
                                     name: string;
                                     slug: string;
+                                    /** @description Decimal string, e.g. "349.00" */
+                                    price: string;
+                                    /** @description Decimal string, e.g. "349.00" */
+                                    discount: string;
+                                    /** @description Decimal string, e.g. "349.00" */
+                                    amount: string;
                                     /** @enum {string} */
-                                    packageType: "base" | "bouquet" | "addon" | "ala_carte" | "combo";
+                                    billingCycle: "monthly" | "quarterly" | "semi_annual" | "annual";
                                 };
                             }[];
                             equipment: {
@@ -1627,15 +1646,19 @@ export interface paths {
         };
         /**
          * Everything a customer details page draws, in one response
-         * @description A customer id is a handle onto a graph — subscriptions, and through each one a provider, a package, a service and a location.
+         * @description A customer id is a handle onto a graph — subscriptions, and through each one a provider, a plan, a service and a location.
          *
-         *     This resolves the whole graph server-side, where the joins are indexed, so the client makes no follow-up calls to `/packages/:id`, `/service-providers/:id` or `/locations/:id`.
+         *     This resolves the whole graph server-side, where the joins are indexed, so the client makes no follow-up calls to `/plans/:id`, `/service-providers/:id` or `/locations/:id`.
          *
          *     Out of your area answers 404 rather than 403: whether a customer exists elsewhere is not something the caller should learn.
+         *
+         *     `transactions` sets how many ledger rows `recentTransactions` carries, newest first (default 20, at most 200).
          */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    transactions?: number;
+                };
                 header?: never;
                 path: {
                     id: string;
@@ -1657,7 +1680,6 @@ export interface paths {
                             name: string | null;
                             phone: string | null;
                             alternatePhone: string | null;
-                            whatsappNumber: string | null;
                             /** @enum {string} */
                             status: "active" | "inactive" | "pending";
                             /** @description Decimal string, e.g. "349.00" */
@@ -1682,6 +1704,9 @@ export interface paths {
                                 price: string;
                                 /** @description Decimal string, e.g. "349.00" */
                                 outstandingBalance: string;
+                                chargedThrough: string | null;
+                                /** @description Decimal string, e.g. "349.00" */
+                                nextPlanCharge: string;
                                 /** Format: uuid */
                                 locationId: string;
                                 installationAddress: string | null;
@@ -1698,13 +1723,19 @@ export interface paths {
                                     name: string;
                                     slug: string;
                                 };
-                                package: {
+                                plan: {
                                     /** Format: uuid */
                                     id: string;
                                     name: string;
                                     slug: string;
+                                    /** @description Decimal string, e.g. "349.00" */
+                                    price: string;
+                                    /** @description Decimal string, e.g. "349.00" */
+                                    discount: string;
+                                    /** @description Decimal string, e.g. "349.00" */
+                                    amount: string;
                                     /** @enum {string} */
-                                    packageType: "base" | "bouquet" | "addon" | "ala_carte" | "combo";
+                                    billingCycle: "monthly" | "quarterly" | "semi_annual" | "annual";
                                 };
                             }[];
                             equipment: {
@@ -1793,7 +1824,189 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Correct a subscriber's name, contacts, address, notes or status
+         * @description Only the fields sent change; `alternatePhone`, `address` and `notes` take `null` to clear. Lines, balances and the subscriber code are not edited here.
+         *
+         *     Reach follows `customers.update` the way the detail follows `customers.view`: outside your areas answers 404.
+         *
+         *     The response is the same shape as `GET /customers/:id`.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        name?: string;
+                        phone?: string;
+                        alternatePhone?: string | null;
+                        /** @enum {string} */
+                        status?: "active" | "inactive" | "pending";
+                        address?: string | null;
+                        notes?: string | null;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            customerCode: string | null;
+                            name: string | null;
+                            phone: string | null;
+                            alternatePhone: string | null;
+                            /** @enum {string} */
+                            status: "active" | "inactive" | "pending";
+                            /** @description Decimal string, e.g. "349.00" */
+                            outstandingBalance: string;
+                            userId: string | null;
+                            locationId: string | null;
+                            locationPath: string | null;
+                            address: string | null;
+                            notes: string | null;
+                            subscriptions: {
+                                /** Format: uuid */
+                                id: string;
+                                serviceAccountNumber: string;
+                                /** @enum {string} */
+                                status: "active" | "inactive" | "suspended" | "cancelled";
+                                /** Format: date-time */
+                                startDate: string;
+                                endDate: string | null;
+                                /** @enum {string} */
+                                billingCycle: "monthly" | "quarterly" | "semi_annual" | "annual";
+                                /** @description Decimal string, e.g. "349.00" */
+                                price: string;
+                                /** @description Decimal string, e.g. "349.00" */
+                                outstandingBalance: string;
+                                chargedThrough: string | null;
+                                /** @description Decimal string, e.g. "349.00" */
+                                nextPlanCharge: string;
+                                /** Format: uuid */
+                                locationId: string;
+                                installationAddress: string | null;
+                                service: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                    slug: string;
+                                    icon: string | null;
+                                };
+                                provider: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                    slug: string;
+                                };
+                                plan: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                    slug: string;
+                                    /** @description Decimal string, e.g. "349.00" */
+                                    price: string;
+                                    /** @description Decimal string, e.g. "349.00" */
+                                    discount: string;
+                                    /** @description Decimal string, e.g. "349.00" */
+                                    amount: string;
+                                    /** @enum {string} */
+                                    billingCycle: "monthly" | "quarterly" | "semi_annual" | "annual";
+                                };
+                            }[];
+                            equipment: {
+                                /** Format: uuid */
+                                id: string;
+                                subscriptionId: string | null;
+                                name: string;
+                                serialNumber: string | null;
+                                status: string;
+                                /** Format: date-time */
+                                assignedAt: string;
+                                returnedAt: string | null;
+                            }[];
+                            recentTransactions: {
+                                /** Format: uuid */
+                                id: string;
+                                transactionNo: string;
+                                /** Format: date-time */
+                                transactionDate: string;
+                                transactionType: string;
+                                serviceAccountNumber: string;
+                                /** @description Decimal string, e.g. "349.00" */
+                                debit: string;
+                                /** @description Decimal string, e.g. "349.00" */
+                                credit: string;
+                                /** @description Decimal string, e.g. "349.00" */
+                                closingBalance: string;
+                                remarks: string | null;
+                            }[];
+                            summary: {
+                                subscriptions: number;
+                                activeSubscriptions: number;
+                                services: string[];
+                                /** @description Decimal string, e.g. "349.00" */
+                                monthlyValue: string;
+                                /** @description Decimal string, e.g. "349.00" */
+                                outstandingBalance: string;
+                            };
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+            };
+        };
         trace?: never;
     };
     "/api/v1/customers/{id}/subscriptions/{subscriptionId}": {
@@ -1810,12 +2023,10 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Move a connection onto a different package
-         * @description The package must belong to the same provider as the line: crossing providers would orphan the service account number, which is a new connection rather than a plan change.
+         * Move a connection onto a different plan
+         * @description The plan must be an active plan of the same provider as the line: crossing providers would orphan the service account number, which is a new connection rather than a plan change.
          *
-         *     Nothing is prorated. `outstanding_balance` is only ever written down by a payment — no job accrues the monthly fee — so there is no part-cycle to split. The new price is what the next charge will use.
-         *
-         *     `price` overrides the package list price for this one customer. Omitted, the line takes the package price.
+         *     Nothing is prorated and nothing is charged now. A cycle already paid for runs to its `chargedThrough`; the new plan's amount (`price - discount`) and cycle apply from the next charge.
          */
         patch: {
             parameters: {
@@ -1831,9 +2042,7 @@ export interface paths {
                 content: {
                     "application/json": {
                         /** Format: uuid */
-                        packageId: string;
-                        /** @description Decimal string, never negative, e.g. "349.00" */
-                        price?: string;
+                        planId: string;
                     };
                 };
             };
@@ -1859,6 +2068,9 @@ export interface paths {
                             price: string;
                             /** @description Decimal string, e.g. "349.00" */
                             outstandingBalance: string;
+                            chargedThrough: string | null;
+                            /** @description Decimal string, e.g. "349.00" */
+                            nextPlanCharge: string;
                             /** Format: uuid */
                             locationId: string;
                             installationAddress: string | null;
@@ -1875,13 +2087,19 @@ export interface paths {
                                 name: string;
                                 slug: string;
                             };
-                            package: {
+                            plan: {
                                 /** Format: uuid */
                                 id: string;
                                 name: string;
                                 slug: string;
+                                /** @description Decimal string, e.g. "349.00" */
+                                price: string;
+                                /** @description Decimal string, e.g. "349.00" */
+                                discount: string;
+                                /** @description Decimal string, e.g. "349.00" */
+                                amount: string;
                                 /** @enum {string} */
-                                packageType: "base" | "bouquet" | "addon" | "ala_carte" | "combo";
+                                billingCycle: "monthly" | "quarterly" | "semi_annual" | "annual";
                             };
                         };
                     };
@@ -1945,8 +2163,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Add another package to a customer as its own line — an addon, or a second connection
-         * @description An addon is a subscription of its own rather than a flag on an existing one, because that is the shape the data has: one package per line, one balance per line. It therefore bills, collects and appears on every screen that already reads lines.
+         * Add another plan to a customer as its own line — an addon, or a second connection
+         * @description The new line is on its own plan, with its own balance and cycle. It therefore bills, collects and appears on every screen that already reads lines.
          *
          *     `basedOn` names the line it sits beside. The provider, installation location and address are inherited from it, so an addon cannot be created somewhere the base connection is not. The new line gets its own account number, suffixed off the base: `SSCN-0042-A1`.
          *
@@ -1965,11 +2183,9 @@ export interface paths {
                 content: {
                     "application/json": {
                         /** Format: uuid */
-                        packageId: string;
+                        planId: string;
                         /** Format: uuid */
                         basedOn: string;
-                        /** @description Decimal string, never negative, e.g. "349.00" */
-                        price?: string;
                     };
                 };
             };
@@ -1995,6 +2211,9 @@ export interface paths {
                             price: string;
                             /** @description Decimal string, e.g. "349.00" */
                             outstandingBalance: string;
+                            chargedThrough: string | null;
+                            /** @description Decimal string, e.g. "349.00" */
+                            nextPlanCharge: string;
                             /** Format: uuid */
                             locationId: string;
                             installationAddress: string | null;
@@ -2011,13 +2230,19 @@ export interface paths {
                                 name: string;
                                 slug: string;
                             };
-                            package: {
+                            plan: {
                                 /** Format: uuid */
                                 id: string;
                                 name: string;
                                 slug: string;
+                                /** @description Decimal string, e.g. "349.00" */
+                                price: string;
+                                /** @description Decimal string, e.g. "349.00" */
+                                discount: string;
+                                /** @description Decimal string, e.g. "349.00" */
+                                amount: string;
                                 /** @enum {string} */
-                                packageType: "base" | "bouquet" | "addon" | "ala_carte" | "combo";
+                                billingCycle: "monthly" | "quarterly" | "semi_annual" | "annual";
                             };
                         };
                     };
@@ -3403,6 +3628,103 @@ export interface paths {
                             returnedToLocationId?: string | null;
                             depositRefundStatus?: string | null;
                             depositDeductionAmount?: string | null;
+                        }[];
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inventory/units/available": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Units in stock that can be issued now, searchable by item, type, serial, VC or MAC */
+        get: {
+            parameters: {
+                query?: {
+                    q?: string;
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            catalogId: string;
+                            itemName: string;
+                            itemCode: string | null;
+                            typeName: string | null;
+                            serialNumber: string | null;
+                            vcNumber: string | null;
+                            macAddress: string | null;
+                            locationName: string | null;
+                            defaultSalePrice: string;
                         }[];
                     };
                 };
@@ -7127,7 +7449,7 @@ export interface paths {
                     customerId?: string;
                     locationId?: string;
                     collectedBy?: string | "me";
-                    outcome?: "full" | "partial" | "none" | "refund" | "others";
+                    outcome?: "full" | "partial" | "none" | "due" | "refund" | "others";
                     from?: string;
                     to?: string;
                     nearLatitude?: number;
@@ -7170,7 +7492,7 @@ export interface paths {
                                 collectedBy: string;
                                 collectorName: string | null;
                                 /** @enum {string} */
-                                outcome: "full" | "partial" | "none" | "refund" | "others";
+                                outcome: "full" | "partial" | "none" | "due" | "refund" | "others";
                                 method: ("cash" | "upi" | "card" | "bank_transfer" | "cheque") | null;
                                 /** @description Decimal string, e.g. "349.00" */
                                 dueAmount: string;
@@ -7178,6 +7500,8 @@ export interface paths {
                                 duesPaid: string;
                                 /** @description Decimal string, e.g. "349.00" */
                                 accessoryAmount: string;
+                                /** @description Decimal string, e.g. "349.00" */
+                                planCharge: string;
                                 /** @description Decimal string, e.g. "349.00" */
                                 totalCollected: string;
                                 /** @description Decimal string, e.g. "349.00" */
@@ -7322,7 +7646,7 @@ export interface paths {
                             collectedBy: string;
                             collectorName: string | null;
                             /** @enum {string} */
-                            outcome: "full" | "partial" | "none" | "refund" | "others";
+                            outcome: "full" | "partial" | "none" | "due" | "refund" | "others";
                             method: ("cash" | "upi" | "card" | "bank_transfer" | "cheque") | null;
                             /** @description Decimal string, e.g. "349.00" */
                             dueAmount: string;
@@ -7330,6 +7654,8 @@ export interface paths {
                             duesPaid: string;
                             /** @description Decimal string, e.g. "349.00" */
                             accessoryAmount: string;
+                            /** @description Decimal string, e.g. "349.00" */
+                            planCharge: string;
                             /** @description Decimal string, e.g. "349.00" */
                             totalCollected: string;
                             /** @description Decimal string, e.g. "349.00" */
@@ -7439,18 +7765,10 @@ export interface paths {
                         /** Format: uuid */
                         customerId: string;
                         /** Format: uuid */
-                        subscriptionId?: string;
-                        /** @description Decimal string, never negative */
-                        amount: string;
+                        subscriptionId: string;
+                        amount?: string | null;
                         /** @enum {string} */
                         method?: "cash" | "upi";
-                        accessories?: {
-                            /** Format: uuid */
-                            catalogId: string;
-                            quantity: number;
-                            /** @description Decimal string, never negative */
-                            unitPrice: string;
-                        }[];
                         reason?: string;
                         notes?: string;
                         reference: string;
@@ -7492,7 +7810,7 @@ export interface paths {
                             collectedBy: string;
                             collectorName: string | null;
                             /** @enum {string} */
-                            outcome: "full" | "partial" | "none" | "refund" | "others";
+                            outcome: "full" | "partial" | "none" | "due" | "refund" | "others";
                             method: ("cash" | "upi" | "card" | "bank_transfer" | "cheque") | null;
                             /** @description Decimal string, e.g. "349.00" */
                             dueAmount: string;
@@ -7500,6 +7818,8 @@ export interface paths {
                             duesPaid: string;
                             /** @description Decimal string, e.g. "349.00" */
                             accessoryAmount: string;
+                            /** @description Decimal string, e.g. "349.00" */
+                            planCharge: string;
                             /** @description Decimal string, e.g. "349.00" */
                             totalCollected: string;
                             /** @description Decimal string, e.g. "349.00" */
@@ -7591,7 +7911,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Record an equipment payment: add new equipment or update/replace existing equipment
+         * Record a payment for new equipment issued to the customer
          * @description Idempotent on `reference` — replaying one returns the original receipt rather than taking the money twice.
          */
         post: {
@@ -7606,8 +7926,6 @@ export interface paths {
                     "application/json": {
                         /** Format: uuid */
                         customerId: string;
-                        /** @description Decimal string, never negative */
-                        amount: string;
                         /** @enum {string} */
                         method?: "cash" | "upi";
                         reference: string;
@@ -7618,21 +7936,21 @@ export interface paths {
                         latitude?: number;
                         longitude?: number;
                         gpsAccuracyM?: number;
-                        /** Format: uuid */
-                        customerEquipmentId?: string;
-                        /** Format: uuid */
-                        replacementEquipmentId?: string;
-                        replacementSerialNumber?: string;
-                        /** @enum {string} */
-                        returnCondition?: "working" | "damaged" | "missing_accessories" | "faulty";
+                        /** @description Decimal string, never negative */
+                        amount: string;
                         /** Format: uuid */
                         catalogId?: string;
+                        items?: {
+                            /** Format: uuid */
+                            catalogId: string;
+                            /** Format: uuid */
+                            equipmentId?: string;
+                        }[];
                         /** Format: uuid */
                         equipmentId?: string;
                         serialNumber?: string;
                         /** @enum {string} */
                         ownershipType?: "tenant_provided" | "customer_owned" | "rental" | "deposit";
-                        status?: unknown;
                     };
                 };
             };
@@ -7666,7 +7984,7 @@ export interface paths {
                             collectedBy: string;
                             collectorName: string | null;
                             /** @enum {string} */
-                            outcome: "full" | "partial" | "none" | "refund" | "others";
+                            outcome: "full" | "partial" | "none" | "due" | "refund" | "others";
                             method: ("cash" | "upi" | "card" | "bank_transfer" | "cheque") | null;
                             /** @description Decimal string, e.g. "349.00" */
                             dueAmount: string;
@@ -7674,6 +7992,177 @@ export interface paths {
                             duesPaid: string;
                             /** @description Decimal string, e.g. "349.00" */
                             accessoryAmount: string;
+                            /** @description Decimal string, e.g. "349.00" */
+                            planCharge: string;
+                            /** @description Decimal string, e.g. "349.00" */
+                            totalCollected: string;
+                            /** @description Decimal string, e.g. "349.00" */
+                            balanceAfter: string;
+                            transactionId: string | null;
+                            accessories: {
+                                /** Format: uuid */
+                                catalogId: string;
+                                name: string;
+                                quantity: number;
+                                /** @description Decimal string, e.g. "349.00" */
+                                unitPrice: string;
+                                /** @description Decimal string, e.g. "349.00" */
+                                amount: string;
+                            }[];
+                            reversesId: string | null;
+                            reversedById: string | null;
+                            reason: string | null;
+                            notes: string | null;
+                            reference: string;
+                            /** Format: date-time */
+                            collectedAt: string;
+                            latitude: string | null;
+                            longitude: string | null;
+                            gpsAccuracyM: string | null;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/equipment/replace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replace a customer's equipment with a unit from stock, with an optional replacement fee
+         * @description Idempotent on `reference`. The old unit is returned and the new one issued in one transaction, and a receipt records it.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        customerId: string;
+                        /** @enum {string} */
+                        method?: "cash" | "upi";
+                        reference: string;
+                        notes?: string;
+                        reason?: string;
+                        /** Format: date-time */
+                        collectedAt?: string;
+                        latitude?: number;
+                        longitude?: number;
+                        gpsAccuracyM?: number;
+                        amount?: string | null;
+                        /** Format: uuid */
+                        customerEquipmentId: string;
+                        /** Format: uuid */
+                        replacementEquipmentId?: string;
+                        replacementSerialNumber?: string;
+                        /** @enum {string} */
+                        returnCondition?: "working" | "damaged" | "missing_accessories" | "faulty";
+                        /** @enum {string} */
+                        ownershipType?: "tenant_provided" | "customer_owned" | "rental" | "deposit";
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            customerId: string;
+                            customerName: string | null;
+                            customerCode: string | null;
+                            subscriptionId: string | null;
+                            customerEquipmentId: string | null;
+                            equipment: {
+                                itemName: string;
+                                itemCode: string | null;
+                                serialNumber: string | null;
+                                brand: string | null;
+                                model: string | null;
+                            } | null;
+                            serviceAccountNumber: string | null;
+                            locationId: string | null;
+                            locationPath: string | null;
+                            /** Format: uuid */
+                            collectedBy: string;
+                            collectorName: string | null;
+                            /** @enum {string} */
+                            outcome: "full" | "partial" | "none" | "due" | "refund" | "others";
+                            method: ("cash" | "upi" | "card" | "bank_transfer" | "cheque") | null;
+                            /** @description Decimal string, e.g. "349.00" */
+                            dueAmount: string;
+                            /** @description Decimal string, e.g. "349.00" */
+                            duesPaid: string;
+                            /** @description Decimal string, e.g. "349.00" */
+                            accessoryAmount: string;
+                            /** @description Decimal string, e.g. "349.00" */
+                            planCharge: string;
                             /** @description Decimal string, e.g. "349.00" */
                             totalCollected: string;
                             /** @description Decimal string, e.g. "349.00" */
@@ -7812,7 +8301,7 @@ export interface paths {
                             collectedBy: string;
                             collectorName: string | null;
                             /** @enum {string} */
-                            outcome: "full" | "partial" | "none" | "refund" | "others";
+                            outcome: "full" | "partial" | "none" | "due" | "refund" | "others";
                             method: ("cash" | "upi" | "card" | "bank_transfer" | "cheque") | null;
                             /** @description Decimal string, e.g. "349.00" */
                             dueAmount: string;
@@ -7820,6 +8309,8 @@ export interface paths {
                             duesPaid: string;
                             /** @description Decimal string, e.g. "349.00" */
                             accessoryAmount: string;
+                            /** @description Decimal string, e.g. "349.00" */
+                            planCharge: string;
                             /** @description Decimal string, e.g. "349.00" */
                             totalCollected: string;
                             /** @description Decimal string, e.g. "349.00" */
@@ -7899,6 +8390,592 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List subscription plans
+         * @description A plan is the operator's own price over one or more provider packages. `amount` is what one cycle charges.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    page?: unknown;
+                    limit?: unknown;
+                    serviceProviderId?: string;
+                    serviceId?: string;
+                    packageId?: string;
+                    status?: "active" | "inactive";
+                    q?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            items: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                serviceProviderId: string;
+                                serviceProviderName: string;
+                                /** Format: uuid */
+                                serviceId: string;
+                                serviceName: string;
+                                serviceIcon: string | null;
+                                name: string;
+                                slug: string;
+                                /** @description Decimal string, e.g. "349.00" */
+                                price: string;
+                                /** @description Decimal string, e.g. "349.00" */
+                                discount: string;
+                                /** @description Decimal string, e.g. "349.00" */
+                                amount: string;
+                                /** @enum {string} */
+                                billingCycle: "monthly" | "quarterly" | "semi_annual" | "annual";
+                                description: string | null;
+                                metadata: {
+                                    [key: string]: unknown;
+                                } | null;
+                                /** @enum {string} */
+                                status: "active" | "inactive";
+                                packageCount: number;
+                                packages?: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                    slug: string;
+                                    /** @enum {string} */
+                                    packageType: "base" | "bouquet" | "addon" | "ala_carte" | "combo";
+                                    /** @enum {string} */
+                                    status: "active" | "inactive";
+                                }[];
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** Format: date-time */
+                                updatedAt: string;
+                            }[];
+                            total: number;
+                            page: number;
+                            limit: number;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Create a plan over a provider's packages
+         * @description Money is sent as a decimal string. `discount` is flat rupees and cannot exceed `price`.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        serviceProviderId: string;
+                        name: string;
+                        slug?: string;
+                        /** @description Decimal string, never negative, e.g. "349.00" */
+                        price: string;
+                        /** @description Decimal string, never negative, e.g. "349.00" */
+                        discount?: string;
+                        /** @enum {string} */
+                        billingCycle?: "monthly" | "quarterly" | "semi_annual" | "annual";
+                        description?: string;
+                        metadata?: {
+                            [key: string]: unknown;
+                        } | null;
+                        packageIds: string[];
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            serviceProviderId: string;
+                            serviceProviderName: string;
+                            /** Format: uuid */
+                            serviceId: string;
+                            serviceName: string;
+                            serviceIcon: string | null;
+                            name: string;
+                            slug: string;
+                            /** @description Decimal string, e.g. "349.00" */
+                            price: string;
+                            /** @description Decimal string, e.g. "349.00" */
+                            discount: string;
+                            /** @description Decimal string, e.g. "349.00" */
+                            amount: string;
+                            /** @enum {string} */
+                            billingCycle: "monthly" | "quarterly" | "semi_annual" | "annual";
+                            description: string | null;
+                            metadata: {
+                                [key: string]: unknown;
+                            } | null;
+                            /** @enum {string} */
+                            status: "active" | "inactive";
+                            packageCount: number;
+                            packages?: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                slug: string;
+                                /** @enum {string} */
+                                packageType: "base" | "bouquet" | "addon" | "ala_carte" | "combo";
+                                /** @enum {string} */
+                                status: "active" | "inactive";
+                            }[];
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read one plan */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            serviceProviderId: string;
+                            serviceProviderName: string;
+                            /** Format: uuid */
+                            serviceId: string;
+                            serviceName: string;
+                            serviceIcon: string | null;
+                            name: string;
+                            slug: string;
+                            /** @description Decimal string, e.g. "349.00" */
+                            price: string;
+                            /** @description Decimal string, e.g. "349.00" */
+                            discount: string;
+                            /** @description Decimal string, e.g. "349.00" */
+                            amount: string;
+                            /** @enum {string} */
+                            billingCycle: "monthly" | "quarterly" | "semi_annual" | "annual";
+                            description: string | null;
+                            metadata: {
+                                [key: string]: unknown;
+                            } | null;
+                            /** @enum {string} */
+                            status: "active" | "inactive";
+                            packageCount: number;
+                            packages?: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                slug: string;
+                                /** @enum {string} */
+                                packageType: "base" | "bouquet" | "addon" | "ala_carte" | "combo";
+                                /** @enum {string} */
+                                status: "active" | "inactive";
+                            }[];
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        /** Delete a plan no live line is on */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /**
+         * Reprice or edit a plan
+         * @description Pricing is live: every line on the plan is charged the new amount from its next cycle.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        name?: string;
+                        /** @description Decimal string, never negative, e.g. "349.00" */
+                        price?: string;
+                        /** @description Decimal string, never negative, e.g. "349.00" */
+                        discount?: string;
+                        /** @enum {string} */
+                        billingCycle?: "monthly" | "quarterly" | "semi_annual" | "annual";
+                        description?: string | null;
+                        metadata?: {
+                            [key: string]: unknown;
+                        } | null;
+                        /** @enum {string} */
+                        status?: "active" | "inactive";
+                        packageIds?: string[];
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            serviceProviderId: string;
+                            serviceProviderName: string;
+                            /** Format: uuid */
+                            serviceId: string;
+                            serviceName: string;
+                            serviceIcon: string | null;
+                            name: string;
+                            slug: string;
+                            /** @description Decimal string, e.g. "349.00" */
+                            price: string;
+                            /** @description Decimal string, e.g. "349.00" */
+                            discount: string;
+                            /** @description Decimal string, e.g. "349.00" */
+                            amount: string;
+                            /** @enum {string} */
+                            billingCycle: "monthly" | "quarterly" | "semi_annual" | "annual";
+                            description: string | null;
+                            metadata: {
+                                [key: string]: unknown;
+                            } | null;
+                            /** @enum {string} */
+                            status: "active" | "inactive";
+                            packageCount: number;
+                            packages?: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                slug: string;
+                                /** @enum {string} */
+                                packageType: "base" | "bouquet" | "addon" | "ala_carte" | "combo";
+                                /** @enum {string} */
+                                status: "active" | "inactive";
+                            }[];
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+            };
+        };
         trace?: never;
     };
     "/api/v1/remotes": {
@@ -8540,6 +9617,8 @@ export interface paths {
                                 slug: string;
                                 code: string | null;
                                 description: string | null;
+                                logoUrl: string | null;
+                                websiteUrl: string | null;
                                 contact: {
                                     [key: string]: unknown;
                                 } | null;
@@ -8665,6 +9744,8 @@ export interface paths {
                                 slug: string;
                                 code: string | null;
                                 description: string | null;
+                                logoUrl: string | null;
+                                websiteUrl: string | null;
                                 contact: {
                                     [key: string]: unknown;
                                 } | null;
@@ -8789,6 +9870,8 @@ export interface paths {
                                 slug: string;
                                 code: string | null;
                                 description: string | null;
+                                logoUrl: string | null;
+                                websiteUrl: string | null;
                                 contact: {
                                     [key: string]: unknown;
                                 } | null;
@@ -8986,6 +10069,8 @@ export interface paths {
                                 slug: string;
                                 code: string | null;
                                 description: string | null;
+                                logoUrl: string | null;
+                                websiteUrl: string | null;
                                 contact: {
                                     [key: string]: unknown;
                                 } | null;
@@ -9095,6 +10180,8 @@ export interface paths {
                             slug: string;
                             code: string | null;
                             description: string | null;
+                            logoUrl: string | null;
+                            websiteUrl: string | null;
                             contact: {
                                 [key: string]: unknown;
                             } | null;
@@ -9179,6 +10266,8 @@ export interface paths {
                         slug?: string;
                         code?: string;
                         description?: string;
+                        logoUrl?: string | null;
+                        websiteUrl?: string | null;
                         contact?: {
                             [key: string]: unknown;
                         } | null;
@@ -9208,6 +10297,8 @@ export interface paths {
                             slug: string;
                             code: string | null;
                             description: string | null;
+                            logoUrl: string | null;
+                            websiteUrl: string | null;
                             contact: {
                                 [key: string]: unknown;
                             } | null;
@@ -9314,6 +10405,8 @@ export interface paths {
                             slug: string;
                             code: string | null;
                             description: string | null;
+                            logoUrl: string | null;
+                            websiteUrl: string | null;
                             contact: {
                                 [key: string]: unknown;
                             } | null;
@@ -9466,6 +10559,8 @@ export interface paths {
                         name?: string;
                         code?: string | null;
                         description?: string | null;
+                        logoUrl?: string | null;
+                        websiteUrl?: string | null;
                         contact?: {
                             [key: string]: unknown;
                         } | null;
@@ -9497,6 +10592,8 @@ export interface paths {
                             slug: string;
                             code: string | null;
                             description: string | null;
+                            logoUrl: string | null;
+                            websiteUrl: string | null;
                             contact: {
                                 [key: string]: unknown;
                             } | null;
@@ -10172,13 +11269,14 @@ export interface paths {
                                     name: string;
                                     slug: string;
                                     isDefault: boolean;
-                                    packages: {
+                                    plans: {
                                         /** Format: uuid */
                                         id: string;
                                         name: string;
                                         slug: string;
-                                        packageType: string;
                                         price: string;
+                                        discount: string;
+                                        amount: string;
                                         billingCycle: string;
                                     }[];
                                 }[];
@@ -12304,7 +13402,7 @@ export interface paths {
                                     /** Format: uuid */
                                     id: string;
                                     serviceAccountNumber: string;
-                                    packageName: string;
+                                    planName: string;
                                 } | null;
                                 locationId: string | null;
                                 locationPath: string | null;
@@ -12429,7 +13527,7 @@ export interface paths {
                                 /** Format: uuid */
                                 id: string;
                                 serviceAccountNumber: string;
-                                packageName: string;
+                                planName: string;
                             } | null;
                             locationId: string | null;
                             locationPath: string | null;
@@ -12543,7 +13641,7 @@ export interface paths {
                                 /** Format: uuid */
                                 id: string;
                                 serviceAccountNumber: string;
-                                packageName: string;
+                                planName: string;
                             } | null;
                             locationId: string | null;
                             locationPath: string | null;
@@ -12665,7 +13763,7 @@ export interface paths {
                                 /** Format: uuid */
                                 id: string;
                                 serviceAccountNumber: string;
-                                packageName: string;
+                                planName: string;
                             } | null;
                             locationId: string | null;
                             locationPath: string | null;
@@ -12783,7 +13881,7 @@ export interface paths {
                                 /** Format: uuid */
                                 id: string;
                                 serviceAccountNumber: string;
-                                packageName: string;
+                                planName: string;
                             } | null;
                             locationId: string | null;
                             locationPath: string | null;
