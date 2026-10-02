@@ -18,6 +18,7 @@ import {
   Pressable,
   ScrollView,
   Text,
+  ThemedIcon,
   View,
 } from '@/components/ui';
 import { useChannels } from '@/lib/hooks/api/use-channels';
@@ -172,7 +173,7 @@ export function PackageChannelsScreen() {
       >
         <View className="gap-2.5">
           <View className="flex-row items-center rounded-2xl border border-border bg-card px-3.5 py-2.5">
-            <HugeiconsIcon icon={Search01Icon} size={18} color={colors.neutral[400]} strokeWidth={2} />
+            <ThemedIcon icon={Search01Icon} size={18} strokeWidth={2} colorClassName="text-muted-foreground" />
             <TextInput
               value={search}
               onChangeText={setSearch}

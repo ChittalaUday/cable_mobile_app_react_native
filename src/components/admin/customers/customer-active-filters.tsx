@@ -48,6 +48,9 @@ export function CustomerActiveFilters({ filters, onClear }: {
       {filters.serviceProviderId
         ? <FilterPill label={t('customers_list.filter_service_provider')} onPress={() => onClear('serviceProviderId')} />
         : null}
+      {filters.balance
+        ? <FilterPill label={`Payment: ${filters.balance === 'due' ? 'Due' : filters.balance === 'advance' ? 'Advance' : 'All clear'}`} onPress={() => onClear('balance')} />
+        : null}
       {filters.datePreset && filters.datePreset !== 'all'
         ? <FilterPill label={`${t('customers_list.filter_created_date')}:${filters.datePreset}`} onPress={() => onClear('datePreset')} />
         : null}

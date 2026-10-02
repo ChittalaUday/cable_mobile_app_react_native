@@ -7774,9 +7774,9 @@ export interface paths {
                         reference: string;
                         /** Format: date-time */
                         collectedAt?: string;
-                        latitude?: number;
-                        longitude?: number;
-                        gpsAccuracyM?: number;
+                        latitude: number;
+                        longitude: number;
+                        gpsAccuracyM: number;
                     };
                 };
             };
@@ -7933,9 +7933,9 @@ export interface paths {
                         reason?: string;
                         /** Format: date-time */
                         collectedAt?: string;
-                        latitude?: number;
-                        longitude?: number;
-                        gpsAccuracyM?: number;
+                        latitude: number;
+                        longitude: number;
+                        gpsAccuracyM: number;
                         /** @description Decimal string, never negative */
                         amount: string;
                         /** Format: uuid */
@@ -8107,9 +8107,9 @@ export interface paths {
                         reason?: string;
                         /** Format: date-time */
                         collectedAt?: string;
-                        latitude?: number;
-                        longitude?: number;
-                        gpsAccuracyM?: number;
+                        latitude: number;
+                        longitude: number;
+                        gpsAccuracyM: number;
                         amount?: string | null;
                         /** Format: uuid */
                         customerEquipmentId: string;

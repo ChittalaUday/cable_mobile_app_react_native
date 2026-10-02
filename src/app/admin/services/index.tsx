@@ -82,7 +82,7 @@ function ProviderItemCard({
               {prov.status === 'active' ? 'Active' : 'Inactive'}
             </Text>
           </View>
-          <HugeiconsIcon icon={ArrowRight01Icon} size={18} color={colors.neutral[400]} strokeWidth={2} />
+          <ThemedIcon icon={ArrowRight01Icon} size={18} strokeWidth={2} colorClassName="text-muted-foreground" />
         </View>
       </Pressable>
     </Card>
@@ -155,7 +155,7 @@ export function ServicesScreen() {
         )}
       >
         <View className="flex-row items-center rounded-xl border border-border bg-surface px-3 py-2">
-          <HugeiconsIcon icon={Search01Icon} size={16} color={colors.neutral[400]} strokeWidth={2} />
+          <ThemedIcon icon={Search01Icon} size={16} strokeWidth={2} colorClassName="text-muted-foreground" />
           <TextInput
             value={search}
             onChangeText={setSearch}

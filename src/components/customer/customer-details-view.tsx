@@ -31,6 +31,7 @@ import { useTranslation } from 'react-i18next';
 import { Linking, RefreshControl, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PlanPrice } from '@/components/common/plan-price';
 import { Avatar, IconTile, Segmented, StatusPill, TINT } from '@/components/common/shell';
 import { EditCustomerSheet } from '@/components/customer/edit-customer-sheet';
 import { RaiseTicketSheet } from '@/components/tickets/raise-ticket-sheet';
@@ -240,10 +241,22 @@ function DetailRow({ label, value, icon, valueClassName = 'text-foreground', chi
   children?: React.ReactNode;
 }) {
   return (
-    <View className="flex-row items-start gap-2 py-2">
-      {icon ? <ThemedIcon icon={icon} size={16} colorClassName="text-muted-foreground" /> : null}
-      <Text className="w-[38%] text-[13px] text-muted-foreground">{label}</Text>
-      {children ?? <Text selectable className={`flex-1 text-[13px] font-medium ${valueClassName}`}>{value || '—'}</Text>}
+    <View className="flex-row items-start gap-3 py-2">
+      {/* Icon and label share one fixed column, so every value starts at the same x
+          whether or not its row has an icon; the icon sits on the first text line. */}
+      <View className="w-[42%] flex-row items-start gap-2">
+        {icon
+          ? (
+              <View className="h-[18px] w-4 items-center justify-center">
+                <ThemedIcon icon={icon} size={16} colorClassName="text-muted-foreground" />
+              </View>
+            )
+          : null}
+        <Text className="flex-1 text-[13px] leading-[18px] text-muted-foreground">{label}</Text>
+      </View>
+      {children === undefined
+        ? <Text selectable className={`flex-1 text-[13px] leading-[18px] font-medium ${valueClassName}`}>{value || '—'}</Text>
+        : <View className="min-h-[18px] flex-1 justify-center">{children}</View>}
     </View>
   );
 }
@@ -397,10 +410,9 @@ function ServiceCard({ sub, onManage }: { sub: CustomerSubscription; onManage?: 
       <DetailRow label="Service Account No." value={sub.serviceAccountNumber} valueClassName="text-foreground font-bold" />
       <DetailRow label="Plan" value={sub.plan.name} />
       <DetailRow label="Billing Cycle" value={capitalize(sub.billingCycle)} />
-      {Number(sub.plan.discount) > 0
-        ? <DetailRow label="Plan Price" value={`₹${sub.plan.price} − ₹${sub.plan.discount} off`} />
-        : null}
-      <DetailRow label="Per Cycle" value={`₹${sub.price}`} />
+      <DetailRow label="Price">
+        <PlanPrice price={sub.plan.price} amount={sub.plan.amount} className="flex-1 text-[13px] font-medium text-foreground" />
+      </DetailRow>
       <DetailRow label="Outstanding" value={`₹${sub.outstandingBalance}`} valueClassName={balanceTone(outstanding).text} />
       <DetailRow label="Start Date" value={formatDate(sub.startDate)} />
       <DetailRow label="Next Charge" value={Number(sub.nextPlanCharge) > 0 ? `₹${sub.nextPlanCharge}` : '—'} />
@@ -470,7 +482,7 @@ function PaymentsTab({ customer }: { customer: CustomerDetail }) {
             className="flex-row items-center gap-1.5 rounded-lg border border-border px-3 py-1.5"
           >
             <Text className="text-xs font-medium text-foreground">{PAYMENT_RANGES.find(r => r.months === months)?.label}</Text>
-            <HugeiconsIcon icon={ArrowDown01Icon} size={14} color={colors.neutral[500]} />
+            <ThemedIcon icon={ArrowDown01Icon} size={14} colorClassName="text-muted-foreground" />
           </Pressable>
         </View>
         {picking

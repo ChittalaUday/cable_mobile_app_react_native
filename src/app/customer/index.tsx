@@ -10,7 +10,7 @@ import { CustomerConnectionCard } from '@/components/common/customer-connection-
 import { Card, LoadError, Loading } from '@/components/common/shell';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { RaiseTicketSheet } from '@/components/tickets/raise-ticket-sheet';
-import { Button, colors, Pressable, ScrollView, Text, View } from '@/components/ui';
+import { Button, colors, Pressable, ScrollView, Text, ThemedIcon, View } from '@/components/ui';
 import { customerItemToConsolidated, useCustomers } from '@/lib/hooks/api/use-customers';
 import { useAuthStore } from '@/lib/hooks/stores/use-auth-store';
 
@@ -105,7 +105,7 @@ export function CustomerDashboardScreen() {
             <Text className="font-semibold text-foreground">{t('remote.public_remote')}</Text>
             <Text className="text-xs text-muted-foreground">{t('remote.public_remote_desc')}</Text>
           </View>
-          <HugeiconsIcon icon={ArrowRight01Icon} size={16} color={colors.neutral[400]} strokeWidth={2.4} />
+          <ThemedIcon icon={ArrowRight01Icon} size={16} strokeWidth={2.4} colorClassName="text-muted-foreground" />
         </Pressable>
 
         <Button label={t('profile.sign_out')} variant="outline" onPress={signOut} />

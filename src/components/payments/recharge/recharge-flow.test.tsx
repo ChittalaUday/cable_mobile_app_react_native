@@ -26,6 +26,12 @@ jest.mock('@react-navigation/native', () => ({ useIsFocused: () => true }));
 
 jest.mock('react-native-qrcode-svg', () => 'QRCode');
 
+// A fix is in hand: every payment carries where it was collected.
+jest.mock('@/lib/hooks/common/use-collection-fix', () => ({
+  useCollectionFix: () => ({ status: 'ready', latitude: 16.8697, longitude: 81.9342, gpsAccuracyM: 12, retry: () => {} }),
+  fixPayload: (fix: { latitude: number; longitude: number; gpsAccuracyM: number }) => ({ latitude: fix.latitude, longitude: fix.longitude, gpsAccuracyM: fix.gpsAccuracyM }),
+}));
+
 jest.mock('@/lib/hooks/api/use-customers', () => ({
   useCustomer: jest.fn(),
 }));

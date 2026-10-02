@@ -11,6 +11,7 @@ import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, TextInput, TouchableOpacity } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { PlanPrice } from '@/components/common/plan-price';
 import { Button, colors, Pressable, Text, ThemedIcon, View } from '@/components/ui';
 
 import { useCreateCustomer, useCustomers } from '@/lib/hooks/api/use-customers';
@@ -430,9 +431,9 @@ function PlanRow({ item, selected, onPress }: {
         <Text className="text-sm font-extrabold text-foreground" numberOfLines={1}>{item.name}</Text>
         <Text className="text-[11px] text-muted-foreground" numberOfLines={1}>{item.serviceProviderName}</Text>
       </View>
-      <Text className="shrink-0 text-xs font-bold text-primary-600" numberOfLines={1}>
-        {`₹${item.amount} / ${item.billingCycle}`}
-      </Text>
+      <View className="shrink-0">
+        <PlanPrice price={item.price} amount={item.amount} className="text-xs font-bold text-primary-600" />
+      </View>
     </Pressable>
   );
 }

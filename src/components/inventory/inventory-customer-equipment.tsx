@@ -59,7 +59,7 @@ export function InventoryCustomerEquipmentScreen() {
         {/* Search Bar */}
         <View className="rounded-xl border border-border bg-card px-3 py-1">
           <View className="flex-row items-center gap-2">
-            <HugeiconsIcon icon={Search01Icon} size={18} color={colors.neutral[400]} strokeWidth={2} />
+            <ThemedIcon icon={Search01Icon} size={18} strokeWidth={2} colorClassName="text-muted-foreground" />
             <Input
               value={search}
               onChangeText={setSearch}
@@ -215,7 +215,7 @@ export function InventoryCustomerEquipmentScreen() {
             : (
                 <Card className="items-center justify-center border border-border p-10">
                   <View className="mb-2 size-14 items-center justify-center rounded-2xl bg-muted">
-                    <HugeiconsIcon icon={Package01Icon} size={28} color={colors.neutral[400]} strokeWidth={1.8} />
+                    <ThemedIcon icon={Package01Icon} size={28} strokeWidth={1.8} colorClassName="text-muted-foreground" />
                   </View>
                   <Text className="text-sm font-semibold text-foreground">No Equipment Found</Text>
                   <Text className="mt-1 text-center text-xs text-muted-foreground">

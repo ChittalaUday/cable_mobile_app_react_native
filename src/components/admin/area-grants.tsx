@@ -85,7 +85,7 @@ export function AreaGrants({
                   onPress={() => remove(area.id)}
                   hitSlop={10}
                 >
-                  <HugeiconsIcon icon={Cancel01Icon} size={16} color={colors.neutral[400]} strokeWidth={2.2} />
+                  <ThemedIcon icon={Cancel01Icon} size={16} strokeWidth={2.2} colorClassName="text-muted-foreground" />
                 </Pressable>
               </View>
             ))}
@@ -100,7 +100,7 @@ export function AreaGrants({
               {inherited.map(area => (
                 <View key={area.id} className="flex-row items-center gap-2.5">
                   <View className="size-8 items-center justify-center rounded-lg bg-muted">
-                    <HugeiconsIcon icon={Location01Icon} size={15} color={colors.neutral[400]} strokeWidth={2} />
+                    <ThemedIcon icon={Location01Icon} size={15} strokeWidth={2} colorClassName="text-muted-foreground" />
                   </View>
                   <View className="flex-1">
                     <Text className="text-sm font-semibold text-muted-foreground" numberOfLines={1}>{area.name}</Text>

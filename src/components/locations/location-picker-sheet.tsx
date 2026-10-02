@@ -85,7 +85,7 @@ function Breadcrumb({ trail, rootLabel, onJump }: {
 
       {trail.map((step, index) => (
         <View key={step.id} className="flex-row items-center gap-1">
-          <HugeiconsIcon icon={ArrowRight01Icon} size={13} color={colors.neutral[400]} />
+          <ThemedIcon icon={ArrowRight01Icon} size={13} colorClassName="text-muted-foreground" />
           <Pressable
             accessibilityRole="button"
             onPress={() => onJump(trail.slice(0, index + 1))}

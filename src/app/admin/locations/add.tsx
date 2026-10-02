@@ -1,6 +1,5 @@
 import type { Location, LocationSchema } from '@/lib/api/types';
 import { ArrowDown01Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as React from 'react';
@@ -16,6 +15,7 @@ import {
   FocusAwareStatusBar,
   Pressable,
   Text,
+  ThemedIcon,
   useModal,
   View,
 } from '@/components/ui';
@@ -82,7 +82,7 @@ function Dropdown({
         >
           {value || placeholder}
         </Text>
-        <HugeiconsIcon icon={ArrowDown01Icon} size={18} color={colors.neutral[400]} />
+        <ThemedIcon icon={ArrowDown01Icon} size={18} colorClassName="text-muted-foreground" />
       </Pressable>
       {open
         ? (
@@ -323,7 +323,7 @@ export function AddLocationScreen() {
                         )
                       : null}
                   </View>
-                  <HugeiconsIcon icon={ArrowRight01Icon} size={17} color={colors.neutral[400]} strokeWidth={2} />
+                  <ThemedIcon icon={ArrowRight01Icon} size={17} strokeWidth={2} colorClassName="text-muted-foreground" />
                 </Pressable>
                 {errors.parent ? <Text className="text-xs text-danger-500">{errors.parent}</Text> : null}
               </View>

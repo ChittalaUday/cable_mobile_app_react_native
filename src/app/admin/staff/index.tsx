@@ -22,6 +22,7 @@ import {
   Pressable,
   SafeAreaView,
   Text,
+  ThemedIcon,
   View,
 } from '@/components/ui';
 import { useStaff, useTeams } from '@/lib/hooks/api/use-staff';
@@ -85,7 +86,7 @@ function PersonCard({ member, onPress }: { member: StaffMember; onPress: () => v
               {member.team ? ` · ${member.team.name}` : ''}
             </Text>
             <View className="mt-1 flex-row items-center gap-1">
-              <HugeiconsIcon icon={Location01Icon} size={12} color={colors.neutral[400]} strokeWidth={2} />
+              <ThemedIcon icon={Location01Icon} size={12} strokeWidth={2} colorClassName="text-muted-foreground" />
               <Text className="text-[11px] text-muted-foreground">
                 {areas === 0 ? 'No areas — reaches nothing' : `${areas} ${areas === 1 ? 'area' : 'areas'}`}
                 {member.inheritedLocations.length > 0 ? ` (${member.inheritedLocations.length} via team)` : ''}
@@ -96,7 +97,7 @@ function PersonCard({ member, onPress }: { member: StaffMember; onPress: () => v
 
         <View className="shrink-0 flex-row items-center gap-2">
           <StatusPill status={member.status} />
-          <HugeiconsIcon icon={ArrowRight01Icon} size={18} color={colors.neutral[400]} strokeWidth={2} />
+          <ThemedIcon icon={ArrowRight01Icon} size={18} strokeWidth={2} colorClassName="text-muted-foreground" />
         </View>
       </Pressable>
     </Card>
@@ -140,7 +141,7 @@ function TeamCard({ team, onPress, onEdit }: { team: Team; onPress: () => void; 
           >
             <HugeiconsIcon icon={PencilEdit02Icon} size={15} color={colors.primary[600]} strokeWidth={2} />
           </Pressable>
-          <HugeiconsIcon icon={ArrowRight01Icon} size={18} color={colors.neutral[400]} strokeWidth={2} />
+          <ThemedIcon icon={ArrowRight01Icon} size={18} strokeWidth={2} colorClassName="text-muted-foreground" />
         </View>
       </Pressable>
     </Card>
@@ -237,7 +238,7 @@ export function StaffScreen() {
 
           {/* Search Bar */}
           <View className="mt-2.5 flex-row items-center rounded-xl border border-border bg-surface px-3 py-2">
-            <HugeiconsIcon icon={Search01Icon} size={16} color={colors.neutral[400]} strokeWidth={2} />
+            <ThemedIcon icon={Search01Icon} size={16} strokeWidth={2} colorClassName="text-muted-foreground" />
             <TextInput
               testID="staff-search-input"
               value={search}

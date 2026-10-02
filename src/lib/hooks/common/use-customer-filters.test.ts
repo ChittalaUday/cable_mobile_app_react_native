@@ -28,4 +28,20 @@ describe('useCustomerFilters', () => {
     expect(result.current.modalFilters.datePreset).toBe('all');
     expect(result.current.hasActiveFilters).toBe(false);
   });
+
+  it('takes the payment filter from the sheet and clears it like any other', () => {
+    const { result } = renderHook(() => useCustomerFilters());
+    expect(result.current.balance).toBe('any');
+
+    act(() => result.current.applyFilters({ ...result.current.modalFilters, balance: 'due' }));
+    expect(result.current.balance).toBe('due');
+    expect(result.current.hasActiveFilters).toBe(true);
+
+    act(() => result.current.applyFilters({ ...result.current.modalFilters, balance: 'advance' }));
+    expect(result.current.balance).toBe('advance');
+
+    act(() => result.current.clearFilter('balance'));
+    expect(result.current.balance).toBe('any');
+    expect(result.current.hasActiveFilters).toBe(false);
+  });
 });

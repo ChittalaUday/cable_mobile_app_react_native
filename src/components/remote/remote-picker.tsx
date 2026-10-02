@@ -13,7 +13,7 @@ import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { TextInput } from 'react-native';
 
-import { colors, Pressable, Text, View } from '@/components/ui';
+import { colors, Pressable, Text, ThemedIcon, View } from '@/components/ui';
 
 const DEVICE_TYPES: { type: RemoteDeviceType; icon: typeof Tv01Icon }[] = [
   { type: 'tv', icon: Tv01Icon },
@@ -68,7 +68,7 @@ export function RemotePicker({ deviceType, onDeviceType, remotes, onSelect }: {
       {total === 0
         ? (
             <View className="items-center gap-1.5 rounded-3xl border border-border bg-card px-6 py-10">
-              <HugeiconsIcon icon={Search01Icon} size={26} color={colors.neutral[400]} strokeWidth={1.8} />
+              <ThemedIcon icon={Search01Icon} size={26} strokeWidth={1.8} colorClassName="text-muted-foreground" />
               <Text className="text-center text-sm font-semibold text-foreground">{t('remote.empty')}</Text>
               <Text className="text-center text-xs text-muted-foreground">{t('remote.empty_hint')}</Text>
             </View>
@@ -141,7 +141,7 @@ function RemoteRow({ remote, first, onPress }: {
             </View>
           )}
 
-      <HugeiconsIcon icon={ArrowRight01Icon} size={16} color={colors.neutral[400]} strokeWidth={2.4} />
+      <ThemedIcon icon={ArrowRight01Icon} size={16} strokeWidth={2.4} colorClassName="text-muted-foreground" />
     </Pressable>
   );
 }
@@ -153,7 +153,7 @@ function SearchField({ value, onChange, placeholder }: {
 }) {
   return (
     <View className="flex-row items-center gap-2 rounded-2xl border border-border bg-card px-3.5 py-1">
-      <HugeiconsIcon icon={Search01Icon} size={17} color={colors.neutral[400]} strokeWidth={2.2} />
+      <ThemedIcon icon={Search01Icon} size={17} strokeWidth={2.2} colorClassName="text-muted-foreground" />
       <TextInput
         testID="remote-search-input"
         value={value}
@@ -174,7 +174,7 @@ function SearchField({ value, onChange, placeholder }: {
               onPress={() => onChange('')}
               className="p-1"
             >
-              <HugeiconsIcon icon={Cancel01Icon} size={15} color={colors.neutral[400]} strokeWidth={2.4} />
+              <ThemedIcon icon={Cancel01Icon} size={15} strokeWidth={2.4} colorClassName="text-muted-foreground" />
             </Pressable>
           )
         : null}

@@ -91,7 +91,7 @@ describe('addCustomerModal', () => {
     toConnectionStep();
 
     expect(screen.getByText('Gold HD')).toBeTruthy();
-    expect(screen.getByText('₹350.00 / monthly')).toBeTruthy();
+    expect(screen.getByText('₹400 ₹350')).toBeTruthy();
     expect(screen.queryByText('Retired')).toBeNull();
   });
 

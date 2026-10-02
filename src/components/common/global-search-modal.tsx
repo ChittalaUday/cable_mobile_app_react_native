@@ -9,7 +9,7 @@ import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { InteractionManager, Modal, ScrollView, TextInput, TouchableOpacity } from 'react-native';
 import { ICON_MAP } from '@/components/common/registry-icons';
-import { colors, Text, View } from '@/components/ui';
+import { colors, Text, ThemedIcon, View } from '@/components/ui';
 
 import { useAppSearch } from '@/lib/hooks/common/use-app-search';
 import { useDismissKeyboardOnExit } from '@/lib/hooks/common/use-dismiss-keyboard';
@@ -58,7 +58,7 @@ export function GlobalSearchModal({ visible, onClose }: GlobalSearchModalProps) 
         <View className="overflow-hidden rounded-2xl border border-border bg-surface">
           {/* Header & Search Input */}
           <View className="flex-row items-center border-b border-border px-4 py-3">
-            <HugeiconsIcon icon={Search01Icon} size={20} color={colors.neutral[400]} />
+            <ThemedIcon icon={Search01Icon} size={20} colorClassName="text-muted-foreground" />
             <TextInput
               autoFocus
               value={query}
@@ -68,7 +68,7 @@ export function GlobalSearchModal({ visible, onClose }: GlobalSearchModalProps) 
               className="ml-3 flex-1 text-base text-foreground"
             />
             <TouchableOpacity onPress={onClose} hitSlop={12}>
-              <HugeiconsIcon icon={Cancel01Icon} size={20} color={colors.neutral[400]} />
+              <ThemedIcon icon={Cancel01Icon} size={20} colorClassName="text-muted-foreground" />
             </TouchableOpacity>
           </View>
 

@@ -6,7 +6,6 @@ import {
   Notification03Icon,
   Settings02Icon,
 } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { showMessage } from 'react-native-flash-message';
@@ -14,7 +13,7 @@ import { showMessage } from 'react-native-flash-message';
 import { dialogs } from '@/components/common/dialogs';
 
 import { Card, Divider, IconTile, ScreenHeader, TINT } from '@/components/common/shell';
-import { colors, FocusAwareStatusBar, Image, Pressable, ScrollView, Text, View } from '@/components/ui';
+import { FocusAwareStatusBar, Image, Pressable, ScrollView, Text, ThemedIcon, View } from '@/components/ui';
 import { useAuthStore } from '@/lib/hooks/stores/use-auth-store';
 import { translate } from '@/lib/i18n';
 import { initials } from '@/lib/utils/admin-format';
@@ -111,7 +110,7 @@ export function ProfileScreen({ basePath = '/admin' }: { basePath?: '/admin' | '
               >
                 <IconTile icon={row.icon} tint={row.tint} size={32} iconSize={17} />
                 <Text className="flex-1 text-[14px] text-foreground">{row.label}</Text>
-                <HugeiconsIcon icon={ArrowRight01Icon} size={16} color={colors.neutral[400]} strokeWidth={2.2} />
+                <ThemedIcon icon={ArrowRight01Icon} size={16} strokeWidth={2.2} colorClassName="text-muted-foreground" />
               </Pressable>
             </View>
           ))}

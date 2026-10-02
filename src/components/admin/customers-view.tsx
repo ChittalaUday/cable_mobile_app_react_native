@@ -13,10 +13,10 @@ import { Avatar, Segmented, StatusPill } from '@/components/common/shell';
 import { colors, Pressable, Text, View } from '@/components/ui';
 import { useCustomerFilters } from '@/lib/hooks/common/use-customer-filters';
 import { useCustomerResults } from '@/lib/hooks/common/use-customer-results';
+import { planRupees } from '@/lib/utils/admin-format';
 import { AddCustomerModal } from './add-customer-modal';
 import { CustomerFilterModal } from './customer-filter-modal';
 import { CustomerActiveFilters } from './customers/customer-active-filters';
-import { CustomerBalanceChips } from './customers/customer-balance-chips';
 import { CustomerListEmpty } from './customers/customer-list-empty';
 import { CustomerSearchBar } from './customers/customer-search-bar';
 
@@ -39,8 +39,29 @@ function CustomerRow({ customer, onPress }: { customer: ConsolidatedCustomer; on
         {customer.phone ? <Text className="text-[13px] text-muted-foreground">{customer.phone}</Text> : null}
         {customer.address ? <Text className="text-[13px] text-muted-foreground">{customer.address}</Text> : null}
       </View>
-      <StatusPill status={customer.status} />
+      <View className="items-end gap-1">
+        <StatusPill status={customer.status} />
+        <BalanceTag customer={customer} />
+      </View>
     </Pressable>
+  );
+}
+
+/** What the customer owes across their connections — due in red, advance in green, nothing when clear. */
+function BalanceTag({ customer }: { customer: ConsolidatedCustomer }) {
+  const paise = customer.connections.reduce((total, connection) => total + Math.round(connection.balance * 100), 0);
+  if (paise === 0)
+    return null;
+
+  const due = paise > 0;
+  return (
+    <Text
+      testID={`customer-balance-${customer.id}`}
+      className={`text-xs font-extrabold ${due ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}
+      numberOfLines={1}
+    >
+      {`${planRupees(Math.abs(paise) / 100)} ${due ? 'due' : 'advance'}`}
+    </Text>
   );
 }
 
@@ -112,8 +133,6 @@ export function CustomersView({
           value={filters.activeChip}
           onChange={filters.selectChip}
         />
-
-        <CustomerBalanceChips value={filters.balance} onChange={filters.setBalance} />
 
         {filters.hasActiveFilters
           ? <CustomerActiveFilters filters={filters.modalFilters} onClear={filters.clearFilter} />

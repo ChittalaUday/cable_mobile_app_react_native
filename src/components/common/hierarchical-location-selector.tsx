@@ -132,7 +132,7 @@ export function LocationBreadcrumb({
         const isCurrent = index === trail.length - 1;
         return (
           <View key={step.id} className="flex-row items-center gap-1.5">
-            <HugeiconsIcon icon={ArrowRight01Icon} size={12} color={colors.neutral[400]} />
+            <ThemedIcon icon={ArrowRight01Icon} size={12} colorClassName="text-muted-foreground" />
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={step.name}

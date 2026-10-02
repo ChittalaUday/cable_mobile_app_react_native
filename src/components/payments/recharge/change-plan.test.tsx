@@ -82,11 +82,11 @@ describe('the plans page', () => {
     mount();
 
     expect(screen.getByText('Current plan')).toBeTruthy();
-    expect(screen.getByText('ACT • ₹350.00 / monthly (₹400.00 − ₹50.00)')).toBeTruthy();
+    expect(screen.getByText('ACT • ₹400 ₹350')).toBeTruthy();
     expect(screen.getByRole('tab', { name: 'Plans (3)' })).toBeTruthy();
     expect(screen.getByRole('tab', { name: 'Add-ons (4)' })).toBeTruthy();
     expect(screen.getByText('Platinum')).toBeTruthy();
-    expect(screen.getByText('₹700.00 / quarterly (₹900.00 − ₹200.00)')).toBeTruthy();
+    expect(screen.getByText('₹900 ₹700')).toBeTruthy();
     // The current plan is pinned, not repeated among switch choices; a retired one is not offered.
     expect(screen.getAllByText('Gold HD')).toHaveLength(1);
     expect(screen.queryByText('Retired Plan')).toBeNull();

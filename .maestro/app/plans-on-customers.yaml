@@ -39,7 +39,7 @@ tags:
 - eraseText: 5
 - inputText: '50'
 - runFlow: ../utils/hide-keyboard.yaml
-- assertVisible: '₹911.00 / monthly'
+- assertVisible: '₹961 ₹911'
 - scrollUntilVisible:
     element: ${PACKAGE}
     timeout: 30000
@@ -81,7 +81,7 @@ tags:
     element: E2E Plan ${output.stamp}
     timeout: 90000
     speed: 70
-- assertVisible: '₹911.00 / monthly'
+- assertVisible: '₹961 ₹911'
 - tapOn: E2E Plan ${output.stamp}
 - scrollUntilVisible:
     element:
@@ -122,8 +122,7 @@ tags:
 - scrollUntilVisible:
     element: '.*E2E Plan ${output.stamp}.*'
     timeout: 20000
-- assertVisible: '₹961.00 − ₹50.00 off'
-- assertVisible: '₹911.00'
+- assertVisible: '₹961 ₹911'
 - assertNotVisible: ${PACKAGE}
 
 # --- Retire it from sale: a plan with a live line cannot be deleted -------------

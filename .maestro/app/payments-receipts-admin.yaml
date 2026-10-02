@@ -49,7 +49,7 @@ tags:
 - assertVisible: upi
 - assertVisible: When
 - assertVisible: Area
-- assertNotVisible: Reversed
+- assertNotVisible: Refunded
 
 # --- Reverse: cancel first, then post it -------------------------------------
 - scrollUntilVisible:
@@ -57,7 +57,7 @@ tags:
 - tapOn: Reverse this receipt
 - assertVisible: '.*The original stays on the record and both are audited.*'
 - tapOn: Cancel
-- assertNotVisible: Reversed
+- assertNotVisible: Refunded
 - assertVisible: Reverse this receipt
 
 - tapOn: Reverse this receipt
@@ -66,7 +66,7 @@ tags:
 - inputText: E2E cap check ${output.stamp}
 - tapOn: Reverse
 - extendedWaitUntil:
-    visible: Reversed
+    visible: Refunded
     timeout: 20000
 - assertNotVisible: Reverse this receipt
 
@@ -110,4 +110,4 @@ tags:
     visible: Collected by
     timeout: 20000
 - assertVisible: ${CUSTOMER}
-- assertVisible: Reversed
+- assertVisible: Refunded

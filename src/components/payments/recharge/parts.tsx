@@ -1,10 +1,11 @@
-/* eslint-disable react-refresh/only-export-components -- STEP_LABELS and cycleLabel belong beside the pieces that use them. */
+/* eslint-disable react-refresh/only-export-components -- STEP_LABELS belongs beside the pieces that use them. */
 import type { IconSvgElement } from '@hugeicons/react-native';
 import type { CustomerSubscription } from '@/lib/api/types';
 import type { ChargeKind, Step } from '@/lib/hooks/stores/use-recharge-store';
 import { CheckListIcon, CheckmarkCircle02Icon, PrinterIcon, Tick02Icon, ViewIcon, Wallet01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as React from 'react';
+import { PlanPrice } from '@/components/common/plan-price';
 import { colors, Pressable, Text, View } from '@/components/ui';
 import { STEPS } from '@/lib/hooks/stores/use-recharge-store';
 import { rupeesExact } from '@/lib/utils/admin-format';
@@ -104,23 +105,6 @@ export function SumRow({ label, value, tone = 'normal', testID }: {
   );
 }
 
-/** What one cycle of the line's plan charges, and how long a cycle is. */
-export function cycleLabel(subscription: CustomerSubscription): string {
-  return `${rupeesExact(subscription.price)} / ${cycleName(subscription.billingCycle)}`;
-}
-
-function cycleName(cycle: string): string {
-  return cycle.replace('_', '-');
-}
-
-/** A plan as a collector reads it: the amount one cycle charges, with the discount it comes from. */
-export function planLabel(plan: { amount: string; billingCycle: string; discount?: string; price?: string }): string {
-  const off = plan.discount !== undefined && Number(plan.discount) > 0 && plan.price !== undefined
-    ? ` (${rupeesExact(plan.price)} − ${rupeesExact(plan.discount)})`
-    : '';
-  return `${rupeesExact(plan.amount)} / ${cycleName(plan.billingCycle)}${off}`;
-}
-
 /**
  * The customer's connections, and which one this visit is about.
  *
@@ -157,7 +141,7 @@ export function PlanTable({ lines, selectedId, onSelect }: {
                   {`${line.service.name} • ${line.provider.name}`}
                 </Text>
               </View>
-              <Text className="text-sm font-bold text-foreground">{cycleLabel(line)}</Text>
+              <PlanPrice price={line.plan.price} amount={line.plan.amount} className="text-sm font-bold text-foreground" />
             </View>
 
             <View className="flex-row items-center justify-between gap-2">
@@ -178,7 +162,7 @@ export function PlanTable({ lines, selectedId, onSelect }: {
 /** A row in a list of things that can be chosen — equipment, a package, a printer. */
 export function ChoiceRow({ title, subtitle, trailing, selected, disabled, onPress, testID }: {
   title: string;
-  subtitle?: string;
+  subtitle?: React.ReactNode;
   trailing?: string;
   selected?: boolean;
   disabled?: boolean;
@@ -198,9 +182,9 @@ export function ChoiceRow({ title, subtitle, trailing, selected, disabled, onPre
     >
       <View className="min-w-0 flex-1 gap-0.5">
         <Text className="text-sm font-extrabold text-foreground" numberOfLines={1}>{title}</Text>
-        {subtitle != null && (
-          <Text className="text-xs text-muted-foreground" numberOfLines={1}>{subtitle}</Text>
-        )}
+        {typeof subtitle === 'string'
+          ? <Text className="text-xs text-muted-foreground" numberOfLines={1}>{subtitle}</Text>
+          : subtitle}
       </View>
       {trailing != null && (
         <Text className="text-[11px] font-bold text-primary-600">{trailing}</Text>

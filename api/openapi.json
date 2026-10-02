@@ -17007,7 +17007,10 @@
                 "required": [
                   "customerId",
                   "subscriptionId",
-                  "reference"
+                  "reference",
+                  "latitude",
+                  "longitude",
+                  "gpsAccuracyM"
                 ],
                 "properties": {
                   "customerId": {
@@ -17536,6 +17539,9 @@
                 "required": [
                   "customerId",
                   "reference",
+                  "latitude",
+                  "longitude",
+                  "gpsAccuracyM",
                   "amount"
                 ],
                 "properties": {
@@ -18097,6 +18103,9 @@
                 "required": [
                   "customerId",
                   "reference",
+                  "latitude",
+                  "longitude",
+                  "gpsAccuracyM",
                   "customerEquipmentId"
                 ],
                 "properties": {

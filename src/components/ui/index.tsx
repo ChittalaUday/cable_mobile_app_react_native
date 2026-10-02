@@ -1,7 +1,8 @@
 /* eslint-disable react-refresh/only-export-components */
+import type * as React from 'react';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import Svg from 'react-native-svg';
-import { withUniwind } from 'uniwind';
+import { useResolveClassNames, withUniwind } from 'uniwind';
 
 export * from './button';
 export * from './checkbox';
@@ -33,5 +34,11 @@ export const StyledSvg = withUniwind(Svg);
  * A Hugeicons icon coloured by a theme class, so it follows light and dark:
  * `<ThemedIcon icon={X} colorClassName="text-muted-foreground" />`. Use it
  * instead of a fixed grey from `colors`, which only reads on one background.
+ *
+ * The class is resolved with `useResolveClassNames`, which re-renders on a
+ * theme switch; `withUniwind` resolved it once and kept the light colour.
  */
-export const ThemedIcon = withUniwind(HugeiconsIcon);
+export function ThemedIcon({ colorClassName = 'text-foreground', color, ...props }: React.ComponentProps<typeof HugeiconsIcon> & { colorClassName?: string }) {
+  const resolved = useResolveClassNames(colorClassName);
+  return <HugeiconsIcon {...props} color={color ?? (resolved.color as string | undefined)} />;
+}

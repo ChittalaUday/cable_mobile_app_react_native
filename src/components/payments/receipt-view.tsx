@@ -18,11 +18,11 @@ import { PrinterPanel, ReceiptPreview, useReceiptPrint } from './receipt-print';
 const rupees = (value: string | number) => `₹${Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const OUTCOME_LABEL: Record<Collection['outcome'], string> = {
-  full: 'Paid in full',
-  partial: 'Part payment',
-  none: 'Nothing collected',
-  due: 'Nothing collected · plan due',
-  refund: 'Reversal',
+  full: 'Paid',
+  partial: 'Partial',
+  none: 'Not paid',
+  due: 'Due',
+  refund: 'Refund',
   others: 'Other',
 };
 
@@ -110,7 +110,7 @@ export function ReceiptView({ id }: { id: string }) {
           </Text>
           {isReversed && (
             <Text className="mt-1 rounded-full bg-danger-50 px-3 py-1 text-[11px] font-bold text-danger-600 dark:bg-danger-950/40">
-              Reversed
+              Refunded
             </Text>
           )}
         </Card>

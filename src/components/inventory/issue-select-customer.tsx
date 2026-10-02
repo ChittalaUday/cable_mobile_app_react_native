@@ -14,6 +14,7 @@ import {
   Pressable,
   ScrollView,
   Text,
+  ThemedIcon,
   View,
 } from '@/components/ui';
 import { useCustomers } from '@/lib/hooks/api/use-customers';
@@ -79,7 +80,7 @@ export function IssueSelectCustomerScreen({
       <View className="p-4 pb-2">
         <View className="rounded-xl border border-border bg-card px-3 py-1">
           <View className="flex-row items-center gap-2">
-            <HugeiconsIcon icon={Search01Icon} size={18} color={colors.neutral[400]} strokeWidth={2} />
+            <ThemedIcon icon={Search01Icon} size={18} strokeWidth={2} colorClassName="text-muted-foreground" />
             <Input
               value={search}
               onChangeText={setSearch}
@@ -124,7 +125,7 @@ export function IssueSelectCustomerScreen({
                         </View>
                       </View>
 
-                      <HugeiconsIcon icon={ArrowRight01Icon} size={18} color={colors.neutral[400]} strokeWidth={2} />
+                      <ThemedIcon icon={ArrowRight01Icon} size={18} strokeWidth={2} colorClassName="text-muted-foreground" />
                     </Pressable>
                   ))}
                 </Card>

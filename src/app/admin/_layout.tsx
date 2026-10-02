@@ -1,6 +1,7 @@
 import { Redirect, Stack } from 'expo-router';
 import * as React from 'react';
 
+import { LocationGate } from '@/components/common/location-gate';
 import { LoadError } from '@/components/common/shell';
 import { useAuthStore } from '@/lib/hooks/stores/use-auth-store';
 
@@ -27,5 +28,9 @@ export default function AdminLayout() {
     return <Redirect href="/" />;
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <LocationGate>
+      <Stack screenOptions={{ headerShown: false }} />
+    </LocationGate>
+  );
 }

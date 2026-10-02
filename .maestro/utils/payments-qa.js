@@ -53,7 +53,7 @@ if (ACTION === 'setup') {
 }
 else if (ACTION === 'pay') {
   var amount = AMOUNT === 'null' ? null : AMOUNT;
-  var body = { customerId: output.qaCustomerId, subscriptionId: output.qaLineId, amount: amount, reference: uuid() };
+  var body = { customerId: output.qaCustomerId, subscriptionId: output.qaLineId, amount: amount, reference: uuid(), latitude: 16.8697, longitude: 81.9342, gpsAccuracyM: 12 };
   if (amount === null)
     body.reason = 'Second device: not home';
   else

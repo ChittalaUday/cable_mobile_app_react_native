@@ -2,8 +2,9 @@
 import type { LayoutChangeEvent } from 'react-native';
 import type { Bar, Slice } from '@/lib/utils/admin-stats';
 import * as React from 'react';
-import Svg, { Circle, Defs, G, Line, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, G, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
+import { useResolveClassNames } from 'uniwind';
 import { Text, View } from '@/components/ui';
 import { grouped, lakhs, niceTicks } from '@/lib/utils/admin-format';
 
@@ -81,12 +82,6 @@ export function RevenueBars({ bars, height = 164 }: { bars: Bar[]; height?: numb
                   <Stop offset="1" stopColor="#FF8C33" />
                 </LinearGradient>
               </Defs>
-              {ticks.map((tick, index) => (
-                <Line key={tick} x1={0} x2={width} y1={plot - (index / (ticks.length - 1)) * plot} y2={plot - (index / (ticks.length - 1)) * plot} stroke="#EDF0F4" strokeWidth={1} />
-              ))}
-              {bars.map((bar, index) => (
-                <Line key={`grid-${bar.key}`} x1={slot * (index + 1)} x2={slot * (index + 1)} y1={0} y2={plot} stroke="#F5F7F9" strokeWidth={1} />
-              ))}
               {bars.map((bar, index) => {
                 const barHeight = Math.max((bar.value / max) * plot, bar.value > 0 ? 3 : 0);
                 return (
@@ -123,6 +118,8 @@ export function Donut({ slices, total, caption, colors: palette, size = 124, str
   stroke?: number;
 }) {
   const radius = (size - stroke) / 2;
+  // The empty ring follows the theme; a fixed light grey shows as a white band in dark.
+  const track = (useResolveClassNames('bg-muted').backgroundColor as string | undefined) ?? '#262626';
   const circumference = 2 * Math.PI * radius;
   const denominator = Math.max(total, 1);
   const lengths = slices.map(slice => (slice.count / denominator) * circumference);
@@ -131,7 +128,7 @@ export function Donut({ slices, total, caption, colors: palette, size = 124, str
     <View className="items-center justify-center" style={{ width: size, height: size }}>
       <Svg width={size} height={size}>
         <G origin={`${size / 2}, ${size / 2}`} rotation={-90}>
-          <Circle cx={size / 2} cy={size / 2} r={radius} stroke="#F1F3F6" strokeWidth={stroke} fill="none" />
+          <Circle cx={size / 2} cy={size / 2} r={radius} stroke={track} strokeWidth={stroke} fill="none" />
           {slices.map((slice, index) => (
             <Circle
               key={slice.id}
@@ -148,11 +145,17 @@ export function Donut({ slices, total, caption, colors: palette, size = 124, str
         </G>
       </Svg>
       <View className="absolute items-center">
-        <Text className="text-lg font-bold text-foreground">{grouped(total)}</Text>
-        <Text className="text-[9px] text-muted-foreground">{caption}</Text>
+        <Text className="text-lg font-bold text-foreground" numberOfLines={1}>{grouped(total)}</Text>
+        <Text className="text-center text-[9px] text-muted-foreground" numberOfLines={2} style={{ maxWidth: size - stroke * 2 - 8 }}>{caption}</Text>
       </View>
     </View>
   );
+}
+
+/** 70.1564…% reads as 70.2%; a whole share drops the decimal. */
+export function shareLabel(share: number): string {
+  const rounded = Math.round(share * 10) / 10;
+  return `${Number.isInteger(rounded) ? rounded : rounded.toFixed(1)}%`;
 }
 
 export function DonutLegend({ slices, colors: palette }: { slices: Slice[]; colors: string[] }) {
@@ -163,10 +166,7 @@ export function DonutLegend({ slices, colors: palette }: { slices: Slice[]; colo
           <View className="size-2.5 rounded-full" style={{ backgroundColor: palette[index % palette.length] }} />
           <Text className="flex-1 text-xs text-foreground" numberOfLines={1}>{slice.label}</Text>
           <Text className="text-xs font-semibold text-foreground">{grouped(slice.count)}</Text>
-          <Text className="w-7 text-right text-[11px] text-muted-foreground">
-            {slice.share}
-            %
-          </Text>
+          <Text className="w-12 text-right text-[11px] text-muted-foreground" numberOfLines={1}>{shareLabel(slice.share)}</Text>
         </View>
       ))}
     </View>

@@ -23,6 +23,8 @@ export type CustomerFilterValues = {
   locationId?: string;
   serviceProviderId?: string;
   datePreset?: DatePresetType;
+  /** Read off each connection: owes money, holds an advance, or settled. */
+  balance?: 'due' | 'advance' | 'clear';
 };
 
 export type CustomerFilterModalProps = {
@@ -49,6 +51,7 @@ export function CustomerFilterModal({
   const [draftLocationId, setDraftLocationId] = React.useState<string | undefined>(filters.locationId);
   const [draftServiceProviderId, setDraftServiceProviderId] = React.useState<string | undefined>(filters.serviceProviderId);
   const [draftDatePreset, setDraftDatePreset] = React.useState<DatePresetType>(filters.datePreset || 'all');
+  const [draftBalance, setDraftBalance] = React.useState<CustomerFilterValues['balance']>(filters.balance);
 
   const [providerDropdownOpen, setProviderDropdownOpen] = React.useState(false);
 
@@ -70,6 +73,7 @@ export function CustomerFilterModal({
     setDraftLocationId(filters.locationId);
     setDraftServiceProviderId(filters.serviceProviderId);
     setDraftDatePreset(filters.datePreset || 'all');
+    setDraftBalance(filters.balance);
     setProviderDropdownOpen(false);
   }
   else if (!visible && openedWith) {
@@ -101,6 +105,7 @@ export function CustomerFilterModal({
       locationId: draftLocationId,
       serviceProviderId: draftServiceProviderId,
       datePreset: draftDatePreset,
+      balance: draftBalance,
     });
     sheet.dismiss();
     onClose();
@@ -111,6 +116,7 @@ export function CustomerFilterModal({
     setDraftLocationId(undefined);
     setDraftServiceProviderId(undefined);
     setDraftDatePreset('all');
+    setDraftBalance(undefined);
     onReset();
     sheet.dismiss();
     onClose();
@@ -121,6 +127,13 @@ export function CustomerFilterModal({
     { key: 'active', label: t('customers_list.active') },
     { key: 'inactive', label: t('customers_list.inactive') },
     { key: 'pending', label: t('customers_list.pending') },
+  ];
+
+  const balanceOptions: { key: CustomerFilterValues['balance']; label: string }[] = [
+    { key: undefined, label: t('customers_list.all') },
+    { key: 'due', label: 'Due' },
+    { key: 'advance', label: 'Advance' },
+    { key: 'clear', label: 'All clear' },
   ];
 
   const dateOptions: { key: DatePresetType; label: string }[] = [
@@ -207,13 +220,35 @@ export function CustomerFilterModal({
             </View>
           </View>
 
-          {/* 2. Location Filter */}
+          {/* 2. Payment: what each connection's balance says */}
+          <View className="gap-2">
+            <Text className="text-xs font-bold tracking-wider text-muted-foreground uppercase">Payment</Text>
+            <View className="flex-row flex-wrap gap-2">
+              {balanceOptions.map((opt) => {
+                const isSelected = draftBalance === opt.key;
+                return (
+                  <Pressable
+                    key={opt.key ?? 'any'}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isSelected }}
+                    testID={`customers-balance-${opt.key ?? 'any'}`}
+                    onPress={() => setDraftBalance(opt.key)}
+                    className={`rounded-xl border px-3.5 py-2 ${isSelected ? 'border-primary-500 bg-primary-500' : 'border-border bg-surface active:bg-muted/40'}`}
+                  >
+                    <Text className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-foreground'}`}>{opt.label}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* 3. Location Filter */}
           <HierarchicalLocationSelector
             selectedLocationId={draftLocationId}
             onSelectLocation={loc => setDraftLocationId(loc?.id)}
           />
 
-          {/* 3. Created Date Filter */}
+          {/* 4. Created Date Filter */}
           <View className="gap-2">
             <View className="flex-row items-center gap-1.5">
               <HugeiconsIcon icon={Calendar01Icon} size={14} color={colors.primary[500]} />

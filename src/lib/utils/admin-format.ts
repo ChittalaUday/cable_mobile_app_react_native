@@ -85,3 +85,8 @@ export function dateTime(iso: string) {
   const h = d.getHours();
   return `${dayMonthYear(d)}, ${pad2(h % 12 || 12)}:${pad2(d.getMinutes())} ${h < 12 ? 'AM' : 'PM'}`;
 }
+
+/** ₹300, or ₹300.50 — paise only when there are some. How plan prices read. */
+export function planRupees(value: string | number): string {
+  return rupeesExact(value).replace(/\.00$/, '');
+}

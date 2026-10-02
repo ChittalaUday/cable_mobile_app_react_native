@@ -22,6 +22,7 @@ let mockReferenceCounter = 0;
 jest.mock('expo-location', () => ({
   requestForegroundPermissionsAsync: async () => mockRequestPermission() as Promise<{ granted: boolean }>,
   getCurrentPositionAsync: async () => mockGetPosition() as Promise<{ coords: { latitude: number; longitude: number; accuracy: number | null } }>,
+  getLastKnownPositionAsync: async () => null,
   Accuracy: { Balanced: 3 },
 }));
 
@@ -124,7 +125,7 @@ async function mount(lines = [line('sub-1', 'ACT9001', '500.00')]) {
   useCustomer.mockReturnValue({ data: customer(lines), isPending: false, error: null, refetch: jest.fn() });
 
   const view = render(<CollectPaymentScreen customerId="cust-1" basePath="/staff" />);
-  await screen.findByText(/accurate to|Location off|No location fix/);
+  await screen.findByText(/accurate to|Location permission off|No location fix/);
 
   return view;
 }
@@ -287,19 +288,19 @@ describe('collecting a payment', () => {
     });
   });
 
-  it('still records the money when location was refused', async () => {
+  it('will not record a payment without a location, and says how to fix it', async () => {
     mockRequestPermission.mockResolvedValue({ granted: false });
+    const notify = jest.spyOn(dialogs, 'notify').mockResolvedValue();
     await mount();
 
-    await screen.findByText(/Location off/);
+    await screen.findByText(/Location permission off/);
 
     fireEvent.press(screen.getByTestId('collect-submit'));
 
-    // Cash that changed hands has to be recordable in a stairwell.
-    const payload = payloadOf();
-    expect(payload.amount).toBe('500.00');
-    expect(payload.latitude).toBeUndefined();
-    expect(payload.gpsAccuracyM).toBeUndefined();
+    // Every receipt says where it was collected; without a fix nothing is sent.
+    expect(mockRecord).not.toHaveBeenCalled();
+    expect(notify).toHaveBeenCalledWith('Location needed', expect.stringContaining('Allow it in Settings'));
+    notify.mockRestore();
   });
 
   it('does not claim a perfect fix when the handset reports no accuracy', async () => {

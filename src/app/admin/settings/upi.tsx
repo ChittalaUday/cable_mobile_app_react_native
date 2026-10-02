@@ -5,7 +5,7 @@ import * as React from 'react';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { dialogs } from '@/components/common/dialogs';
 import { Card, LoadError, Loading, ScreenHeader } from '@/components/common/shell';
-import { Button, colors, Input, Pressable, Text, View } from '@/components/ui';
+import { Button, colors, Input, Pressable, Text, ThemedIcon, View } from '@/components/ui';
 import {
   useAddUpiAccount,
   useRemoveUpiAccount,
@@ -222,7 +222,7 @@ export default function UpiSettingsScreen() {
         </Card>
 
         <View className="flex-row items-start gap-2 px-1">
-          <HugeiconsIcon icon={Add01Icon} size={14} color={colors.neutral[400]} strokeWidth={2} />
+          <ThemedIcon icon={Add01Icon} size={14} strokeWidth={2} colorClassName="text-muted-foreground" />
           <Text className="flex-1 text-[11px] text-muted-foreground">
             The default handle's QR is printed on every receipt, whether the payment was cash or UPI — it is
             what the customer scans next month.

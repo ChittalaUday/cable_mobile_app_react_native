@@ -191,7 +191,7 @@ export function IssueConfirmScreen({
                         <Text className="text-xs text-muted-foreground">{selectedSubscription.plan.name}</Text>
                       )}
                     </View>
-                    <HugeiconsIcon icon={ArrowRight01Icon} size={16} color={colors.neutral[400]} strokeWidth={2} />
+                    <ThemedIcon icon={ArrowRight01Icon} size={16} strokeWidth={2} colorClassName="text-muted-foreground" />
                   </Pressable>
                 )
               : (

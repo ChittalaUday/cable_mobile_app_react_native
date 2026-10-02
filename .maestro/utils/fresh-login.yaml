@@ -22,3 +22,25 @@ tags:
     notVisible: Welcome Back
     timeout: 60000
 - runFlow: dismiss-system-dialogs.yaml
+# Operator roles are held behind the location gate until location is allowed.
+- extendedWaitUntil:
+    visible:
+      id: location-gate
+    timeout: 5000
+    optional: true
+- runFlow:
+    when:
+      visible:
+        id: location-gate
+    commands:
+      - tapOn:
+          id: location-gate-enable
+      - runFlow:
+          when:
+            visible: While using the app
+          commands:
+            - tapOn: While using the app
+      - extendedWaitUntil:
+          notVisible:
+            id: location-gate
+          timeout: 15000

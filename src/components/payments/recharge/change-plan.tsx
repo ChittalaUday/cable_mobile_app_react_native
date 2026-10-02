@@ -4,12 +4,14 @@ import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SectionList } from 'react-native';
 import { dialogs } from '@/components/common/dialogs';
+import { PlanPrice } from '@/components/common/plan-price';
 import { Card, LoadError, Loading, ScreenHeader } from '@/components/common/shell';
 import { Input, Pressable, Text, View } from '@/components/ui';
 import { useAddSubscription, useChangePlan, useCustomer } from '@/lib/hooks/api/use-customers';
 import { usePlans } from '@/lib/hooks/api/use-plans';
 import { useRechargeStore } from '@/lib/hooks/stores/use-recharge-store';
-import { ChoiceRow, Field, planLabel } from './parts';
+import { planRupees } from '@/lib/utils/admin-format';
+import { ChoiceRow, Field } from './parts';
 
 type PlanSection = {
   key: 'plans' | 'addons';
@@ -78,7 +80,7 @@ export function ChangePlanScreen() {
 
     const agreed = await dialogs.confirm({
       title: `Move to ${item.name}?`,
-      message: `This connection goes to ${planLabel(item)} from its next charge. It takes no money now and leaves the balance and the paid cycle where they are.`,
+      message: `This connection goes to ${planRupees(item.amount)} from its next charge. It takes no money now and leaves the balance and the paid cycle where they are.`,
       confirmLabel: 'Change plan',
       tone: 'default',
     });
@@ -164,7 +166,7 @@ export function ChangePlanScreen() {
           <View className="pb-2">
             <ChoiceRow
               title={item.name}
-              subtitle={planLabel(item)}
+              subtitle={<PlanPrice price={item.price} amount={item.amount} className="text-xs font-semibold text-foreground" />}
               trailing={section.trailing}
               disabled={busy}
               onPress={() => section.key === 'plans' ? void switchTo(item) : addAddon(item)}
@@ -189,7 +191,10 @@ export function ChangePlanScreen() {
               <Card className="mb-4 gap-1 border border-primary-500 bg-primary-50 p-4 dark:bg-primary-950/40">
                 <Text className="text-xs font-semibold tracking-wider text-primary-600 uppercase">{t('recharge.current_plan')}</Text>
                 <Text className="text-base font-extrabold text-foreground">{line.plan.name}</Text>
-                <Text className="text-xs text-muted-foreground">{`${line.provider.name} • ${planLabel(line.plan)}`}</Text>
+                <Text className="text-xs text-muted-foreground">
+                  {`${line.provider.name} • `}
+                  <PlanPrice price={line.plan.price} amount={line.plan.amount} className="text-xs font-semibold text-foreground" />
+                </Text>
               </Card>
             )}
         ListEmptyComponent={isLoading ? <Loading /> : null}

@@ -2,7 +2,6 @@ import type { CustomerSubscription, PaymentEntryMethod } from '@/lib/api/types';
 import type { RecordCollectionPayload } from '@/lib/hooks/api/use-payments';
 import type { CollectionFix } from '@/lib/hooks/common/use-collection-fix';
 import { CheckmarkCircle02Icon, Location01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
 
@@ -11,10 +10,10 @@ import { dialogs } from '@/components/common/dialogs';
 import { Card, LoadError, Loading, ScreenHeader } from '@/components/common/shell';
 import {
   Button,
-  colors,
   Input,
   Pressable,
   Text,
+  ThemedIcon,
   View,
 } from '@/components/ui';
 import { MAX_COLLECTION_AMOUNT, PAYMENT_METHOD_LABELS, PAYMENT_METHODS } from '@/lib/constants/billing';
@@ -24,6 +23,7 @@ import { fixPayload, useCollectionFix } from '@/lib/hooks/common/use-collection-
 import { translate } from '@/lib/i18n/utils';
 import { isPaymentReferenceConflict, isPaymentResultUnknown } from '@/lib/payments/payment-errors';
 import { clear as clearPendingReference, get as getPendingReference, metadata as pendingMetadata, renew as renewPendingReference } from '@/lib/payments/pending-reference';
+import { ensureFix } from '@/lib/payments/require-fix';
 import { rupeesExact as rupees } from '@/lib/utils/admin-format';
 import { apiErrorMessage } from '@/lib/utils/api-error';
 import { isPaymentAmount } from '@/lib/utils/payment-amount';
@@ -49,9 +49,9 @@ function fixLabel(fix: CollectionFix): string {
     case 'ready':
       return `Location attached · accurate to ${Math.round(fix.gpsAccuracyM)} m`;
     case 'denied':
-      return 'Location off — the receipt will not say where it was collected';
+      return 'Location permission off — allow it to record this payment';
     case 'unavailable':
-      return 'No location fix — the receipt will not say where it was collected';
+      return 'No location fix — turn location on to record this payment';
   }
 }
 
@@ -104,6 +104,8 @@ export function CollectPaymentScreen({ customerId, basePath }: {
       void dialogs.notify(translate('payment_errors.invalid_amount_title'), translate('payment_errors.invalid_amount_message'));
       return;
     }
+    if (!ensureFix(fix))
+      return;
     if (outcome === 'none' && reason.trim() === '') {
       void dialogs.notify('Reason needed', 'Say why nothing was collected — it is the part of the round an operator actually reads.');
       return;
@@ -117,7 +119,7 @@ export function CollectPaymentScreen({ customerId, basePath }: {
       reference: pendingReference.reference,
       ...(outcome === 'none' ? { reason: reason.trim() } : { method }),
       ...(notes.trim() === '' ? {} : { notes: notes.trim() }),
-      // Sent when the phone had one. A receipt is never held up waiting for it.
+      // Required: ensureFix above refuses to send without one.
       ...pendingMetadata(customerId, 'dues', fixPayload(fix)),
     };
 
@@ -305,12 +307,12 @@ export function CollectPaymentScreen({ customerId, basePath }: {
         />
 
         <View className="flex-row items-center gap-2 px-1">
-          <HugeiconsIcon icon={Location01Icon} size={14} color={colors.neutral[400]} strokeWidth={2} />
+          <ThemedIcon icon={Location01Icon} size={14} strokeWidth={2} colorClassName="text-muted-foreground" />
           <Text className="flex-1 text-[11px] text-muted-foreground">{fixLabel(fix)}</Text>
         </View>
 
         <View className="flex-row items-start gap-2 px-1">
-          <HugeiconsIcon icon={CheckmarkCircle02Icon} size={14} color={colors.neutral[400]} strokeWidth={2} />
+          <ThemedIcon icon={CheckmarkCircle02Icon} size={14} strokeWidth={2} colorClassName="text-muted-foreground" />
           <Text className="flex-1 text-[11px] text-muted-foreground">
             Once recorded, a receipt cannot be edited or deleted by anyone. A mistake is corrected by an admin posting a reversal, and both are kept.
           </Text>

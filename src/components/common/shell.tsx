@@ -10,6 +10,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as React from 'react';
+import { StyleSheet } from 'react-native';
 
 import { ActivityIndicator, Button, colors, Pressable, Text, View } from '@/components/ui';
 
@@ -98,8 +99,9 @@ export function LoadError({ message, onRetry }: { message?: string; onRetry: () 
   );
 }
 
+/** A hairline (one physical pixel), not 1dp — three pixels on a dense screen. */
 export function Divider({ className = '' }: { className?: string }) {
-  return <View className={`h-px bg-border ${className}`} />;
+  return <View className={`bg-border ${className}`} style={{ height: StyleSheet.hairlineWidth }} />;
 }
 
 /** The same five tabs the tab bar itself has — screens pushed over it reuse this. */

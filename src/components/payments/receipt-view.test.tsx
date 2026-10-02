@@ -90,7 +90,7 @@ describe('a receipt', () => {
     mount(receipt({ accessoryAmount: '150.00', totalCollected: '650.00' }));
 
     expect(screen.getByText('₹650.00')).toBeTruthy();
-    expect(screen.getByText('Paid in full')).toBeTruthy();
+    expect(screen.getByText('Paid')).toBeTruthy();
     expect(screen.getByText('ACT9001')).toBeTruthy();
     expect(screen.getByText('₹150.00')).toBeTruthy();
   });
@@ -126,7 +126,7 @@ describe('a receipt', () => {
   it('will not reverse one that already has been, even for an admin', () => {
     mount(receipt({ reversedById: 'rcp-2' }), 'ALL');
 
-    expect(screen.getByText('Reversed')).toBeTruthy();
+    expect(screen.getByText('Refunded')).toBeTruthy();
     expect(screen.queryByText('Reverse this receipt')).toBeNull();
   });
 
@@ -146,7 +146,7 @@ describe('a receipt', () => {
       reason: 'Nobody home',
     }));
 
-    expect(screen.getByText('Nothing collected')).toBeTruthy();
+    expect(screen.getByText('Not paid')).toBeTruthy();
     expect(screen.getByText('Nobody home')).toBeTruthy();
   });
 

@@ -9,9 +9,10 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { FieldLabel, ProviderPicker } from '@/components/admin/catalogue-form';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { dialogs } from '@/components/common/dialogs';
+import { PlanPrice } from '@/components/common/plan-price';
 import { SaveBar } from '@/components/common/save-bar';
 import { Card, Loading, ScreenHeader } from '@/components/common/shell';
-import { colors, FocusAwareStatusBar, Pressable, Text, View } from '@/components/ui';
+import { colors, FocusAwareStatusBar, Pressable, Text, ThemedIcon, View } from '@/components/ui';
 import { QUERY_KEYS } from '@/constants';
 import { BILLING_OPTIONS } from '@/lib/constants/crm';
 import { usePackages } from '@/lib/hooks/api/use-packages';
@@ -240,9 +241,7 @@ function PlanForm({ existing }: { existing: Plan | null }) {
 
         <Card className="flex-row items-center justify-between border border-primary-500 bg-primary-50 p-4 dark:bg-primary-950/40">
           <Text className="text-xs font-semibold tracking-wider text-primary-600 uppercase">Customer pays</Text>
-          <Text className="text-lg font-extrabold text-foreground" testID="plan-amount-preview">
-            {`${rupeesExact(Math.max(0, amountPaise) / 100)} / ${cycleLabel.toLowerCase()}`}
-          </Text>
+          <PlanPrice price={(paise(price) / 100).toFixed(2)} amount={(Math.max(0, amountPaise) / 100).toFixed(2)} className="text-lg font-extrabold text-foreground" testID="plan-amount-preview" />
         </Card>
 
         <View className="gap-1.5">
@@ -254,7 +253,7 @@ function PlanForm({ existing }: { existing: Plan | null }) {
             className="flex-row items-center justify-between rounded-2xl border border-border bg-card px-4 py-3.5"
           >
             <Text className="text-sm font-medium text-foreground">{cycleLabel}</Text>
-            <HugeiconsIcon icon={ArrowDown01Icon} size={18} color={colors.neutral[400]} />
+            <ThemedIcon icon={ArrowDown01Icon} size={18} colorClassName="text-muted-foreground" />
           </Pressable>
           {cycleOpen
             ? (

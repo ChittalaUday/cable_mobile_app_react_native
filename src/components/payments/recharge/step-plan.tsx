@@ -1,11 +1,12 @@
 import type { CustomerDetail, CustomerSubscription } from '@/lib/api/types';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
+import { PlanPrice } from '@/components/common/plan-price';
 import { Card } from '@/components/common/shell';
 import { Text, View } from '@/components/ui';
 import { paise, useRechargeStore } from '@/lib/hooks/stores/use-recharge-store';
 import { rupeesExact } from '@/lib/utils/admin-format';
-import { ChoiceRow, cycleLabel, Field, PlanTable } from './parts';
+import { ChoiceRow, Field, PlanTable } from './parts';
 
 /**
  * Step one: settle which connection this visit is about, and what it owes.
@@ -57,7 +58,12 @@ export function StepPlan({ customer, line, basePath }: {
                 {line !== null && (
                   <ChoiceRow
                     title="Change subscription"
-                    subtitle={`On ${line.plan.name} • ${cycleLabel(line)}`}
+                    subtitle={(
+                      <Text className="text-xs text-muted-foreground" numberOfLines={1}>
+                        {`On ${line.plan.name} • `}
+                        <PlanPrice price={line.plan.price} amount={line.plan.amount} className="text-xs text-muted-foreground" />
+                      </Text>
+                    )}
                     trailing="Change"
                     onPress={() => router.push(`${basePath}/recharge/switch-plan`)}
                     testID="recharge-change-plan"

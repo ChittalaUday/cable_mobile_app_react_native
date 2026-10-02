@@ -1,11 +1,12 @@
+import type { IconSvgElement } from '@hugeicons/react-native';
 import type { Collection } from '@/lib/hooks/api/use-payments';
-import { ArrowDown01Icon, Calendar03Icon } from '@hugeicons/core-free-icons';
+import { ArrowDown01Icon, Calendar03Icon, CancelCircleIcon, CheckmarkCircle02Icon, Clock01Icon, PieChart01Icon, Undo02Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
-import { ActivityIndicator, RefreshControl } from 'react-native';
-import { Avatar, LoadError, Loading, Segmented, TINT } from '@/components/common/shell';
-import { colors, List, Pressable, Text, View } from '@/components/ui';
+import { ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
+import { LoadError, Loading, TINT } from '@/components/common/shell';
+import { colors, List, Pressable, Text, ThemedIcon, View } from '@/components/ui';
 import { useCollections } from '@/lib/hooks/api/use-payments';
 import { dateTime, dayMonthYear, lakhs, rupees as wholeRupees } from '@/lib/utils/admin-format';
 
@@ -14,22 +15,52 @@ const compact = (value: number) => (Math.abs(value) < 1000 ? wholeRupees(value) 
 
 const day = dayMonthYear;
 
-type Outcome = 'all' | 'full' | 'due' | 'none';
-const OUTCOME_TABS = [
+/**
+ * What a visit came to, in the words a collector uses: paid in full, part
+ * paid, the cycle left due, nothing taken, or money handed back.
+ */
+type Outcome = 'all' | Exclude<Collection['outcome'], 'others'>;
+const OUTCOME_TABS: readonly { key: Outcome; label: string }[] = [
   { key: 'all', label: 'All' },
-  { key: 'full', label: 'Collected' },
-  { key: 'due', label: 'Pending' },
-  { key: 'none', label: 'Failed' },
-] as const;
+  { key: 'full', label: 'Paid' },
+  { key: 'partial', label: 'Partial' },
+  { key: 'due', label: 'Due' },
+  { key: 'none', label: 'Not paid' },
+  { key: 'refund', label: 'Refunds' },
+];
 
-const BADGE: Record<Collection['outcome'], { label: string; tint: { bg: string; fg: string } }> = {
-  full: { label: 'Success', tint: TINT.green },
-  partial: { label: 'Partial', tint: TINT.orange },
-  due: { label: 'Pending', tint: TINT.orange },
-  none: { label: 'Failed', tint: TINT.red },
-  refund: { label: 'Reversed', tint: TINT.red },
-  others: { label: 'Other', tint: TINT.blue },
+const BADGE: Record<Collection['outcome'] | 'reversed', { label: string; tint: { bg: string; fg: string }; icon: IconSvgElement }> = {
+  full: { label: 'Paid', tint: TINT.green, icon: CheckmarkCircle02Icon },
+  partial: { label: 'Partial', tint: TINT.orange, icon: PieChart01Icon },
+  due: { label: 'Due', tint: TINT.red, icon: Clock01Icon },
+  none: { label: 'Not paid', tint: TINT.purple, icon: CancelCircleIcon },
+  refund: { label: 'Refund', tint: TINT.blue, icon: Undo02Icon },
+  others: { label: 'Other', tint: TINT.blue, icon: CheckmarkCircle02Icon },
+  // A receipt that has since been refunded keeps its own outcome icon, struck through by this badge.
+  reversed: { label: 'Refunded', tint: TINT.blue, icon: Undo02Icon },
 };
+
+function OutcomeTabs({ value, onChange }: { value: Outcome; onChange: (key: Outcome) => void }) {
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-1.5" accessibilityRole="tablist">
+      {OUTCOME_TABS.map((option) => {
+        const selected = option.key === value;
+        return (
+          <Pressable
+            key={option.key}
+            accessibilityRole="tab"
+            accessibilityState={{ selected }}
+            onPress={() => onChange(option.key)}
+            testID={`segment-${option.key}`}
+            className={`rounded-xl px-4 py-2.5 ${selected ? 'bg-primary-500' : 'border border-border bg-card'}`}
+          >
+            <Text numberOfLines={1} className={`text-[13px] font-semibold ${selected ? 'text-white' : 'text-muted-foreground'}`}>{option.label}</Text>
+          </Pressable>
+        );
+      })}
+    </ScrollView>
+  );
+}
 
 const METHOD: Record<NonNullable<Collection['method']>, string> = {
   cash: 'Cash',
@@ -62,7 +93,8 @@ function rangeDates(range: Range, now = new Date()): { from: Date; to: Date } | 
 }
 
 function ReceiptRow({ receipt, onPress }: { receipt: Collection; onPress: () => void }) {
-  const badge = receipt.reversedById === null ? BADGE[receipt.outcome] : BADGE.refund;
+  const kind = BADGE[receipt.outcome];
+  const badge = receipt.reversedById === null ? kind : BADGE.reversed;
   const sub = [receipt.customerCode, receipt.method ? METHOD[receipt.method] : null].filter(Boolean).join(' • ');
   return (
     <Pressable
@@ -70,7 +102,9 @@ function ReceiptRow({ receipt, onPress }: { receipt: Collection; onPress: () => 
       onPress={onPress}
       className="mx-4 flex-row items-center gap-3 border-b border-border/60 py-3 active:opacity-70"
     >
-      <Avatar name={receipt.customerName ?? receipt.customerCode} />
+      <View className="size-11 items-center justify-center rounded-full" style={{ backgroundColor: kind.tint.bg }} accessibilityLabel={kind.label}>
+        <HugeiconsIcon icon={kind.icon} size={22} color={kind.tint.fg} />
+      </View>
       <View className="flex-1 gap-0.5">
         <Text className="text-[15px] font-bold text-foreground" numberOfLines={1}>
           {receipt.customerName ?? receipt.customerCode ?? 'Customer'}
@@ -91,10 +125,10 @@ function ReceiptRow({ receipt, onPress }: { receipt: Collection; onPress: () => 
 function StatTile({ value, label, tint }: { value: string; label: string; tint?: { bg: string; fg: string } }) {
   return (
     <View className={`flex-1 items-center rounded-xl py-3 ${tint ? '' : 'border border-border bg-card'}`} style={tint ? { backgroundColor: tint.bg } : undefined}>
-      <Text adjustsFontSizeToFit numberOfLines={1} className="text-xl font-bold" style={{ color: tint?.fg }}>
+      <Text adjustsFontSizeToFit numberOfLines={1} className={`text-xl font-bold ${tint ? '' : 'text-foreground'}`} style={tint ? { color: tint.fg } : undefined}>
         {value}
       </Text>
-      <Text className="text-xs" style={{ color: tint?.fg }}>{label}</Text>
+      <Text className={`text-xs ${tint ? '' : 'text-muted-foreground'}`} style={tint ? { color: tint.fg } : undefined}>{label}</Text>
     </View>
   );
 }
@@ -143,7 +177,7 @@ export function CollectionsList({ basePath, customerId, mineOnly = false, header
 
   const filters = (
     <View className="gap-3 px-4 pb-2">
-      <Segmented<Outcome> options={OUTCOME_TABS} value={outcome} onChange={setOutcome} />
+      <OutcomeTabs value={outcome} onChange={setOutcome} />
 
       <View>
         <Pressable
@@ -152,11 +186,11 @@ export function CollectionsList({ basePath, customerId, mineOnly = false, header
           onPress={() => setPickingRange(open => !open)}
           className="flex-row items-center gap-2 rounded-xl border border-border bg-card p-3"
         >
-          <HugeiconsIcon icon={Calendar03Icon} size={18} color={colors.neutral[500]} />
+          <ThemedIcon icon={Calendar03Icon} size={18} colorClassName="text-muted-foreground" />
           <Text className="flex-1 text-[13px] font-medium text-foreground">
             {dates ? `${day(dates.from)} - ${day(dates.to)}` : RANGE_LABEL.all}
           </Text>
-          <HugeiconsIcon icon={ArrowDown01Icon} size={18} color={colors.neutral[500]} />
+          <ThemedIcon icon={ArrowDown01Icon} size={18} colorClassName="text-muted-foreground" />
         </Pressable>
         {pickingRange
           ? (
@@ -185,8 +219,8 @@ export function CollectionsList({ basePath, customerId, mineOnly = false, header
         : (
             <View className="flex-row gap-2">
               <StatTile value={compact(Number(totals.totalCollected))} label="Collected" tint={TINT.green} />
-              <StatTile value={String(totals.receipts)} label="Transactions" />
-              {pending === undefined ? null : <StatTile value={compact(pending)} label="Pending" tint={TINT.red} />}
+              <StatTile value={String(totals.receipts)} label="Receipts" />
+              {pending === undefined ? null : <StatTile value={compact(pending)} label="Due" tint={TINT.red} />}
             </View>
           )}
     </View>

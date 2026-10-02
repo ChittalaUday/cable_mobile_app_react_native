@@ -13,18 +13,17 @@ import {
   UserIcon,
   Wifi01Icon,
 } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { ScreenHeader } from '@/components/common/screen-header';
 import { Card, IconTile, TINT } from '@/components/common/shell';
 import {
   Button,
-  colors,
   Image,
   Pressable,
   ScrollView,
   Text,
+  ThemedIcon,
   View,
 } from '@/components/ui';
 import { useAuthStore } from '@/lib/hooks/stores/use-auth-store';
@@ -180,7 +179,7 @@ export function MoreView({
                 <Text className="text-xs text-muted-foreground">{user?.phone ?? user?.email ?? 'No phone'}</Text>
               </View>
             </View>
-            <HugeiconsIcon icon={ArrowRight01Icon} size={18} color={colors.neutral[400]} strokeWidth={2} />
+            <ThemedIcon icon={ArrowRight01Icon} size={18} strokeWidth={2} colorClassName="text-muted-foreground" />
           </Pressable>
         </Card>
 
@@ -201,7 +200,7 @@ export function MoreView({
                   <Text className="text-xs text-muted-foreground">{item.subtitle}</Text>
                 </View>
               </View>
-              <HugeiconsIcon icon={ArrowRight01Icon} size={18} color={colors.neutral[400]} strokeWidth={2} />
+              <ThemedIcon icon={ArrowRight01Icon} size={18} strokeWidth={2} colorClassName="text-muted-foreground" />
             </Pressable>
           ))}
         </Card>

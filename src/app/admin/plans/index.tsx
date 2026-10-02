@@ -7,9 +7,9 @@ import * as React from 'react';
 import { ActivityIndicator, RefreshControl, TextInput } from 'react-native';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { dialogs } from '@/components/common/dialogs';
+import { PlanPrice } from '@/components/common/plan-price';
 import { ScreenHeader } from '@/components/common/screen-header';
 import { Card, LoadError, StatusPill } from '@/components/common/shell';
-import { planLabel } from '@/components/payments/recharge/parts';
 import { colors, FocusAwareStatusBar, Pressable, SafeAreaView, Text, ThemedIcon, View } from '@/components/ui';
 import { PERMISSIONS } from '@/constants';
 import { useDeletePlan, usePlans } from '@/lib/hooks/api/use-plans';
@@ -44,7 +44,9 @@ function PlanCard({ plan, canUpdate, canDelete, onEdit, onDelete }: {
       </View>
 
       <View className="flex-row items-center justify-between border-t border-border/60 pt-3">
-        <Text className="flex-1 text-sm font-extrabold text-foreground" testID={`plan-amount-${plan.slug}`}>{planLabel(plan)}</Text>
+        <View className="flex-1">
+          <PlanPrice price={plan.price} amount={plan.amount} className="text-lg font-extrabold text-foreground" testID={`plan-amount-${plan.slug}`} />
+        </View>
         <View className="flex-row gap-2">
           {canUpdate
             ? (
@@ -174,7 +176,7 @@ export function PlansScreen() {
             : null}
         >
           <View className="flex-row items-center rounded-xl border border-border bg-surface px-3 py-2">
-            <HugeiconsIcon icon={Search01Icon} size={18} color={colors.neutral[400]} strokeWidth={2} />
+            <ThemedIcon icon={Search01Icon} size={18} strokeWidth={2} colorClassName="text-muted-foreground" />
             <TextInput
               testID="plan-search-input"
               value={query}

@@ -1,9 +1,8 @@
 import type { ServiceProvider } from '@/lib/api/types';
 import { ArrowDown01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as React from 'react';
 import { Card } from '@/components/common/shell';
-import { colors, Pressable, Text, View } from '@/components/ui';
+import { Pressable, Text, ThemedIcon, View } from '@/components/ui';
 
 /** Form pieces the package and plan editors share. */
 export function FieldLabel({ children, required }: { children: string; required?: boolean }) {
@@ -40,7 +39,7 @@ export function ProviderPicker({
         <Text className={`text-sm font-medium ${selectedId ? 'text-foreground' : 'text-muted-foreground'}`}>
           {selectedName || 'Select a provider'}
         </Text>
-        <HugeiconsIcon icon={ArrowDown01Icon} size={18} color={colors.neutral[400]} />
+        <ThemedIcon icon={ArrowDown01Icon} size={18} colorClassName="text-muted-foreground" />
       </Pressable>
       {open
         ? (

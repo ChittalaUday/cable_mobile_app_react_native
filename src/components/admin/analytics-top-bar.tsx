@@ -14,7 +14,7 @@ export function AnalyticsTopBar({ period, onBack, onPeriod }: { period: string; 
       <Pressable accessibilityRole="button" onPress={onPeriod} className="flex-row items-center gap-2 rounded-xl bg-card px-3 py-2">
         <HugeiconsIcon icon={Calendar03Icon} size={16} color={colors.primary[600]} strokeWidth={2.2} />
         <Text className="text-[13px] font-semibold text-foreground">{period}</Text>
-        <HugeiconsIcon icon={ArrowLeft01Icon} size={14} color={colors.neutral[400]} strokeWidth={2.4} style={{ transform: [{ rotate: '-90deg' }] }} />
+        <ThemedIcon icon={ArrowLeft01Icon} size={14} strokeWidth={2.4} style={{ transform: [{ rotate: '-90deg' }] }} colorClassName="text-muted-foreground" />
       </Pressable>
     </View>
   );

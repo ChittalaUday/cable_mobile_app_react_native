@@ -51,6 +51,11 @@ tags:
 # they record. The server books against what is owed now, so ₹150 leaves the
 # line ₹50 in credit — and every screen after must say so.
 - tapOn: Collect Payment
+- runFlow:
+    when:
+      visible: '.*access this device.s location.*'
+    commands:
+      - tapOn: While using the app
 - extendedWaitUntil:
     visible:
       id: recharge-previous-balance
@@ -92,6 +97,11 @@ tags:
 
 # --- 3. A double tap on Record writes one receipt ------------------------------
 - tapOn: Collect Payment
+- runFlow:
+    when:
+      visible: '.*access this device.s location.*'
+    commands:
+      - tapOn: While using the app
 - extendedWaitUntil:
     visible:
       id: recharge-next

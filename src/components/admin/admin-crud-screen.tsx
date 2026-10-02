@@ -116,7 +116,7 @@ export function AdminCrudScreen<T extends AdminRecord>({
           </Pressable>
         </View>
         <View className="flex-row items-center rounded-xl border border-border bg-card px-4 py-3">
-          <HugeiconsIcon icon={Search01Icon} size={19} color={colors.neutral[400]} />
+          <ThemedIcon icon={Search01Icon} size={19} colorClassName="text-muted-foreground" />
           <TextInput value={query} onChangeText={setQuery} placeholder={t('admin.search')} placeholderTextColor={colors.neutral[400]} className="ml-3 flex-1 text-base text-foreground" />
         </View>
       </View>

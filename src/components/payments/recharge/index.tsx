@@ -17,6 +17,7 @@ import {
   useRecordEquipmentPayment,
   useReplaceEquipment,
 } from '@/lib/hooks/api/use-payments';
+import { fixPayload, useCollectionFix } from '@/lib/hooks/common/use-collection-fix';
 import {
   canRecord,
   hasUnsavedWork,
@@ -28,7 +29,8 @@ import {
 } from '@/lib/hooks/stores/use-recharge-store';
 import { translate } from '@/lib/i18n/utils';
 import { isPaymentReferenceConflict, isPaymentResultUnknown } from '@/lib/payments/payment-errors';
-import { renew as renewPendingReference } from '@/lib/payments/pending-reference';
+import { metadata as pendingMetadata, renew as renewPendingReference } from '@/lib/payments/pending-reference';
+import { ensureFix } from '@/lib/payments/require-fix';
 import { usePrinter } from '@/lib/printer/use-printer';
 import { rupeesExact, shortDate } from '@/lib/utils/admin-format';
 import { apiErrorMessage } from '@/lib/utils/api-error';
@@ -105,6 +107,8 @@ export function RechargeFlowScreen({ customerId, subscriptionId, basePath }: {
   const router = useRouter();
   const { data: customer, isPending, error, refetch } = useCustomer({ variables: { id: customerId } });
 
+  // Where the collector stands, asked once when the flow opens. Never blocks a receipt.
+  const fix = useCollectionFix();
   const step = useRechargeStore(state => state.step);
   const charge = useRechargeStore(state => state.charge);
   const setCharge = useRechargeStore(state => state.setCharge);
@@ -218,6 +222,9 @@ export function RechargeFlowScreen({ customerId, subscriptionId, basePath }: {
       return;
     }
 
+    if (!ensureFix(fix))
+      return;
+
     if (!canRecord(state)) {
       void dialogs.notify(
         paise(state.amount) <= 0 ? 'Enter an amount' : 'Pick the equipment',
@@ -241,6 +248,9 @@ export function RechargeFlowScreen({ customerId, subscriptionId, basePath }: {
         ? { reason: state.notes.trim() === '' ? 'Not paid — balance left due' : state.notes.trim() }
         : freeSwap ? {} : { method: state.method }),
       ...(state.notes.trim() === '' ? {} : { notes: state.notes.trim() }),
+      // Pinned to the first attempt, so a retry of the same reference replays
+      // byte-for-byte instead of looking like a different payment (409).
+      ...pendingMetadata(customerId, state.charge === 'equipment' ? 'equipment' : 'dues', fixPayload(fix)),
     };
 
     const onError = (failure: Error) => {

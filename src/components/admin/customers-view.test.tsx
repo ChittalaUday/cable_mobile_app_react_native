@@ -99,8 +99,6 @@ jest.mock('expo-router', () => ({
   }),
 }));
 
-let mockLastVariables: { balance?: string } | undefined;
-
 jest.mock('@/lib/hooks/api/use-customers', () => ({
   useCustomers: (options?: {
     variables?: {
@@ -114,9 +112,6 @@ jest.mock('@/lib/hooks/api/use-customers', () => ({
       balance?: string;
     };
   }) => {
-    // Only the list's own query carries `balance`; other callers (e.g. the add sheet) do not.
-    if (options?.variables && 'balance' in options.variables)
-      mockLastVariables = options.variables;
     let items = mockCustomerItems;
     const q = options?.variables?.q?.toLowerCase();
     const status = options?.variables?.status;
@@ -257,22 +252,6 @@ describe('customersView', () => {
     expect(screen.getByTestId('segment-all')).toHaveTextContent('All3');
     expect(screen.getByTestId('segment-active')).toHaveTextContent('Active2');
     expect(screen.getByTestId('segment-inactive')).toHaveTextContent('Inactive0');
-  });
-
-  it('asks the server for due, advance or all-clear customers from the balance chips', () => {
-    renderWithClient(<CustomersView basePath="/admin" />);
-
-    fireEvent.press(screen.getByTestId('customers-balance-due'));
-    expect(mockLastVariables?.balance).toBe('due');
-
-    fireEvent.press(screen.getByTestId('customers-balance-advance'));
-    expect(mockLastVariables?.balance).toBe('advance');
-
-    fireEvent.press(screen.getByTestId('customers-balance-clear'));
-    expect(mockLastVariables?.balance).toBe('clear');
-
-    fireEvent.press(screen.getByTestId('customers-balance-any'));
-    expect(mockLastVariables?.balance).toBeUndefined();
   });
 
   it('opens the add-customer sheet in place when + Add is pressed', () => {

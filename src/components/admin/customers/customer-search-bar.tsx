@@ -3,7 +3,7 @@ import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { TextInput } from 'react-native';
-import { colors, Pressable, View } from '@/components/ui';
+import { colors, Pressable, ThemedIcon, View } from '@/components/ui';
 
 export function CustomerSearchBar({
   query,
@@ -20,7 +20,7 @@ export function CustomerSearchBar({
   return (
     <View className="flex-row items-center gap-2">
       <View className="flex-1 flex-row items-center rounded-xl border border-border bg-card px-3 py-2">
-        <HugeiconsIcon icon={Search01Icon} size={18} color={colors.neutral[400]} />
+        <ThemedIcon icon={Search01Icon} size={18} colorClassName="text-muted-foreground" />
         <TextInput
           value={query}
           onChangeText={onChange}

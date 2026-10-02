@@ -195,7 +195,7 @@ export function AddEditPackageScreen() {
             <Text className="text-sm font-medium text-foreground">
               {BILLING_OPTIONS.find(o => o.key === billingCycle)?.label ?? 'Monthly'}
             </Text>
-            <HugeiconsIcon icon={ArrowDown01Icon} size={18} color={colors.neutral[400]} />
+            <ThemedIcon icon={ArrowDown01Icon} size={18} colorClassName="text-muted-foreground" />
           </Pressable>
           {cycleDropdownOpen
             ? (

@@ -71,7 +71,14 @@ it('freezes GPS metadata across retries and reopening the same pending payment',
   const first = metadata('customer-1', 'dues', { latitude: 16.8, longitude: 81.5, gpsAccuracyM: 10 });
   expect(metadata('customer-1', 'dues', { latitude: 16.9, longitude: 81.6, gpsAccuracyM: 5 })).toEqual(first);
   clear('customer-1', 'dues');
-  expect(metadata('customer-1', 'dues', {})).toEqual({});
+  const fresh = { latitude: 17.0, longitude: 82.0, gpsAccuracyM: 7 };
+  expect(metadata('customer-1', 'dues', fresh)).toEqual(fresh);
+});
+
+it('re-pins an attempt that was saved without a position, since the server refused it', () => {
+  mockValues.set('payments.pending-reference.customer-1.dues', JSON.stringify({ reference: 'no-fix', startedAt: Date.now(), metadata: {} }));
+  const point = { latitude: 16.8, longitude: 81.5, gpsAccuracyM: 10 };
+  expect(metadata('customer-1', 'dues', point)).toEqual(point);
 });
 
 describe('renew', () => {

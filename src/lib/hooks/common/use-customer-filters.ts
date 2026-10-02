@@ -4,7 +4,7 @@ import * as React from 'react';
 /** The quick chips above the customer list. */
 export type CustomerListFilter = 'all' | 'active' | 'inactive' | 'multi' | 'pending';
 
-/** The balance chips: every customer, or only those owing, in advance, or settled. */
+/** The sheet's payment filter: every customer, or only those owing, in advance, or settled. */
 export type CustomerBalanceFilter = 'any' | 'due' | 'advance' | 'clear';
 
 const NO_FILTERS: CustomerFilterValues = {
@@ -12,6 +12,7 @@ const NO_FILTERS: CustomerFilterValues = {
   locationId: undefined,
   serviceProviderId: undefined,
   datePreset: 'all',
+  balance: undefined,
 };
 
 /**
@@ -22,14 +23,15 @@ export function useCustomerFilters() {
   const [query, setQuery] = React.useState('');
   const [filter, setFilter] = React.useState<CustomerListFilter>('all');
   const [modalFilters, setModalFilters] = React.useState<CustomerFilterValues>(NO_FILTERS);
-  const [balance, setBalance] = React.useState<CustomerBalanceFilter>('any');
 
   const hasActiveFilters = Boolean(
     modalFilters.status
     || modalFilters.locationId
     || modalFilters.serviceProviderId
-    || (modalFilters.datePreset && modalFilters.datePreset !== 'all'),
+    || (modalFilters.datePreset && modalFilters.datePreset !== 'all')
+    || modalFilters.balance,
   );
+  const balance: CustomerBalanceFilter = modalFilters.balance ?? 'any';
 
   const selectChip = (key: CustomerListFilter) => {
     setFilter(key);
@@ -63,7 +65,6 @@ export function useCustomerFilters() {
     activeChip: modalFilters.status ?? filter,
     modalFilters,
     balance,
-    setBalance,
     hasActiveFilters,
     selectChip,
     applyFilters,

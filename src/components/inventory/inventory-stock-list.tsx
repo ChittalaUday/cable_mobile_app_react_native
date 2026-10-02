@@ -4,7 +4,6 @@ import {
   Package01Icon,
   Search01Icon,
 } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { Card, ScreenHeader } from '@/components/common/shell';
@@ -94,7 +93,7 @@ export function InventoryStockListScreen({ basePath }: { basePath: '/admin/inven
         {/* Search input */}
         <View className="rounded-xl border border-border bg-card px-3 py-1">
           <View className="flex-row items-center gap-2">
-            <HugeiconsIcon icon={Search01Icon} size={18} color={colors.neutral[400]} strokeWidth={2} />
+            <ThemedIcon icon={Search01Icon} size={18} strokeWidth={2} colorClassName="text-muted-foreground" />
             <Input
               value={search}
               onChangeText={setSearch}
@@ -165,7 +164,7 @@ export function InventoryStockListScreen({ basePath }: { basePath: '/admin/inven
                             in stock
                           </Text>
                         </View>
-                        <HugeiconsIcon icon={ArrowRight01Icon} size={18} color={colors.neutral[400]} strokeWidth={2} />
+                        <ThemedIcon icon={ArrowRight01Icon} size={18} strokeWidth={2} colorClassName="text-muted-foreground" />
                       </View>
                     </Pressable>
                   ))}

@@ -12,6 +12,7 @@ import {
   colors,
   ScrollView,
   Text,
+  ThemedIcon,
   View,
 } from '@/components/ui';
 import { useInventoryMovements } from '@/lib/hooks/api/use-inventory';
@@ -101,7 +102,7 @@ export function InventoryMovementsScreen() {
               )
             : (
                 <Card className="items-center justify-center border border-border p-10">
-                  <HugeiconsIcon icon={File01Icon} size={36} color={colors.neutral[400]} strokeWidth={1.5} />
+                  <ThemedIcon icon={File01Icon} size={36} strokeWidth={1.5} colorClassName="text-muted-foreground" />
                   <Text className="mt-2 text-sm font-medium text-muted-foreground">No stock movement logs recorded</Text>
                 </Card>
               )}

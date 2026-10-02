@@ -6,7 +6,7 @@ import { Switch, TextInput } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 import { Card } from '@/components/common/shell';
-import { colors, Pressable, Text, View } from '@/components/ui';
+import { colors, Pressable, Text, ThemedIcon, View } from '@/components/ui';
 
 /**
  * A service is only removable while nothing supplies it.
@@ -106,7 +106,7 @@ export function ProviderDetailsForm({
           <Text className={`text-sm font-medium ${service ? 'text-foreground' : 'text-muted-foreground'}`}>
             {service?.name ?? 'Select a service'}
           </Text>
-          <HugeiconsIcon icon={ArrowDown01Icon} size={18} color={colors.neutral[400]} />
+          <ThemedIcon icon={ArrowDown01Icon} size={18} colorClassName="text-muted-foreground" />
         </Pressable>
         {servicesOpen
           ? (

@@ -20,6 +20,7 @@ import {
   Pressable,
   ScrollView,
   Text,
+  ThemedIcon,
   useModal,
   View,
 } from '@/components/ui';
@@ -153,7 +154,7 @@ export function InventoryCatalogScreen({ basePath }: { basePath: '/admin/invento
       <View className="gap-3 p-4 pb-2">
         {/* Search */}
         <View className="flex-row items-center gap-2 rounded-xl border border-border bg-card px-3 py-1">
-          <HugeiconsIcon icon={Search01Icon} size={18} color={colors.neutral[400]} strokeWidth={2} />
+          <ThemedIcon icon={Search01Icon} size={18} strokeWidth={2} colorClassName="text-muted-foreground" />
           <Input
             value={search}
             onChangeText={setSearch}

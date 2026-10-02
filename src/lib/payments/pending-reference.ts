@@ -3,12 +3,12 @@ import { getItem, removeItem, setItem } from '@/lib/storage';
 
 export type PendingReferenceKind = 'dues' | 'equipment';
 
-type CollectionMetadata = { latitude?: number; longitude?: number; gpsAccuracyM?: number };
+type CollectionMetadata = { latitude: number; longitude: number; gpsAccuracyM: number };
 
 export type PendingReference = {
   reference: string;
   startedAt: number;
-  metadata?: CollectionMetadata;
+  metadata?: Partial<CollectionMetadata>;
 };
 
 const KEY_PREFIX = 'payments.pending-reference.';
@@ -54,8 +54,11 @@ export function renew(customerId: string, kind: PendingReferenceKind): PendingRe
 /** Keep GPS identical when a timed-out attempt is retried after reopening. */
 export function metadata(customerId: string, kind: PendingReferenceKind, current: CollectionMetadata): CollectionMetadata {
   const pending = get(customerId, kind);
-  if (pending.metadata !== undefined && pending.metadata !== null && typeof pending.metadata === 'object')
-    return pending.metadata;
+  // A pinned attempt with no position was refused by the server (a payment
+  // needs one), so nothing is stored under it: a real fix may replace it.
+  const pinned = pending.metadata;
+  if (pinned != null && typeof pinned.latitude === 'number' && typeof pinned.longitude === 'number' && typeof pinned.gpsAccuracyM === 'number')
+    return { latitude: pinned.latitude, longitude: pinned.longitude, gpsAccuracyM: pinned.gpsAccuracyM };
   const saved = { ...current };
   void setItem(storageKey(customerId, kind), { ...pending, metadata: saved });
   return saved;

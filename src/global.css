@@ -142,8 +142,9 @@
       --color-muted: #262626;
       --color-muted-foreground: #a3a3a3;
 
-      --color-border: #404040;
-      --color-input: #404040;
+      /* Barely above the card: separation, not a white outline. */
+      --color-border: #242424;
+      --color-input: #2e2e2e;
     }
   }
 }
