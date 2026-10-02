@@ -23,5 +23,7 @@ export function isPaymentReferenceConflict(error: unknown): boolean {
 
   const serverMessage = paymentError.response.data?.message;
   const message = typeof serverMessage === 'string' ? serverMessage : paymentError.message;
-  return message.toLowerCase().includes('reference was already used for a different payment request');
+  const lower = message.toLowerCase();
+  return lower.includes('reference was already used for a different payment request')
+    || lower.includes('reference already belongs to another collector');
 }

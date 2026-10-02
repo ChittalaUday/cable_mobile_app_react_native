@@ -30,7 +30,7 @@ import { useRecordCollection } from '@/lib/hooks/api/use-payments';
 import { fixPayload, useCollectionFix } from '@/lib/hooks/common/use-collection-fix';
 import { translate } from '@/lib/i18n/utils';
 import { isPaymentReferenceConflict, isPaymentResultUnknown } from '@/lib/payments/payment-errors';
-import { clear as clearPendingReference, get as getPendingReference, metadata as pendingMetadata } from '@/lib/payments/pending-reference';
+import { clear as clearPendingReference, get as getPendingReference, metadata as pendingMetadata, renew as renewPendingReference } from '@/lib/payments/pending-reference';
 import { rupeesExact as rupees } from '@/lib/utils/admin-format';
 import { apiErrorMessage } from '@/lib/utils/api-error';
 import { isPaymentAmount } from '@/lib/utils/payment-amount';
@@ -87,7 +87,10 @@ export function CollectPaymentScreen({ customerId, basePath }: {
   const [notes, setNotes] = React.useState('');
   const [showCatalog, setShowCatalog] = React.useState(false);
 
-  const pendingReference = React.useMemo(() => getPendingReference(customerId, 'dues'), [customerId]);
+  const [pendingReference, setPendingReference] = React.useState(() => getPendingReference(customerId, 'dues'));
+  // Once the earlier attempt is known to be on the server (409) or the collector
+  // has gone to check Receipts, the next submit is a new payment, not a retry.
+  const renewReference = () => setPendingReference(renewPendingReference(customerId, 'dues'));
 
   const lines = customer?.subscriptions ?? [];
   const line = lines[subscriptionIndex] ?? null;
@@ -148,9 +151,13 @@ export function CollectPaymentScreen({ customerId, basePath }: {
         router.replace(`${basePath}/receipts/${receipt.id}`);
       },
       onError: (failure) => {
-        const viewReceipts = () => router.replace(`${basePath}/receipts`);
+        const viewReceipts = () => {
+          renewReference();
+          router.replace(`${basePath}/receipts`);
+        };
 
         if (isPaymentReferenceConflict(failure)) {
+          renewReference();
           void dialogs.confirm({
             title: translate('payment_errors.reference_conflict_title'),
             message: translate('payment_errors.reference_conflict_message'),

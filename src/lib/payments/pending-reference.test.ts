@@ -1,4 +1,4 @@
-import { clear, get, metadata } from './pending-reference';
+import { clear, get, metadata, renew } from '@/lib/payments/pending-reference';
 
 const mockValues = new Map<string, string>();
 let mockReferenceCounter = 0;
@@ -72,4 +72,14 @@ it('freezes GPS metadata across retries and reopening the same pending payment',
   expect(metadata('customer-1', 'dues', { latitude: 16.9, longitude: 81.6, gpsAccuracyM: 5 })).toEqual(first);
   clear('customer-1', 'dues');
   expect(metadata('customer-1', 'dues', {})).toEqual({});
+});
+
+describe('renew', () => {
+  it('replaces the stored reference with a new one that get then returns', () => {
+    const first = get('customer-1', 'dues').reference;
+    const renewed = renew('customer-1', 'dues').reference;
+
+    expect(renewed).not.toBe(first);
+    expect(get('customer-1', 'dues').reference).toBe(renewed);
+  });
 });

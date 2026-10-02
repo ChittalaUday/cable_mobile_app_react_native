@@ -45,6 +45,12 @@ export function clear(customerId: string, kind: PendingReferenceKind): void {
   void removeItem(storageKey(customerId, kind));
 }
 
+/** Drops a resolved attempt and starts a fresh one, e.g. after a 409 or a trip to Receipts. */
+export function renew(customerId: string, kind: PendingReferenceKind): PendingReference {
+  clear(customerId, kind);
+  return get(customerId, kind);
+}
+
 /** Keep GPS identical when a timed-out attempt is retried after reopening. */
 export function metadata(customerId: string, kind: PendingReferenceKind, current: CollectionMetadata): CollectionMetadata {
   const pending = get(customerId, kind);

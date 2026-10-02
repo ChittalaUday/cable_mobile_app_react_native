@@ -210,7 +210,7 @@
     "invalid_amount_message": "The total payment must be between ₹0 and ₹99,000.",
     "invalid_amount_title": "Invalid amount",
     "leave_message": "Discard the entered details? If you already submitted a payment, check receipts before starting another payment.",
-    "reference_conflict_message": "This payment reference was already used for a different request. The earlier payment may have been recorded. Check Receipts before trying again.",
+    "reference_conflict_message": "An earlier attempt for this customer was already recorded with different details, such as a changed amount. Check Receipts before collecting again.",
     "reference_conflict_title": "Payment reference already used",
     "retry": "Retry",
     "unknown_result_message": "We couldn't confirm this payment. It may already be recorded — check Receipts before collecting again.",

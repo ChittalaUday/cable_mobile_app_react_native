@@ -1,9 +1,9 @@
 import type { CustomerDetail, CustomerSubscription } from '@/lib/api/types';
 import type { RecordCollectionPayload } from '@/lib/hooks/api/use-payments';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import * as React from 'react';
 import { dialogs } from '@/components/common/dialogs';
-import { CollectPaymentScreen } from './collect-payment';
+import { CollectPaymentScreen } from '@/components/payments/collect-payment';
 
 /** What `useRecordCollection().mutate` is handed, so the assertions are typed. */
 type RecordArgs = [
@@ -380,14 +380,46 @@ describe('collecting a payment', () => {
     const failure = Object.assign(new Error('That reference was already used for a different payment request'), {
       response: { status: 409, data: { message: 'That reference was already used for a different payment request' } },
     });
-    handlersOf().onError(failure);
+    act(() => handlersOf().onError(failure));
 
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/staff/receipts'));
     expect(confirm).toHaveBeenCalledWith(expect.objectContaining({
       title: 'Payment reference already used',
-      message: 'This payment reference was already used for a different request. The earlier payment may have been recorded. Check Receipts before trying again.',
+      message: 'An earlier attempt for this customer was already recorded with different details, such as a changed amount. Check Receipts before collecting again.',
       confirmLabel: 'View receipts',
     }));
+    confirm.mockRestore();
+  });
+
+  it.each([
+    'That reference was already used for a different payment request',
+    'That reference already belongs to another collector\'s receipt',
+  ])('starts a new reference after a 409 (%s), so the next collection is not stuck or replayed', async (message) => {
+    const confirm = jest.spyOn(dialogs, 'confirm').mockResolvedValue(false);
+    await mount();
+
+    fireEvent.press(screen.getByTestId('collect-submit'));
+    act(() => handlersOf().onError(Object.assign(new Error(message), { response: { status: 409, data: { message } } })));
+    await waitFor(() => expect(confirm).toHaveBeenCalled());
+
+    fireEvent.press(screen.getByTestId('collect-submit'));
+    expect(payloadOf(1).reference).not.toBe(payloadOf(0).reference);
+    confirm.mockRestore();
+  });
+
+  it('starts a new reference once the collector goes to check Receipts', async () => {
+    const confirm = jest.spyOn(dialogs, 'confirm').mockResolvedValue(false);
+    const firstView = await mount();
+
+    fireEvent.press(screen.getByTestId('collect-submit'));
+    const first = payloadOf().reference;
+    act(() => handlersOf().onError(new Error('Network Error')));
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/staff/receipts'));
+
+    firstView.unmount();
+    await mount();
+    fireEvent.press(screen.getByTestId('collect-submit'));
+    expect(payloadOf(1).reference).not.toBe(first);
     confirm.mockRestore();
   });
 });

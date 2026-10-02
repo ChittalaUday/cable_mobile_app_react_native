@@ -23,6 +23,7 @@ import {
 } from '@/lib/hooks/stores/use-recharge-store';
 import { translate } from '@/lib/i18n/utils';
 import { isPaymentReferenceConflict, isPaymentResultUnknown } from '@/lib/payments/payment-errors';
+import { renew as renewPendingReference } from '@/lib/payments/pending-reference';
 import { rupeesExact } from '@/lib/utils/admin-format';
 import { apiErrorMessage } from '@/lib/utils/api-error';
 import { isPaymentAmount } from '@/lib/utils/payment-amount';
@@ -187,9 +188,18 @@ export function RechargeFlowScreen({ customerId, subscriptionId, basePath }: {
     };
 
     const onError = (failure: Error) => {
-      const viewReceipts = () => router.replace(`${basePath}/receipts`);
+      // Once the earlier attempt is known to be on the server (409) or the collector
+      // has gone to check Receipts, the next submit is a new payment, not a retry.
+      const renewReference = () => useRechargeStore.setState({
+        reference: renewPendingReference(customerId, state.charge === 'equipment' ? 'equipment' : 'dues').reference,
+      });
+      const viewReceipts = () => {
+        renewReference();
+        router.replace(`${basePath}/receipts`);
+      };
 
       if (isPaymentReferenceConflict(failure)) {
+        renewReference();
         void dialogs.confirm({
           title: translate('payment_errors.reference_conflict_title'),
           message: translate('payment_errors.reference_conflict_message'),
