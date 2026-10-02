@@ -1,0 +1,24 @@
+appId: ${APP_ID}
+tags:
+  - util
+---
+# After Record: the printer step (no Bluetooth printer on the emulator) is
+# skipped, landing on the Done step with its recorded total. Opening the step
+# can ask for nearby-devices permission first; grant it, it is not under test.
+- extendedWaitUntil:
+    visible: '(.*nearby devices.*|Connect the receipt printer.*|Skip)'
+    timeout: 30000
+- runFlow:
+    when:
+      visible: Allow
+    commands:
+      - tapOn: Allow
+- extendedWaitUntil:
+    visible:
+      id: recharge-skip-print
+    timeout: 30000
+- tapOn:
+    id: recharge-skip-print
+- extendedWaitUntil:
+    visible: (?i)payment recorded
+    timeout: 30000

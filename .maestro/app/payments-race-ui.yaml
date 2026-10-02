@@ -1,0 +1,156 @@
+appId: ${APP_ID}
+tags:
+  - e2e
+  - admin
+  - recharge
+  - race
+---
+# Payments under races, as a collector sees them. A "second device"
+# (utils/payments-qa.js, straight to the API) collects and refunds while this
+# phone has the customer open, and every screen must end on the server's
+# numbers — never a stale sum, never a second receipt from a double tap.
+# Uses a fresh customer on Satya Basic (₹300 − ₹50 = ₹250/month) each run.
+- runScript:
+    file: ../utils/payments-qa.js
+    env:
+      ACTION: setup
+- runFlow: ../utils/login-admin.yaml
+- tapOn: Customers
+- tapOn:
+    id: customer-search-input
+- inputText: ${output.qaPhone}
+- extendedWaitUntil:
+    visible: ${output.qaName}
+    timeout: 20000
+- tapOn: ${output.qaName}
+- extendedWaitUntil:
+    visible: Customer Details
+    timeout: 20000
+- assertVisible:
+    id: customer-outstanding
+    text: ₹0.00
+
+# --- 1. Another device collects while this screen is open --------------------
+# ₹100 on a fresh line: the ₹250 plan is charged, ₹150 is left owing.
+- runScript:
+    file: ../utils/payments-qa.js
+    env:
+      ACTION: pay
+      AMOUNT: '100.00'
+- swipe:
+    start: 50%, 30%
+    end: 50%, 85%
+- extendedWaitUntil:
+    visible:
+      id: customer-outstanding
+      text: ₹150.00
+    timeout: 20000
+
+# --- 2. A stale screen pays what it last saw ----------------------------------
+# The collector opens the recharge on ₹150; the other device takes ₹50 before
+# they record. The server books against what is owed now, so ₹150 leaves the
+# line ₹50 in credit — and every screen after must say so.
+- tapOn: Collect Payment
+- extendedWaitUntil:
+    visible:
+      id: recharge-previous-balance
+      text: ₹150.00
+    timeout: 30000
+- runScript:
+    file: ../utils/payments-qa.js
+    env:
+      ACTION: pay
+      AMOUNT: '50.00'
+- tapOn:
+    id: recharge-next
+- tapOn:
+    id: recharge-amount
+- inputText: '150'
+- runFlow: ../utils/hide-keyboard.yaml
+- scrollUntilVisible:
+    element:
+      id: recharge-submit
+- assertVisible: Record ₹150.00
+- tapOn:
+    id: recharge-submit
+- runFlow: ../utils/payments-skip-print.yaml
+- assertVisible:
+    id: recharge-recorded-total
+    text: ₹150.00
+- runScript:
+    file: ../utils/payments-qa.js
+    env:
+      ACTION: state
+- assertTrue: ${output.qaBalance == '-50.00' && output.qaReceipts == 3}
+- tapOn:
+    id: recharge-finish
+- extendedWaitUntil:
+    visible:
+      id: customer-outstanding
+      text: ₹-50.00
+    timeout: 30000
+
+# --- 3. A double tap on Record writes one receipt ------------------------------
+- tapOn: Collect Payment
+- extendedWaitUntil:
+    visible:
+      id: recharge-next
+    timeout: 30000
+- tapOn:
+    id: recharge-next
+- tapOn:
+    id: recharge-amount
+- inputText: '1'
+- runFlow: ../utils/hide-keyboard.yaml
+- scrollUntilVisible:
+    element:
+      id: recharge-submit
+- tapOn:
+    id: recharge-submit
+    repeat: 3
+    delay: 40
+    retryTapIfNoChange: false
+- runFlow: ../utils/payments-skip-print.yaml
+- runScript:
+    file: ../utils/payments-qa.js
+    env:
+      ACTION: state
+- assertTrue: ${output.qaReceipts == 4 && output.qaBalance == '-51.00'}
+- tapOn:
+    id: recharge-finish
+- extendedWaitUntil:
+    visible:
+      id: customer-outstanding
+      text: ₹-51.00
+    timeout: 30000
+
+# --- 4. A refund from another device ---------------------------------------
+# It pays ₹2 then refunds that receipt, so after a refresh the balance is back
+# where it was and the book holds both receipts.
+- runScript:
+    file: ../utils/payments-qa.js
+    env:
+      ACTION: state
+- evalScript: ${output.qaLastBefore = output.qaReceipts}
+- runScript:
+    file: ../utils/payments-qa.js
+    env:
+      ACTION: pay
+      AMOUNT: '2.00'
+- runScript:
+    file: ../utils/payments-qa.js
+    env:
+      ACTION: reverse
+- swipe:
+    start: 50%, 30%
+    end: 50%, 85%
+- extendedWaitUntil:
+    visible:
+      id: customer-outstanding
+      text: ₹-51.00
+    timeout: 20000
+- runScript:
+    file: ../utils/payments-qa.js
+    env:
+      ACTION: state
+- assertTrue: ${output.qaReceipts == output.qaLastBefore + 2 && output.qaBalance == '-51.00'}

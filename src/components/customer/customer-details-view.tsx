@@ -315,7 +315,7 @@ function OverviewTab({ customer }: { customer: CustomerDetail }) {
           <Text className="text-sm font-medium text-foreground">Outstanding Balance</Text>
           {tone.tint ? <Badge label={balance < 0 ? 'Credit' : 'Due'} tint={tone.tint} /> : null}
         </View>
-        <Text className={`mt-1 text-3xl font-bold ${tone.text}`}>{`₹${customer.outstandingBalance}`}</Text>
+        <Text testID="customer-outstanding" className={`mt-1 text-3xl font-bold ${tone.text}`}>{`₹${customer.outstandingBalance}`}</Text>
         <Text className={`text-xs ${tone.text}`}>
           {balance < 0 ? 'Customer is in credit' : balance > 0 ? 'Payment pending' : 'No dues'}
         </Text>
