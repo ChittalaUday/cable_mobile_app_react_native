@@ -15,6 +15,7 @@ import { Card, Loading, ScreenHeader } from '@/components/common/shell';
 import {
   colors,
   FocusAwareStatusBar,
+  Pill,
   Pressable,
   Text,
   View,
@@ -355,19 +356,14 @@ export function AddEditStaffScreen() {
                   <FieldLabel>Team</FieldLabel>
                   <View className="flex-row flex-wrap gap-1.5">
                     {[{ id: null, name: 'No team' }, ...teams].map(team => (
-                      <Pressable
+                      <Pill
                         key={team.id ?? 'none'}
                         accessibilityRole="radio"
-                        accessibilityState={{ selected: teamId === team.id }}
+                        label={team.name}
                         onPress={() => edit({ teamId: team.id })}
-                        className={`rounded-full px-3 py-1.5 ${
-                          teamId === team.id ? 'bg-primary-600' : 'border border-border bg-card'
-                        }`}
-                      >
-                        <Text className={`text-xs font-bold ${teamId === team.id ? 'text-white' : 'text-foreground'}`}>
-                          {team.name}
-                        </Text>
-                      </Pressable>
+                        selected={teamId === team.id}
+                        size="sm"
+                      />
                     ))}
                   </View>
                   <Text className="text-[10px] text-muted-foreground">

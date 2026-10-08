@@ -35,9 +35,7 @@ tags:
     visible: '.*Location attached.*'
     timeout: 30000
 - tapOn:
-    id: visit-outcome-not_available
-- tapOn:
-    id: visit-next-tomorrow
+    id: visit-choice-not_available
 - tapOn:
     id: visit-notes
 - inputText: Door locked
@@ -54,13 +52,14 @@ tags:
 - extendedWaitUntil:
     visible: Customer not available (bill)
     timeout: 20000
-- assertVisible: '.*Door locked.*next visit.*'
+- assertVisible: '.*Door locked.*'
 - assertVisible: Customer registered
 
 # --- And in Visits, for the office to track -----------------------------------
 - tapOn: Back
-- tapOn: More
 - tapOn: Visits
+- tapOn:
+    id: visit-history
 - extendedWaitUntil:
     visible: ${output.qaName}
     timeout: 20000

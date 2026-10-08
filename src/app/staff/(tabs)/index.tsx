@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { MotiView } from 'moti';
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -7,7 +8,8 @@ import { Greeting, OperatorHeader } from '@/components/admin/operator-header';
 import { GlobalSearchModal } from '@/components/common/global-search-modal';
 import { QuickActionsFab } from '@/components/common/quick-actions-fab';
 import { LoadError, Loading } from '@/components/common/shell';
-import { StaffCollectionsCard } from '@/components/staff/staff-collections-card';
+import { RemoteShortcut } from '@/components/remote/remote-shortcut';
+import { TodaysRound } from '@/components/staff/todays-round';
 import { colors, FocusAwareStatusBar, Pressable, SafeAreaView, ScrollView, Text, View } from '@/components/ui';
 import { useStaffDashboard } from '@/lib/hooks/api/use-staff-dashboard';
 import { useAuthStore } from '@/lib/hooks/stores/use-auth-store';
@@ -16,11 +18,12 @@ import { greeting } from '@/lib/utils/admin-format';
 /**
  * The field officer's home: what to do next, then how the round is going.
  *
- * Customers, Payments, Remote and More are tabs now, so nothing here repeats
+ * Customers, Payments, Visits and More are tabs now, so nothing here repeats
  * them as tiles; quick actions are the shortcuts into the work itself.
  */
 export function StaffDashboardScreen() {
   const { t } = useTranslation();
+  const router = useRouter();
   const user = useAuthStore.use.user();
   const [searchVisible, setSearchVisible] = React.useState(false);
   const { data: dashboard, isPending, isRefetching, error, refetch } = useStaffDashboard();
@@ -63,7 +66,15 @@ export function StaffDashboardScreen() {
                       <Text className="text-xs font-semibold text-warning-700 dark:text-warning-300">{t('staff_dashboard.refresh_failed')}</Text>
                     </Pressable>
                   )}
-                  <StaffCollectionsCard dashboard={dashboard} />
+                  <Pressable accessibilityRole="button" testID="collected-today" onPress={() => router.push('/staff/collections')}>
+                    <View className="gap-1 rounded-2xl bg-charcoal-900 p-5">
+                      <Text className="text-sm font-semibold text-primary-300">{t('staff_dashboard.collected_today')}</Text>
+                      <Text selectable className="text-4xl font-bold text-white">{`₹${dashboard.personal.today.toFixed(2)}`}</Text>
+                      <Text className="text-charcoal-300">{`${dashboard.personal.todayReceipts} ${dashboard.personal.todayReceipts === 1 ? 'receipt' : 'receipts'} · Tap for details`}</Text>
+                    </View>
+                  </Pressable>
+                  <TodaysRound basePath="/staff" compact />
+                  <RemoteShortcut />
                 </MotiView>
               </ScrollView>
             )}

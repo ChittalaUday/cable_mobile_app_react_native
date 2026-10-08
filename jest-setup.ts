@@ -11,6 +11,9 @@ jest.mock('react-native-worklets', () => ({
   default: {},
 }));
 
+// Safe-area hooks need a provider; the library ships a mock with zero insets
+jest.mock('react-native-safe-area-context', () => (require('react-native-safe-area-context/jest/mock') as { default: unknown }).default);
+
 // Mock @hugeicons/react-native
 jest.mock('@hugeicons/react-native', () => {
   const React = require('react') as typeof ReactModule;

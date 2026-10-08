@@ -1,6 +1,5 @@
 import type { IconSvgElement } from '@hugeicons/react-native';
 import type { RaiseTicketTarget } from '@/components/tickets/raise-ticket-sheet';
-import type { MarkVisitTarget } from '@/components/visits/mark-visit-sheet';
 import type { CustomerDetail, CustomerEquipment, CustomerSubscription, CustomerTransaction } from '@/lib/api/types';
 import {
   Add01Icon,
@@ -41,8 +40,9 @@ import { CustomerTimeline } from '@/components/customer/customer-timeline';
 import { EditCustomerSheet } from '@/components/customer/edit-customer-sheet';
 import { RaiseTicketSheet } from '@/components/tickets/raise-ticket-sheet';
 import { Button, colors, Pressable, Text, ThemedIcon, View } from '@/components/ui';
-import { MarkVisitSheet } from '@/components/visits/mark-visit-sheet';
+import { startVisit } from '@/components/visits/mark-visit-sheet';
 import { PERMISSIONS } from '@/constants/permissions';
+import { openCallIntent } from '@/lib/call-intent';
 import { usePermissions } from '@/lib/hooks/common/use-permissions';
 import { dateTime, dayMonthYear, planRupees } from '@/lib/utils/admin-format';
 
@@ -214,10 +214,11 @@ const DETAIL_TABS = [
 ] as const;
 
 const PAYMENT_RANGES = [
-  { months: 1, label: 'Last Month' },
-  { months: 3, label: 'Last 3 Months' },
-  { months: 6, label: 'Last 6 Months' },
-  { months: 0, label: 'All' },
+  { days: 7, label: 'Last 7 Days' },
+  { days: 30, label: 'Last Month' },
+  { days: 90, label: 'Last 3 Months' },
+  { days: 180, label: 'Last 6 Months' },
+  { days: 0, label: 'All' },
 ] as const;
 
 function Panel({ className = '', children }: { className?: string; children: React.ReactNode }) {
@@ -371,7 +372,7 @@ function OverviewTab({ customer }: { customer: CustomerDetail }) {
         <DetailRow icon={IdIcon} label="Customer Code" value={customer.customerCode} />
         <DetailRow icon={UserIcon} label="Name" value={customer.name} />
         <DetailRow icon={Call02Icon} label="Phone">
-          <Pressable accessibilityRole="link" disabled={!customer.phone} onPress={() => Linking.openURL(`tel:${customer.phone}`)} className="flex-1 flex-row items-center gap-2">
+          <Pressable accessibilityRole="link" disabled={!customer.phone} onPress={() => void openCallIntent(customer.phone)} className="flex-1 flex-row items-center gap-2">
             <Text selectable className="text-[13px] font-medium text-foreground">{customer.phone || '—'}</Text>
             {customer.phone ? <HugeiconsIcon icon={Call02Icon} size={14} color={TINT.blue.fg} /> : null}
           </Pressable>
@@ -441,11 +442,12 @@ function ServiceCard({ sub, onManage }: { sub: CustomerSubscription; onManage?: 
       </DetailRow>
       <DetailRow label="Outstanding" value={`₹${sub.outstandingBalance}`} valueClassName={balanceTone(outstanding).text} />
       <DetailRow label="Start Date" value={formatDate(sub.startDate)} />
+      <DetailRow label="Expires" value={formatDate(sub.endDate)} valueClassName={sub.endDate && new Date(sub.endDate) < new Date() ? 'text-red-600 font-bold' : undefined} />
       <DetailRow label="Next Charge" value={Number(sub.nextPlanCharge) > 0 ? `₹${sub.nextPlanCharge}` : '—'} />
       <DetailRow label="Charged Through" value={formatDate(sub.chargedThrough)} />
       {sub.installationAddress
         ? (
-            <View className="mt-1 flex-row items-start gap-2 border-t border-border/60 pt-3">
+            <View className="mt-1 flex-row items-start gap-2 pt-3">
               <ThemedIcon icon={Location01Icon} size={16} colorClassName="text-muted-foreground" />
               <View className="flex-1">
                 <Text className="text-xs text-muted-foreground">Installation Address</Text>
@@ -455,7 +457,7 @@ function ServiceCard({ sub, onManage }: { sub: CustomerSubscription; onManage?: 
           )
         : null}
 
-      <View className="mt-1 flex-row items-center gap-3 border-t border-border/60 pt-3">
+      <View className="mt-1 flex-row items-center gap-3 pt-3">
         <Avatar name={sub.provider.name} size={36} />
         <View className="flex-1">
           <Text className="text-xs text-muted-foreground">Service Provider</Text>
@@ -470,7 +472,7 @@ function TransactionRow({ tx }: { tx: CustomerTransaction }) {
   const isCredit = Number(tx.credit) > 0;
   const tint = isCredit ? TINT.green : TINT.red;
   return (
-    <View className="flex-row items-start gap-3 border-b border-border/60 py-3">
+    <View className="flex-row items-start gap-3 py-3">
       <View className="size-10 items-center justify-center rounded-full" style={{ backgroundColor: tint.bg }}>
         <HugeiconsIcon icon={isCredit ? ArrowDown02Icon : ArrowUp02Icon} size={20} color={tint.fg} />
       </View>
@@ -488,12 +490,12 @@ function TransactionRow({ tx }: { tx: CustomerTransaction }) {
 }
 
 function PaymentsTab({ customer }: { customer: CustomerDetail }) {
-  const [months, setMonths] = React.useState<number>(3);
+  const [days, setDays] = React.useState<number>(90);
   const [picking, setPicking] = React.useState(false);
-  const since = new Date();
-  since.setMonth(since.getMonth() - months);
+  const [now] = React.useState(Date.now);
+  const since = now - days * 86_400_000;
   // ponytail: filters the detail's recent ledger only; page `/transactions` if older history is needed here.
-  const txs = months === 0 ? customer.recentTransactions : customer.recentTransactions.filter(tx => new Date(tx.transactionDate) >= since);
+  const txs = days === 0 ? customer.recentTransactions : customer.recentTransactions.filter(tx => new Date(tx.transactionDate).getTime() >= since);
   const sum = (key: 'credit' | 'debit') => txs.reduce((total, tx) => total + Number(tx[key] || 0), 0).toFixed(2);
 
   return (
@@ -507,7 +509,7 @@ function PaymentsTab({ customer }: { customer: CustomerDetail }) {
             onPress={() => setPicking(open => !open)}
             className="flex-row items-center gap-1.5 rounded-lg border border-border px-3 py-1.5"
           >
-            <Text className="text-xs font-medium text-foreground">{PAYMENT_RANGES.find(r => r.months === months)?.label}</Text>
+            <Text className="text-xs font-medium text-foreground">{PAYMENT_RANGES.find(r => r.days === days)?.label}</Text>
             <ThemedIcon icon={ArrowDown01Icon} size={14} colorClassName="text-muted-foreground" />
           </Pressable>
         </View>
@@ -516,15 +518,15 @@ function PaymentsTab({ customer }: { customer: CustomerDetail }) {
               <View className="mb-3 overflow-hidden rounded-xl border border-border">
                 {PAYMENT_RANGES.map(range => (
                   <Pressable
-                    key={range.months}
+                    key={range.days}
                     accessibilityRole="button"
                     onPress={() => {
-                      setMonths(range.months);
+                      setDays(range.days);
                       setPicking(false);
                     }}
                     className="px-4 py-2.5 active:bg-muted/40"
                   >
-                    <Text className={`text-[13px] ${range.months === months ? 'font-bold text-primary-600' : 'text-foreground'}`}>{range.label}</Text>
+                    <Text className={`text-[13px] ${range.days === days ? 'font-bold text-primary-600' : 'text-foreground'}`}>{range.label}</Text>
                   </Pressable>
                 ))}
               </View>
@@ -565,7 +567,7 @@ function EquipmentCard({ item, line }: { item: CustomerEquipment; line?: Custome
         <StatusDot active={active} label={capitalize(item.status)} />
       </DetailRow>
 
-      <View className="mt-2 border-t border-border/60 pt-3">
+      <View className="mt-2 pt-3">
         <Text className="mb-2 text-sm font-bold text-foreground">History</Text>
         <TimelineStep color="bg-green-500" title="Assigned" detail={`${dateTime(item.assignedAt)}${assignedTo ? `\nto ${assignedTo}` : ''}`} last={false} />
         {item.returnedAt
@@ -603,7 +605,6 @@ export function CustomerDetailsView({
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [tab, setTab] = React.useState<DetailTab>('overview');
-  const [visitFor, setVisitFor] = React.useState<MarkVisitTarget | null>(null);
   const { can } = usePermissions();
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [ticketFor, setTicketFor] = React.useState<RaiseTicketTarget | null>(null);
@@ -695,7 +696,7 @@ export function CustomerDetailsView({
             <View className="flex-row flex-wrap items-center gap-2">
               {customer.phone
                 ? (
-                    <Pressable accessibilityRole="link" accessibilityLabel={`Call ${customer.phone}`} onPress={() => Linking.openURL(`tel:${customer.phone}`)} className="flex-row items-center gap-1">
+                    <Pressable accessibilityRole="link" accessibilityLabel={`Call ${customer.phone}`} onPress={() => void openCallIntent(customer.phone)} className="flex-row items-center gap-1">
                       <HugeiconsIcon icon={Call02Icon} size={14} color={TINT.blue.fg} />
                       <Text selectable className="text-sm font-semibold text-foreground">{customer.phone}</Text>
                     </Pressable>
@@ -712,7 +713,7 @@ export function CustomerDetailsView({
                 {customer.phone
                   ? (
                       <>
-                        <ContactButton icon={Call02Icon} color={TINT.blue.fg} label={t('customer_details.call')} onPress={() => Linking.openURL(`tel:${customer.phone}`)} />
+                        <ContactButton icon={Call02Icon} color={TINT.blue.fg} label={t('customer_details.call')} onPress={() => void openCallIntent(customer.phone)} />
                         <ContactButton icon={WhatsappIcon} color="#25D366" label={t('customer_details.whatsapp')} onPress={() => Linking.openURL(`https://wa.me/${whatsapp}`)} />
                         <ContactButton icon={Message01Icon} color={TINT.purple.fg} label={t('customer_details.message')} onPress={() => Linking.openURL(`sms:${customer.phone}`)} />
                       </>
@@ -725,7 +726,7 @@ export function CustomerDetailsView({
             )
           : null}
 
-        <View className="mt-4">
+        <View className="mt-4 rounded-2xl bg-primary-500/10 p-1.5">
           <Segmented options={DETAIL_TABS} value={tab} onChange={setTab} />
         </View>
 
@@ -777,23 +778,23 @@ export function CustomerDetailsView({
 
       {isOperator
         ? (
-            <View className="flex-row gap-2 border-t border-border/60 bg-card px-4 pt-3" style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
+            <View className="flex-row gap-2 bg-card px-4 pt-3" style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
               {can(PERMISSIONS.VISITS_CREATE)
                 ? (
                     <Button
                       label="Mark visit"
                       variant="outline"
-                      className="h-12 flex-1 rounded-xl"
-                      textClassName="text-base font-bold"
+                      size="lg"
+                      className="flex-1 rounded-xl"
                       testID="customer-mark-visit"
-                      onPress={() => setVisitFor({ customerId: customer.id, customerName: displayName, ...(plan ? { subscriptionId: plan.id } : {}) })}
+                      onPress={() => startVisit({ customerId: customer.id, customerName: displayName, purpose: 'payment', action: 'collect_payment', ...(plan ? { subscriptionId: plan.id } : {}) })}
                     />
                   )
                 : null}
               <Button
                 label="Collect Payment"
-                className="h-12 flex-1 rounded-xl bg-primary-500"
-                textClassName="text-base font-bold"
+                size="lg"
+                className="flex-1 rounded-xl"
                 onPress={() => recharge(plan?.id)}
               />
             </View>
@@ -801,7 +802,6 @@ export function CustomerDetailsView({
         : null}
 
       <RaiseTicketSheet target={ticketFor} onClose={() => setTicketFor(null)} />
-      <MarkVisitSheet target={visitFor} onClose={() => setVisitFor(null)} />
       <EditCustomerSheet customer={editing ? customer : null} onClose={() => setEditing(false)} />
     </View>
   );

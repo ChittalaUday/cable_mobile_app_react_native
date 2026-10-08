@@ -4,8 +4,8 @@ import {
   ArrowRight01Icon,
   CreditCardIcon,
   Home01Icon,
+  Location01Icon,
   MoreIcon,
-  RemoteControlIcon,
   UserMultipleIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
@@ -109,7 +109,7 @@ const TABS = [
   { key: 'home', icon: Home01Icon, label: 'Home' },
   { key: 'customers', icon: UserMultipleIcon, label: 'Customers' },
   { key: 'payments', icon: CreditCardIcon, label: 'Payments' },
-  { key: 'remote', icon: RemoteControlIcon, label: 'Remote' },
+  { key: 'visits', icon: Location01Icon, label: 'Visits' },
   { key: 'more', icon: MoreIcon, label: 'More' },
 ] as const;
 

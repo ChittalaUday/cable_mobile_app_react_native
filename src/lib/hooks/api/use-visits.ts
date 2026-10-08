@@ -3,10 +3,13 @@ import { createInfiniteQuery, createMutation, createQuery } from 'react-query-ki
 import { client } from '@/lib/api/client';
 import { queryClient } from '@/lib/api/query-client';
 
+export type DueVisit = ApiResponse<'/api/v1/visits/due', 'get', 200>['items'][number];
+export type DueVisitReason = DueVisit['reason'];
 export type Visit = ApiResponse<'/api/v1/customers/{id}/visits', 'post', 201>;
 export type RecordVisitPayload = ApiBody<'/api/v1/customers/{id}/visits', 'post'>;
 export type VisitPurpose = RecordVisitPayload['purpose'];
 export type VisitOutcome = RecordVisitPayload['outcome'];
+export type VisitAction = NonNullable<DueVisit['action']>;
 export type TimelinePage = ApiResponse<'/api/v1/customers/{id}/timeline', 'get', 200>;
 export type TimelineItem = TimelinePage['items'][number];
 
@@ -26,17 +29,24 @@ export const VISIT_OUTCOME_LABELS: Record<VisitOutcome, string> = {
 };
 
 /** A visit marked at the door: it lands on the customer's timeline and the visit list. */
+export async function recordVisit(customerId: string, payload: RecordVisitPayload): Promise<Visit> {
+  const response = await client.post<Visit>(`/customers/${customerId}/visits`, payload);
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: ['visits'] }),
+    queryClient.invalidateQueries({ queryKey: ['customer-timeline'] }),
+  ]);
+  return response.data;
+}
+
 export const useRecordVisit = createMutation<Visit, { customerId: string; payload: RecordVisitPayload }, Error>({
-  mutationFn: async ({ customerId, payload }) => {
-    const response = await client.post<Visit>(`/customers/${customerId}/visits`, payload);
-    return response.data;
-  },
-  onSuccess: async () => {
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['visits'] }),
-      queryClient.invalidateQueries({ queryKey: ['customer-timeline'] }),
-    ]);
-  },
+  mutationFn: ({ customerId, payload }) => recordVisit(customerId, payload),
+});
+
+/** Today's round: open complaints, lines ending within 3 days, and doors promised for today. */
+export const useDueVisits = createQuery<DueVisit[], void, Error>({
+  queryKey: ['visits', 'due'],
+  fetcher: async () => (await client.get<ApiResponse<'/api/v1/visits/due', 'get', 200>>('/visits/due')).data.items,
+  staleTime: 0,
 });
 
 export type VisitVariables = ApiQuery<'/api/v1/visits'> | void;

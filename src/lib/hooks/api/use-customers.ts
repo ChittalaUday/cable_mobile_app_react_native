@@ -5,6 +5,7 @@ import type {
   CustomerPage,
   CustomerSubscription,
 } from '@/lib/api/types';
+import type { ConsolidatedCustomer } from '@/types/customer-connection';
 import { createInfiniteQuery, createMutation, createQuery } from 'react-query-kit';
 import { client } from '@/lib/api/client';
 import { queryClient } from '@/lib/api/query-client';
@@ -136,7 +137,7 @@ export const useAddSubscription = createMutation<
 /**
  * Maps a wire `CustomerListItem` to a `ConsolidatedCustomer` for display in list cards.
  */
-export function customerItemToConsolidated(item: CustomerListItem) {
+export function customerItemToConsolidated(item: CustomerListItem): ConsolidatedCustomer {
   const accounts = item.serviceAccounts ?? [];
   const defaultServiceName = item.services[0] || 'Cable TV';
 
@@ -164,6 +165,7 @@ export function customerItemToConsolidated(item: CustomerListItem) {
             vcNumber: box.vcNumber ?? undefined,
             packageName: `${account.accountNumber} (Box ${idx + 1})`,
             balance: Number(account.outstandingBalance) || 0,
+            expiryDate: account.endDate ?? undefined,
             status: item.status === 'active' ? ('active' as const) : ('pending' as const),
             locationLabel: account.locationPath?.split(' / ').pop(),
           }));
@@ -183,6 +185,7 @@ export function customerItemToConsolidated(item: CustomerListItem) {
           vcNumber: box?.vcNumber ?? undefined,
           packageName: account.accountNumber,
           balance: Number(account.outstandingBalance) || 0,
+          expiryDate: account.endDate ?? undefined,
           status: item.status === 'active' ? ('active' as const) : ('pending' as const),
           locationLabel: account.locationPath?.split(' / ').pop(),
         }];

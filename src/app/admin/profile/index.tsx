@@ -5,6 +5,7 @@ import {
   Logout01Icon,
   Notification03Icon,
   QrCodeIcon,
+  RemoteControlIcon,
 } from '@hugeicons/core-free-icons';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
@@ -30,6 +31,7 @@ import { authErrorMessage } from '@/lib/utils/auth-error';
 function rowsFor(canManageUpi: boolean): { key: string; icon: IconSvgElement; tint: keyof typeof TINT; label: string; route: Href }[] {
   return [
     { key: 'notifications', icon: Notification03Icon, tint: 'orange', label: 'Notifications', route: '/notifications' },
+    { key: 'remote', icon: RemoteControlIcon, tint: 'blue', label: translate('remote.public_remote'), route: '/remote' },
     ...(canManageUpi ? [{ key: 'upi', icon: QrCodeIcon, tint: 'purple' as const, label: translate('settings.upi_accounts'), route: '/admin/settings/upi' as Href }] : []),
   ];
 }

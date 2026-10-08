@@ -2,7 +2,7 @@ import type { CustomerDetail, CustomerSubscription } from '@/lib/api/types';
 import * as React from 'react';
 import QRCode from 'react-native-qrcode-svg';
 import { Card } from '@/components/common/shell';
-import { Input, Pressable, Text, View } from '@/components/ui';
+import { Input, Pill, Pressable, Text, View } from '@/components/ui';
 import { PAYMENT_METHOD_LABELS, PAYMENT_METHODS } from '@/lib/constants/billing';
 import { useCustomerEquipment } from '@/lib/hooks/api/use-inventory';
 import { chooseUpiAccount, useTenantUpiAccounts } from '@/lib/hooks/api/use-tenant-upi';
@@ -110,15 +110,14 @@ export function StepAmount({ customer, line }: {
       <Field label="Paid by">
         <View className="flex-row flex-wrap gap-2">
           {PAYMENT_METHODS.map(option => (
-            <Pressable
+            <Pill
               key={option}
               accessibilityRole="radio"
-              accessibilityState={{ selected: method === option }}
+              label={PAYMENT_METHOD_LABELS[option]}
               onPress={() => setField('method', option)}
-              className={`rounded-full border px-4 py-2 ${method === option ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/40' : 'border-border bg-card'}`}
-            >
-              <Text className="text-xs font-bold text-foreground">{PAYMENT_METHOD_LABELS[option]}</Text>
-            </Pressable>
+              selected={method === option}
+              variant="soft"
+            />
           ))}
         </View>
       </Field>

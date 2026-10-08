@@ -15,6 +15,7 @@ import {
   colors,
   FocusAwareStatusBar,
   Image,
+  Pill,
   Pressable,
   ScrollView,
   Text,
@@ -200,19 +201,13 @@ export function PackageChannelsScreen() {
               { key: 'selected' as const, label: `Selected (${selectedChannelIds.length})` },
               ...RESOLUTIONS.map(resolution => ({ key: resolution, label: resolution })),
             ]).map(pill => (
-              <Pressable
+              <Pill
                 key={pill.key}
-                accessibilityRole="button"
-                accessibilityState={{ selected: filter === pill.key }}
+                label={pill.label}
                 onPress={() => setFilter(pill.key)}
-                className={`rounded-full px-4 py-1.5 ${
-                  filter === pill.key ? 'bg-primary-600' : 'border border-border bg-card'
-                }`}
-              >
-                <Text className={`text-xs font-semibold ${filter === pill.key ? 'text-white' : 'text-foreground'}`}>
-                  {pill.label}
-                </Text>
-              </Pressable>
+                selected={filter === pill.key}
+                size="sm"
+              />
             ))}
           </ScrollView>
         </View>

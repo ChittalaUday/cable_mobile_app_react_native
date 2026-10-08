@@ -11,6 +11,7 @@ import { Card, LoadError, Loading, ScreenHeader } from '@/components/common/shel
 import {
   Button,
   Input,
+  Pill,
   Pressable,
   Text,
   ThemedIcon,
@@ -261,15 +262,14 @@ export function CollectPaymentScreen({ customerId, basePath }: {
                   <Text className="text-xs font-semibold text-foreground">Paid by</Text>
                   <View className="flex-row flex-wrap gap-2">
                     {PAYMENT_METHODS.map(option => (
-                      <Pressable
+                      <Pill
                         key={option}
                         accessibilityRole="radio"
-                        accessibilityState={{ selected: method === option }}
+                        label={PAYMENT_METHOD_LABELS[option]}
                         onPress={() => setMethod(option)}
-                        className={`rounded-full border px-4 py-2 ${method === option ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/40' : 'border-border bg-card'}`}
-                      >
-                        <Text className="text-xs font-bold text-foreground">{PAYMENT_METHOD_LABELS[option]}</Text>
-                      </Pressable>
+                        selected={method === option}
+                        variant="soft"
+                      />
                     ))}
                   </View>
                 </View>

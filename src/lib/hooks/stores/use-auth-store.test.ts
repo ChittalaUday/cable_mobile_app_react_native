@@ -150,9 +150,19 @@ describe('a password that needs an emailed code as well', () => {
   });
 });
 describe('restoring a session on launch', () => {
+  it('re-checks quietly, without dropping to idle, when already signed in', () => {
+    jest.mocked(getToken).mockReturnValue({ access: 'a', refresh: 'r' });
+    jest.mocked(client.get).mockReturnValueOnce(new Promise(() => {}));
+    useAuthStore.setState({ status: 'signIn' });
+    useAuthStore.getState().hydrate();
+    expect(useAuthStore.getState().status).toBe('signIn');
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
     jest.mocked(getToken).mockReturnValue({ access: 'a', refresh: 'r' });
+    // A real launch starts idle; an earlier test may have left the store signed in.
+    useAuthStore.setState({ status: 'idle' });
   });
   it('keeps the token when the request fails for a reason that is not the session', async () => {
     // A timeout is the common one: a phone on a bad connection at launch.

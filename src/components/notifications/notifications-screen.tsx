@@ -19,6 +19,7 @@ import {
   colors,
   FocusAwareStatusBar,
   Image,
+  Pill,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -46,20 +47,6 @@ function ago(iso: string): string {
   if (minutes < 1440)
     return `${Math.floor(minutes / 60)}h ago`;
   return `${Math.floor(minutes / 1440)}d ago`;
-}
-
-function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      className={`mr-2 rounded-full px-3 py-1.5 ${active ? 'bg-primary-500' : 'border border-border bg-card'}`}
-    >
-      <Text className={`text-xs font-extrabold ${active ? 'text-white' : 'text-muted-foreground'}`}>
-        {label}
-      </Text>
-    </Pressable>
-  );
 }
 
 function Row({ item, onPress }: { item: AppNotification; onPress: () => void }) {
@@ -137,12 +124,14 @@ export function NotificationsScreen() {
           : undefined}
       >
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-3">
-          <Chip label="All" active={category === null} onPress={() => setCategory(null)} />
+          <Pill className="mr-2" label="All" selected={category === null} size="sm" onPress={() => setCategory(null)} />
           {NOTIFICATION_CATEGORIES.map(value => (
-            <Chip
+            <Pill
               key={value}
+              className="mr-2"
               label={CATEGORIES[value].label}
-              active={category === value}
+              selected={category === value}
+              size="sm"
               onPress={() => setCategory(value)}
             />
           ))}

@@ -106,6 +106,23 @@ describe('customerConnectionCard', () => {
     open.mockRestore();
   });
 
+  it('shows when service expires, and flags it once it has', () => {
+    const expiring = (expiryDate?: string) => ({ ...singleConnectionCustomer, connections: [{ ...singleConnectionCustomer.connections[0]!, expiryDate }] });
+    jest.useFakeTimers().setSystemTime(new Date('2026-10-20T06:00:00.000Z'));
+
+    const { rerender } = render(<CustomerConnectionCard customer={expiring('2026-10-24T06:30:00.000Z')} />);
+    expect(screen.getByText('Expiry Date')).toBeTruthy();
+    expect(screen.getByText('24 Oct 2026').props.className).not.toContain('text-red-600');
+
+    rerender(<CustomerConnectionCard customer={expiring('2026-10-18T06:30:00.000Z')} />);
+    expect(screen.getByText('18 Oct 2026').props.className).toContain('text-red-600');
+
+    // A line the MSO has not dated shows no tile rather than an empty one.
+    rerender(<CustomerConnectionCard customer={expiring(undefined)} />);
+    expect(screen.queryByText('Expiry Date')).toBeNull();
+    jest.useRealTimers();
+  });
+
   it('renders multi-connection customer with connection count badge', () => {
     render(<CustomerConnectionCard customer={multiConnectionCustomer} />);
 

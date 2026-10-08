@@ -10,6 +10,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { DialogProvider } from '@/components/common/dialog-provider';
 import { useThemeConfig } from '@/components/ui/use-theme-config';
+import { MarkVisitSheet } from '@/components/visits/mark-visit-sheet';
 import { logScreenView, setUserId as setAnalyticsUserId } from '@/lib/analytics';
 import { APIProvider, queryClient } from '@/lib/api';
 import { initFirebaseAppCheck } from '@/lib/app-check';
@@ -153,6 +154,7 @@ function Providers({
             <BottomSheetModalProvider>
               <DialogProvider>
                 {children}
+                <MarkVisitSheet />
               </DialogProvider>
             </BottomSheetModalProvider>
             <FlashMessage position="top" />

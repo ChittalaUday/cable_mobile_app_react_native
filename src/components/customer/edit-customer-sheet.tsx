@@ -5,7 +5,7 @@ import { Modal as RNModal } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { z } from 'zod';
 import { dialogs } from '@/components/common/dialogs';
-import { Button, Input, Pressable, Text, View } from '@/components/ui';
+import { Button, Input, Pill, Text, View } from '@/components/ui';
 import { useUpdateCustomer } from '@/lib/hooks/api/use-customers';
 
 const STATUSES = ['active', 'inactive', 'pending'] as const;
@@ -106,15 +106,14 @@ function Sheet({ customer, onClose }: { customer: CustomerDetail; onClose: () =>
             <Text className="mt-2 mb-1.5 text-sm font-bold text-foreground">Status</Text>
             <View className="mb-2 flex-row gap-2">
               {STATUSES.map(option => (
-                <Pressable
+                <Pill
                   key={option}
                   accessibilityRole="radio"
-                  accessibilityState={{ selected: values.status === option }}
+                  label={option}
                   onPress={() => setValues(prev => ({ ...prev, status: option }))}
-                  className={`rounded-full border px-3.5 py-2 ${values.status === option ? 'border-primary-500 bg-primary-500' : 'border-border bg-card'}`}
-                >
-                  <Text className={`text-xs font-bold capitalize ${values.status === option ? 'text-white' : 'text-foreground'}`}>{option}</Text>
-                </Pressable>
+                  selected={values.status === option}
+                  textClassName="capitalize"
+                />
               ))}
             </View>
 

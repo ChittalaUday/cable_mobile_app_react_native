@@ -4,6 +4,7 @@ import {
   Clock01Icon,
   CreditCardIcon,
   HeadsetIcon,
+  Location01Icon,
   PlusSignIcon,
   Wifi01Icon,
 } from '@hugeicons/core-free-icons';
@@ -18,6 +19,7 @@ const ACTIVITY_STYLE: Record<ActivityKind, { icon: IconSvgElement; tint: keyof t
   connection: { icon: Wifi01Icon, tint: 'blue' },
   payment: { icon: CreditCardIcon, tint: 'orange' },
   ticket: { icon: HeadsetIcon, tint: 'purple' },
+  visit: { icon: Location01Icon, tint: 'orange' },
 };
 
 export function RecentActivity({ rows, onSeeAll }: { rows: ActivityRow[]; onSeeAll: () => void }) {

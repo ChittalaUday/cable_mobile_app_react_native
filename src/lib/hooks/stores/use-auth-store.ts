@@ -169,7 +169,7 @@ function authenticatedState(session: AuthResponse) {
  * Returns the teardown the caller's effect needs: a late answer to a launch the
  * user has already navigated away from must not write state.
  */
-function restoreSession(set: (partial: Partial<AuthState>) => void) {
+function restoreSession(set: (partial: Partial<AuthState>) => void, signedIn: boolean) {
   let cancelled = false;
 
   if (!getToken()) {
@@ -179,7 +179,10 @@ function restoreSession(set: (partial: Partial<AuthState>) => void) {
     };
   }
 
-  set({ error: null, status: 'idle' });
+  // Already signed in (a hot reload re-running the root effect): re-check quietly.
+  // Dropping to `idle` unmounts every role layout, which resets navigation to home.
+  if (!signedIn)
+    set({ error: null, status: 'idle' });
 
   client.get<MeResponse>('/auth/me').then(({ data: { user, memberships } }) => {
     if (cancelled)
@@ -229,7 +232,7 @@ const _useAuthStore = create<AuthState>((set, get) => ({
   ...signedOut,
   status: 'idle',
 
-  hydrate: () => restoreSession(set),
+  hydrate: () => restoreSession(set, get().status === 'signIn'),
 
   signIn: async (identifier, password) => {
     set({ error: null });

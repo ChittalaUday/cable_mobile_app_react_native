@@ -134,6 +134,14 @@
     "top_level": "ప్రధాన స్థాయి",
     "total_customers": "మొత్తం కస్టమర్లు"
   },
+  "date_picker": {
+    "apply": "వర్తింపజేయి",
+    "cancel": "రద్దు చేయండి",
+    "choose_future": "రేపు లేదా తర్వాతి తేదీని ఎంచుకోండి.",
+    "next_month": "తదుపరి నెల",
+    "previous_month": "మునుపటి నెల",
+    "title": "భవిష్యత్ తేదీని ఎంచుకోండి"
+  },
   "inventory_validation": {
     "receive_quantity": "1 నుండి 1,000 వరకు పూర్ణ సంఖ్యను పరిమాణంగా నమోదు చేయండి.",
     "transfer_quantity": "ఒకసారి ఒక పరికరాన్ని బదిలీ చేయండి."
@@ -201,6 +209,9 @@
     "verify_otp": "OTPని ధృవీకరించండి",
     "version": "వెర్షన్ {{version}}",
     "welcome_back": "తిరిగి స్వాగతం"
+  },
+  "mark_visit": {
+    "custom_date": "ఇతర తేదీ"
   },
   "onboarding": {
     "message": "సత్య కేబుల్ & బ్రాడ్‌బ్యాండ్‌కు స్వాగతం"

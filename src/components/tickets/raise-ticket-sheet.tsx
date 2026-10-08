@@ -3,7 +3,7 @@ import * as React from 'react';
 import { Modal as RNModal } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { dialogs } from '@/components/common/dialogs';
-import { Button, Input, Pressable, Text, View } from '@/components/ui';
+import { Button, Input, Pill, Text, View } from '@/components/ui';
 import {
   TICKET_CATEGORIES,
   TICKET_CATEGORY_LABELS,
@@ -98,8 +98,9 @@ function Sheet({ target, onClose, onRaised }: {
             <Field label="What is wrong">
               <View className="flex-row flex-wrap gap-2">
                 {TICKET_CATEGORIES.map(option => (
-                  <Chip
+                  <Pill
                     key={option}
+                    accessibilityRole="radio"
                     label={TICKET_CATEGORY_LABELS[option]}
                     selected={option === category}
                     onPress={() => setCategory(option)}
@@ -111,8 +112,9 @@ function Sheet({ target, onClose, onRaised }: {
             <Field label="How urgent">
               <View className="flex-row flex-wrap gap-2">
                 {TICKET_PRIORITIES.map(option => (
-                  <Chip
+                  <Pill
                     key={option}
+                    accessibilityRole="radio"
                     label={TICKET_PRIORITY_LABELS[option]}
                     selected={option === priority}
                     onPress={() => setPriority(option)}
@@ -169,20 +171,5 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <Text className="text-sm font-bold text-foreground">{label}</Text>
       {children}
     </View>
-  );
-}
-
-function Chip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
-  return (
-    <Pressable
-      accessibilityRole="radio"
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      className={`rounded-full border px-3.5 py-2 ${
-        selected ? 'border-primary-500 bg-primary-500' : 'border-border bg-card'
-      }`}
-    >
-      <Text className={`text-xs font-bold ${selected ? 'text-white' : 'text-foreground'}`}>{label}</Text>
-    </Pressable>
   );
 }

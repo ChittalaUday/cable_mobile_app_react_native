@@ -4,6 +4,7 @@ import { HugeiconsIcon } from '@hugeicons/react-native';
 import Svg from 'react-native-svg';
 import { useResolveClassNames, withUniwind } from 'uniwind';
 
+export * from './accordion';
 export * from './button';
 export * from './checkbox';
 export { default as colors } from './colors';
@@ -12,6 +13,7 @@ export * from './image';
 export * from './input';
 export * from './list';
 export * from './modal';
+export * from './pill';
 export * from './progress-bar';
 export * from './select';
 export * from './text';

@@ -18,6 +18,7 @@ import { dialogs } from '@/components/common/dialogs';
 import { Card, Loading, ScreenHeader } from '@/components/common/shell';
 import { getProviderBrand } from '@/components/services/provider-brand-utils';
 import { colors, FocusAwareStatusBar, Pressable, Text, ThemedIcon, View } from '@/components/ui';
+import { openCallIntent } from '@/lib/call-intent';
 import { coverageLabel, usePackages } from '@/lib/hooks/api/use-packages';
 import { useDeleteServiceProvider, useServiceProvider } from '@/lib/hooks/api/use-service-providers';
 import { usePackageFormStore } from '@/lib/hooks/stores/use-package-form-store';
@@ -332,7 +333,7 @@ export function ProviderDetailsScreen() {
                       <InfoRow
                         label="Contact"
                         value={contact.phone}
-                        onPress={() => Linking.openURL(`tel:${contact.phone}`)}
+                        onPress={() => void openCallIntent(contact.phone)}
                       />
                     )
                   : null}

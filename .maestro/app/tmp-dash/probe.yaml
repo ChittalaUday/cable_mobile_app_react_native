@@ -1,0 +1,15 @@
+appId: ${APP_ID}
+---
+- runFlow: ../../utils/login-admin.yaml
+- extendedWaitUntil:
+    visible: Total Customers
+    timeout: 60000
+- tapOn: Quick actions
+- extendedWaitUntil:
+    visible: Issue Equipment
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn: Issue Equipment
+- takeScreenshot: /private/tmp/claude-501/-Users-udaychittala-exp-cable-mobile-app-react-native/10571404-f19f-483e-9003-a78a85cb9ca6/scratchpad/p1
+- waitForAnimationToEnd
+- takeScreenshot: /private/tmp/claude-501/-Users-udaychittala-exp-cable-mobile-app-react-native/10571404-f19f-483e-9003-a78a85cb9ca6/scratchpad/p2

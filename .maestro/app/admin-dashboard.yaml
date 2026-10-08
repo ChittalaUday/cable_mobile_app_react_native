@@ -71,9 +71,9 @@ tags:
 - extendedWaitUntil:
     visible: 'Payments & Collections'
     timeout: 30000
-- tapOn: Remote
+- tapOn: Visits
 - extendedWaitUntil:
-    visible: Choose a remote
+    visible: '(Doors visited, paid or not|[0-9]+ visits)'
     timeout: 30000
 - tapOn: More
 - extendedWaitUntil:

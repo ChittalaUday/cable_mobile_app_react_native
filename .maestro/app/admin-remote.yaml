@@ -10,7 +10,9 @@ tags:
 - extendedWaitUntil:
     visible: Total Customers
     timeout: 60000
-- tapOn: Remote
+- scrollUntilVisible:
+    element: IR Remote
+- tapOn: IR Remote
 - extendedWaitUntil:
     visible: Choose a remote
     timeout: 30000

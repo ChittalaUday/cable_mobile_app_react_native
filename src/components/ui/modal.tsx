@@ -39,6 +39,7 @@ import { Pressable, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { Path, Svg } from 'react-native-svg';
+import { useCSSVariable } from 'uniwind';
 
 import { Text } from './text';
 
@@ -56,9 +57,9 @@ type ModalRef = React.ForwardedRef<BottomSheetModal>;
  * reason for a sheet to fail to render. Resolved once at import, so the hook
  * call below stays stable.
  */
-const InsetsContext: React.Context<{ top: number } | null>
-  = (SafeAreaInsetsContext as React.Context<{ top: number } | null> | undefined)
-    ?? React.createContext<{ top: number } | null>(null);
+const InsetsContext: React.Context<{ top: number; bottom: number } | null>
+  = (SafeAreaInsetsContext as React.Context<{ top: number; bottom: number } | null> | undefined)
+    ?? React.createContext<{ top: number; bottom: number } | null>(null);
 
 type ModalHeaderProps = {
   title?: string;
@@ -76,13 +77,15 @@ export function useModal() {
   return { ref, present, dismiss };
 }
 
-export function Modal({ ref, snapPoints: _snapPoints = ['60%', '100%'] as (string | number)[], title, detached = false, topInset, ...props }: ModalProps & { ref?: ModalRef }) {
+export function Modal({ ref, snapPoints: _snapPoints = ['60%', '100%'] as (string | number)[], title, detached = false, topInset, children, ...props }: ModalProps & { ref?: ModalRef }) {
   const detachedProps = React.useMemo(
     () => getDetachedProps(detached),
     [detached],
   );
   const modal = useModal();
   const insets = React.use(InsetsContext);
+  // The sheet paints its own background, which is white unless told otherwise.
+  const sheetColor = String(useCSSVariable('--color-card') ?? '#ffffff');
   const snapPoints = React.useMemo(() => _snapPoints, [_snapPoints]);
 
   /*
@@ -114,6 +117,7 @@ export function Modal({ ref, snapPoints: _snapPoints = ['60%', '100%'] as (strin
 
   return (
     <BottomSheetModal
+      backgroundStyle={{ backgroundColor: sheetColor }}
       {...props}
       {...detachedProps}
       ref={modal.ref}
@@ -124,7 +128,12 @@ export function Modal({ ref, snapPoints: _snapPoints = ['60%', '100%'] as (strin
       backdropComponent={props.backdropComponent || renderBackdrop}
       enableDynamicSizing={false}
       handleComponent={renderHandleComponent}
-    />
+    >
+      {/* Keeps the last row clear of the home indicator / gesture bar. */}
+      <View className="flex-1" style={{ paddingBottom: detached ? 0 : insets?.bottom ?? 0 }}>
+        {children as React.ReactNode}
+      </View>
+    </BottomSheetModal>
   );
 }
 
@@ -182,7 +191,7 @@ const ModalHeader = React.memo(({ title, dismiss }: ModalHeaderProps) => {
    * — on a sheet with no title — sitting on top of the content.
    */
   return (
-    <View className="flex-row items-center border-b border-border p-3">
+    <View className="flex-row items-center p-3">
       <View className="size-8" />
       <View className="flex-1">
         {title

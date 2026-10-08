@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { MotiView } from 'moti';
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -10,6 +10,7 @@ import { RecentActivity } from '@/components/admin/recent-activity';
 import { GlobalSearchModal } from '@/components/common/global-search-modal';
 import { QuickActionsFab } from '@/components/common/quick-actions-fab';
 import { LoadError, Loading } from '@/components/common/shell';
+import { RemoteShortcut } from '@/components/remote/remote-shortcut';
 import { colors, FocusAwareStatusBar, Pressable, SafeAreaView, ScrollView, Text, View } from '@/components/ui';
 import { useAdminDashboard } from '@/lib/hooks/api/use-admin-dashboard';
 import { useAuthStore } from '@/lib/hooks/stores/use-auth-store';
@@ -22,6 +23,14 @@ export function AdminHomeScreen() {
   const [searchVisible, setSearchVisible] = React.useState(false);
 
   const { data, isPending, isRefetching, error, refetch } = useAdminDashboard();
+
+  const opened = React.useRef(false);
+
+  useFocusEffect(React.useCallback(() => {
+    if (opened.current)
+      void refetch();
+    opened.current = true;
+  }, [refetch]));
 
   const now = React.useMemo(() => new Date(), []);
   const firstName = (user?.displayName ?? user?.email?.split('@')[0] ?? 'Admin').split(' ')[0];
@@ -71,6 +80,7 @@ export function AdminHomeScreen() {
                         </MotiView>
                       )}
                       <KpiGrid data={data} />
+                      <RemoteShortcut />
                       <RecentActivity rows={data.activity} onSeeAll={() => router.push('/admin/analytics')} />
                     </View>
                   </MotiView>

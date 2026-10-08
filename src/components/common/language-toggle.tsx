@@ -4,6 +4,7 @@ import { Tick02Icon, TranslateIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as React from 'react';
 import { Pressable } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useUniwind } from 'uniwind';
 import { colors, renderBackdrop, Text, View } from '@/components/ui';
@@ -25,6 +26,7 @@ export function LanguageToggle({ iconSize = 20, className = 'p-1' }: LanguageTog
   const { theme } = useUniwind();
   const isDark = theme === 'dark';
   const sheetRef = React.useRef<BottomSheetModal>(null);
+  const insets = useSafeAreaInsets();
 
   const langs = React.useMemo(
     () => [
@@ -49,13 +51,13 @@ export function LanguageToggle({ iconSize = 20, className = 'p-1' }: LanguageTog
       <BottomSheetModal
         ref={sheetRef}
         index={0}
-        snapPoints={[langs.length * 80 + 130]}
+        snapPoints={[langs.length * 80 + 130 + insets.bottom]}
         enableDynamicSizing={false}
         backdropComponent={renderBackdrop}
         backgroundStyle={{ backgroundColor: isDark ? colors.neutral[800] : colors.white }}
         handleIndicatorStyle={{ backgroundColor: isDark ? colors.neutral[600] : colors.neutral[300] }}
       >
-        <BottomSheetView className="gap-3 px-6 pt-2 pb-6">
+        <BottomSheetView className="gap-3 px-6 pt-2" style={{ paddingBottom: 24 + insets.bottom }}>
           <Text className="mb-1 text-center text-base font-bold text-foreground">{translate('settings.language')}</Text>
           {langs.map(lang => (
             <Pressable

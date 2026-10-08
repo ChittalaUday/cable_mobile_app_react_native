@@ -8,6 +8,7 @@ import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { InteractionManager, Modal, ScrollView, TextInput, TouchableOpacity } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ICON_MAP } from '@/components/common/registry-icons';
 import { colors, Text, ThemedIcon, View } from '@/components/ui';
 
@@ -20,6 +21,7 @@ export type GlobalSearchModalProps = {
 };
 
 export function GlobalSearchModal({ visible, onClose }: GlobalSearchModalProps) {
+  const insets = useSafeAreaInsets();
   useDismissKeyboardOnExit(visible);
 
   const [query, setQuery] = React.useState('');
@@ -52,9 +54,11 @@ export function GlobalSearchModal({ visible, onClose }: GlobalSearchModalProps) 
       animationType="slide"
       transparent
       visible={visible}
+      statusBarTranslucent
+      navigationBarTranslucent
       onRequestClose={onClose}
     >
-      <View className="flex-1 bg-black/60 p-4 pt-14">
+      <View className="flex-1 bg-black/60 p-4" style={{ paddingTop: insets.top + 16 }}>
         <View className="overflow-hidden rounded-2xl border border-border bg-surface">
           {/* Header & Search Input */}
           <View className="flex-row items-center border-b border-border px-4 py-3">

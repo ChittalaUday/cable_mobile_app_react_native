@@ -10,7 +10,7 @@ import { dialogs } from '@/components/common/dialogs';
 import { PlanPrice } from '@/components/common/plan-price';
 import { ScreenHeader } from '@/components/common/screen-header';
 import { Card, LoadError, StatusPill } from '@/components/common/shell';
-import { colors, FocusAwareStatusBar, Pressable, SafeAreaView, Text, ThemedIcon, View } from '@/components/ui';
+import { colors, FocusAwareStatusBar, Pill, Pressable, SafeAreaView, Text, ThemedIcon, View } from '@/components/ui';
 import { PERMISSIONS } from '@/constants';
 import { useDeletePlan, usePlans } from '@/lib/hooks/api/use-plans';
 import { usePermissions } from '@/lib/hooks/common/use-permissions';
@@ -193,18 +193,14 @@ export function PlansScreen() {
           </View>
           <View className="flex-row gap-2 pt-1">
             {([['base', 'Plans'], ['addon', 'Add-ons'], ['all', 'All']] as const).map(([key, label]) => (
-              <Pressable
+              <Pill
                 key={key}
-                accessibilityRole="button"
-                accessibilityState={{ selected: kind === key }}
+                label={`${label} (${key === 'all' ? plans.length : plans.filter(plan => plan.kind === key).length})`}
                 testID={`plans-kind-${key}`}
                 onPress={() => setKind(key)}
-                className={`rounded-full px-3.5 py-1.5 ${kind === key ? 'bg-primary-600' : 'border border-border bg-surface'}`}
-              >
-                <Text className={`text-xs font-bold ${kind === key ? 'text-white' : 'text-foreground'}`}>
-                  {`${label} (${key === 'all' ? plans.length : plans.filter(plan => plan.kind === key).length})`}
-                </Text>
-              </Pressable>
+                selected={kind === key}
+                size="sm"
+              />
             ))}
           </View>
         </ScreenHeader>

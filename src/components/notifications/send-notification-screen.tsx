@@ -8,7 +8,7 @@ import {
   Button,
   FocusAwareStatusBar,
   Input,
-  Pressable,
+  Pill,
   SafeAreaView,
   ScrollView,
   Text,
@@ -42,15 +42,14 @@ function Chips<T extends string>({ values, selected, labels, onSelect }: {
   return (
     <View className="mt-2 flex-row flex-wrap gap-2">
       {values.map(value => (
-        <Pressable
+        <Pill
           key={value}
+          accessibilityRole="radio"
+          label={labels[value]}
           onPress={() => onSelect(value)}
-          className={`rounded-full px-3 py-1.5 ${selected === value ? 'bg-primary-500' : 'border border-border bg-card'}`}
-        >
-          <Text className={`text-xs font-extrabold ${selected === value ? 'text-white' : 'text-muted-foreground'}`}>
-            {labels[value]}
-          </Text>
-        </Pressable>
+          selected={selected === value}
+          size="sm"
+        />
       ))}
     </View>
   );

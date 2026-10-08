@@ -14,7 +14,7 @@ import { Linking, ScrollView } from 'react-native';
 
 import { Card, Divider, StatusPill, TINT } from '@/components/common/shell';
 import { Button, colors, Image, Pressable, Text, ThemedIcon, View } from '@/components/ui';
-import { initials, rupeesExact } from '@/lib/utils/admin-format';
+import { dayMonthYear, initials, rupeesExact } from '@/lib/utils/admin-format';
 
 export type CustomerConnectionCardProps = {
   customer: ConsolidatedCustomer;
@@ -264,8 +264,11 @@ function ConnectionCardItem({
           ? (
               <View className="min-w-[110px] flex-1 rounded-lg border border-border bg-surface px-2.5 py-1.5">
                 <Text className="text-[11px] font-semibold text-muted-foreground">Expiry Date</Text>
-                <Text className="text-sm font-bold text-foreground" numberOfLines={1}>
-                  {connection.expiryDate}
+                <Text
+                  className={`text-sm font-bold ${new Date(connection.expiryDate) < new Date() ? 'text-red-600' : 'text-foreground'}`}
+                  numberOfLines={1}
+                >
+                  {dayMonthYear(new Date(connection.expiryDate))}
                 </Text>
               </View>
             )

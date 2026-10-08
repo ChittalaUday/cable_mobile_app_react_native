@@ -1,20 +1,18 @@
 import {
   CreditCardIcon,
   Home01Icon,
+  Location01Icon,
   MoreIcon,
-  RemoteControlIcon,
   UserMultipleIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { Tabs } from 'expo-router';
 import * as React from 'react';
-import { useTranslation } from 'react-i18next';
 import { useCSSVariable } from 'uniwind';
 
 import { colors } from '@/components/ui';
 
 export default function AdminTabsLayout() {
-  const { t } = useTranslation();
   // The bar is the card colour of the current theme, not a fixed white.
   const card = String(useCSSVariable('--color-card') ?? colors.white);
   const border = String(useCSSVariable('--color-border') ?? colors.neutral[200]);
@@ -64,11 +62,11 @@ export default function AdminTabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="remote"
+        name="visits"
         options={{
-          title: t('remote.tab'),
+          title: 'Visits',
           tabBarIcon: ({ color, focused }) => (
-            <HugeiconsIcon icon={RemoteControlIcon} size={21} color={color} strokeWidth={focused ? 2.4 : 1.9} />
+            <HugeiconsIcon icon={Location01Icon} size={21} color={color} strokeWidth={focused ? 2.4 : 1.9} />
           ),
         }}
       />

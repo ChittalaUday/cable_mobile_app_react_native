@@ -661,7 +661,8 @@
                             "type": "string",
                             "enum": [
                               "customer",
-                              "payment"
+                              "payment",
+                              "visit"
                             ]
                           },
                           "title": {
@@ -3254,6 +3255,7 @@
                                 "accountNumber",
                                 "installationAddress",
                                 "outstandingBalance",
+                                "endDate",
                                 "locationId",
                                 "locationPath",
                                 "providerName",
@@ -3281,6 +3283,17 @@
                                 "outstandingBalance": {
                                   "type": "string",
                                   "description": "Decimal string, e.g. \"349.00\""
+                                },
+                                "endDate": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "format": "date-time"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
                                 },
                                 "locationId": {
                                   "type": "string",
@@ -31961,6 +31974,10 @@
                     "type": "string",
                     "format": "uuid"
                   },
+                  "collectionId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
                   "purpose": {
                     "type": "string",
                     "enum": [
@@ -32008,11 +32025,6 @@
                     "type": "string",
                     "minLength": 8,
                     "maxLength": 64
-                  },
-                  "visitedAt": {
-                    "type": "string",
-                    "format": "date-time",
-                    "maxLength": 50
                   }
                 },
                 "additionalProperties": false
@@ -32045,6 +32057,7 @@
                     "customerCode",
                     "subscriptionId",
                     "ticketId",
+                    "collectionId",
                     "visitedBy",
                     "visitorName",
                     "purpose",
@@ -32098,6 +32111,17 @@
                       ]
                     },
                     "ticketId": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "collectionId": {
                       "anyOf": [
                         {
                           "type": "string",
@@ -32179,6 +32203,257 @@
                     "visitedAt": {
                       "type": "string",
                       "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/visits/due": {
+      "get": {
+        "summary": "Doors the round should include today",
+        "tags": [
+          "visits"
+        ],
+        "description": "The round for the caller's areas, shared by everyone who works them: open complaints, lines ending within 3 days (or ended in the last 14), and return visits promised in the next 7 days. To-do items come first, oldest due date leading (overdue on top); anything someone visited today follows with `doneAt` and `doneByName`.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "items"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "key",
+                          "reason",
+                          "purpose",
+                          "action",
+                          "customerId",
+                          "customerName",
+                          "customerCode",
+                          "title",
+                          "detail",
+                          "dueAt",
+                          "ticketId",
+                          "subscriptionId",
+                          "customerPhone",
+                          "address",
+                          "locationPath",
+                          "doneAt",
+                          "doneByName"
+                        ],
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "reason": {
+                            "type": "string",
+                            "enum": [
+                              "complaint",
+                              "expiring",
+                              "follow_up"
+                            ]
+                          },
+                          "purpose": {
+                            "type": "string",
+                            "enum": [
+                              "payment",
+                              "complaint",
+                              "installation",
+                              "other"
+                            ]
+                          },
+                          "action": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "collect_payment",
+                                  "resolve_complaint"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "customerId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "customerName": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "customerCode": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "detail": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "dueAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "ticketId": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "subscriptionId": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "customerPhone": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "address": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "locationPath": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "doneAt": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "doneByName": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      }
                     }
                   }
                 }
@@ -32361,6 +32636,7 @@
                           "customerCode",
                           "subscriptionId",
                           "ticketId",
+                          "collectionId",
                           "visitedBy",
                           "visitorName",
                           "purpose",
@@ -32414,6 +32690,17 @@
                             ]
                           },
                           "ticketId": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "collectionId": {
                             "anyOf": [
                               {
                                 "type": "string",

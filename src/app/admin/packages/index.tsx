@@ -15,7 +15,7 @@ import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { dialogs } from '@/components/common/dialogs';
 import { ScreenHeader } from '@/components/common/screen-header';
 import { Card, LoadError, StatusPill } from '@/components/common/shell';
-import { colors, FocusAwareStatusBar, Pressable, SafeAreaView, ScrollView, Text, ThemedIcon, View } from '@/components/ui';
+import { colors, FocusAwareStatusBar, Pill, Pressable, SafeAreaView, ScrollView, Text, ThemedIcon, View } from '@/components/ui';
 import { PERMISSIONS } from '@/constants';
 import { coverageLabel, useDeletePackage, usePackages } from '@/lib/hooks/api/use-packages';
 import { usePermissions } from '@/lib/hooks/common/use-permissions';
@@ -296,22 +296,14 @@ export function PackagesScreen() {
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2 pt-1">
             {FILTERS.map(item => (
-              <Pressable
+              <Pill
                 key={item.key}
-                accessibilityRole="button"
                 accessibilityLabel={`Filter: ${item.label}`}
-                accessibilityState={{ selected: filter === item.key }}
+                label={item.label}
                 onPress={() => setFilter(item.key)}
-                className={`rounded-full px-3.5 py-1.5 ${filter === item.key ? 'bg-primary-600' : 'border border-border bg-surface'}`}
-              >
-                <Text
-                  className={`text-xs font-bold ${
-                    filter === item.key ? 'text-white' : 'text-neutral-600 dark:text-neutral-300'
-                  }`}
-                >
-                  {item.label}
-                </Text>
-              </Pressable>
+                selected={filter === item.key}
+                size="sm"
+              />
             ))}
           </ScrollView>
         </ScreenHeader>

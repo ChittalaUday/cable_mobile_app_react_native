@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
 import { LoadError, ScreenHeader, TINT } from '@/components/common/shell';
-import { colors, List, Pressable, Text, View } from '@/components/ui';
+import { colors, List, Pill, Pressable, Text, View } from '@/components/ui';
 import { useVisits, VISIT_OUTCOME_LABELS, VISIT_PURPOSE_LABELS } from '@/lib/hooks/api/use-visits';
 import { dateTime } from '@/lib/utils/admin-format';
 
@@ -40,15 +40,15 @@ export function VisitsList({ basePath }: { basePath: '/admin' | '/staff' }) {
 
   return (
     <View className="flex-1 bg-surface">
-      <ScreenHeader title="Visits" subtitle={data === undefined ? 'Doors visited, paid or not' : `${data.total} visits`} showBack withSafeArea>
+      <ScreenHeader title="Visit history" subtitle={data === undefined ? 'Doors visited, paid or not' : `${data.total} visits`} showBack withSafeArea>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-1.5">
           {(['me', 'all'] as const).map(key => (
-            <Chip key={key} label={key === 'me' ? 'Mine' : 'Everyone I can see'} selected={who === key} onPress={() => setWho(key)} testID={`visits-who-${key}`} />
+            <Pill key={key} label={key === 'me' ? 'Mine' : 'Everyone I can see'} selected={who === key} size="sm" onPress={() => setWho(key)} testID={`visits-who-${key}`} />
           ))}
           <View className="w-px bg-border" />
-          <Chip label="Any" selected={outcome === 'any'} onPress={() => setOutcome('any')} testID="visits-outcome-any" />
+          <Pill label="Any" selected={outcome === 'any'} size="sm" onPress={() => setOutcome('any')} testID="visits-outcome-any" />
           {(Object.keys(VISIT_OUTCOME_LABELS) as VisitOutcome[]).map(key => (
-            <Chip key={key} label={VISIT_OUTCOME_LABELS[key]} selected={outcome === key} onPress={() => setOutcome(key)} testID={`visits-outcome-${key}`} />
+            <Pill key={key} label={VISIT_OUTCOME_LABELS[key]} selected={outcome === key} size="sm" onPress={() => setOutcome(key)} testID={`visits-outcome-${key}`} />
           ))}
         </ScrollView>
       </ScreenHeader>
@@ -86,14 +86,6 @@ function VisitRow({ visit, onPress }: { visit: Visit; onPress: () => void }) {
         </Text>
         <Text className="text-xs text-muted-foreground">{[dateTime(visit.visitedAt), visit.visitorName].filter(Boolean).join(' · ')}</Text>
       </View>
-    </Pressable>
-  );
-}
-
-function Chip({ label, selected, onPress, testID }: { label: string; selected: boolean; onPress: () => void; testID: string }) {
-  return (
-    <Pressable accessibilityRole="button" accessibilityState={{ selected }} onPress={onPress} testID={testID} className={`rounded-full px-3.5 py-1.5 ${selected ? 'bg-primary-600' : 'border border-border bg-surface'}`}>
-      <Text className={`text-xs font-bold ${selected ? 'text-white' : 'text-foreground'}`}>{label}</Text>
     </Pressable>
   );
 }

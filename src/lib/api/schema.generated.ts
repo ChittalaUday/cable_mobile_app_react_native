@@ -255,7 +255,7 @@ export interface paths {
                             activity: {
                                 id: string;
                                 /** @enum {string} */
-                                kind: "customer" | "payment";
+                                kind: "customer" | "payment" | "visit";
                                 title: string;
                                 subtitle: string;
                                 /** Format: date-time */
@@ -1376,6 +1376,7 @@ export interface paths {
                                     installationAddress: string | null;
                                     /** @description Decimal string, e.g. "349.00" */
                                     outstandingBalance: string;
+                                    endDate: string | null;
                                     /** Format: uuid */
                                     locationId: string;
                                     locationPath: string | null;
@@ -14001,6 +14002,8 @@ export interface paths {
                         subscriptionId?: string;
                         /** Format: uuid */
                         ticketId?: string;
+                        /** Format: uuid */
+                        collectionId?: string;
                         /** @enum {string} */
                         purpose: "payment" | "complaint" | "installation" | "other";
                         /** @enum {string} */
@@ -14012,8 +14015,6 @@ export interface paths {
                         longitude: number;
                         gpsAccuracyM: number;
                         reference: string;
-                        /** Format: date-time */
-                        visitedAt?: string;
                     };
                 };
             };
@@ -14033,6 +14034,7 @@ export interface paths {
                             customerCode: string | null;
                             subscriptionId: string | null;
                             ticketId: string | null;
+                            collectionId: string | null;
                             /** Format: uuid */
                             visitedBy: string;
                             visitorName: string | null;
@@ -14106,6 +14108,114 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/visits/due": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Doors the round should include today
+         * @description The round for the caller's areas, shared by everyone who works them: open complaints, lines ending within 3 days (or ended in the last 14), and return visits promised in the next 7 days. To-do items come first, oldest due date leading (overdue on top); anything someone visited today follows with `doneAt` and `doneByName`.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            items: {
+                                key: string;
+                                /** @enum {string} */
+                                reason: "complaint" | "expiring" | "follow_up";
+                                /** @enum {string} */
+                                purpose: "payment" | "complaint" | "installation" | "other";
+                                action: ("collect_payment" | "resolve_complaint") | null;
+                                /** Format: uuid */
+                                customerId: string;
+                                customerName: string | null;
+                                customerCode: string | null;
+                                title: string;
+                                detail: string | null;
+                                /** Format: date-time */
+                                dueAt: string;
+                                ticketId: string | null;
+                                subscriptionId: string | null;
+                                customerPhone: string | null;
+                                address: string | null;
+                                locationPath: string | null;
+                                doneAt: string | null;
+                                doneByName: string | null;
+                            }[];
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/visits": {
         parameters: {
             query?: never;
@@ -14151,6 +14261,7 @@ export interface paths {
                                 customerCode: string | null;
                                 subscriptionId: string | null;
                                 ticketId: string | null;
+                                collectionId: string | null;
                                 /** Format: uuid */
                                 visitedBy: string;
                                 visitorName: string | null;

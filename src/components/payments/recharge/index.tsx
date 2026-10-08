@@ -35,6 +35,7 @@ import { usePrinter } from '@/lib/printer/use-printer';
 import { rupeesExact, shortDate } from '@/lib/utils/admin-format';
 import { apiErrorMessage } from '@/lib/utils/api-error';
 import { isPaymentAmount } from '@/lib/utils/payment-amount';
+import { clearVisitFlow, completeVisitAfterPayment } from '@/lib/visits/visit-flow';
 import { ChargePicker, StepTrail } from './parts';
 import { StepAmount } from './step-amount';
 import { StepDone } from './step-done';
@@ -142,6 +143,10 @@ export function RechargeFlowScreen({ customerId, subscriptionId, basePath }: {
   // A visit is one customer. Arriving at a different one — or coming back to
   // the same one after finishing — starts the flow over rather than resuming
   // somebody else's half-typed amount.
+  // Leaving without a payment — back, or a hard cancel — drops the visit that was
+  // waiting on it; a recorded payment already finished it, so this is then a no-op.
+  React.useEffect(() => clearVisitFlow, []);
+
   const openedRoute = React.useRef<string | null>(null);
   React.useEffect(() => {
     const routeKey = `${customerId}:${subscriptionId ?? ''}`;
@@ -310,7 +315,12 @@ export function RechargeFlowScreen({ customerId, subscriptionId, basePath }: {
       }
       const payload: RecordCollectionPayload = { ...common, subscriptionId: line.id, amount: markedDue ? null : common.amount };
       const send = () => recordDues({ payload }, {
-        onSuccess: made => recorded(made.id, { customerId, charge: state.charge }),
+        onSuccess: (made) => {
+          recorded(made.id, { customerId, charge: state.charge });
+          // A visit waiting on this payment is done now — unless nothing was actually collected.
+          if (!markedDue)
+            void completeVisitAfterPayment(customerId, made.id, 'subscription');
+        },
         onError,
       });
 
@@ -328,7 +338,10 @@ export function RechargeFlowScreen({ customerId, subscriptionId, basePath }: {
       return;
     }
 
-    const onSuccess = (made: { id: string }) => recorded(made.id, { customerId, charge: state.charge });
+    const onSuccess = (made: { id: string }) => {
+      recorded(made.id, { customerId, charge: state.charge });
+      void completeVisitAfterPayment(customerId, made.id, 'equipment');
+    };
     if (state.target?.kind === 'replace') {
       const payload: ReplaceEquipmentPayload = {
         ...common,

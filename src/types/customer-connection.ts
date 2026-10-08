@@ -25,6 +25,7 @@ export type ConnectionAccount = {
   balance: number;
   currency?: string;
   status: 'active' | 'expired' | 'suspended' | 'pending';
+  /** When the service runs out, as an ISO date-time. Absent until the MSO has dated it. */
   expiryDate?: string;
   locationLabel?: string; // e.g. "Living Room", "Bedroom 1", "Office"
   speedMbps?: number;

@@ -11,6 +11,7 @@ import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, TextInput, TouchableOpacity } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PlanPrice } from '@/components/common/plan-price';
 import { Button, colors, Pressable, Text, ThemedIcon, View } from '@/components/ui';
 
@@ -42,6 +43,7 @@ const AREA_RESULTS = 8;
  */
 export function AddCustomerModal({ visible, onClose, onSuccess }: AddCustomerModalProps) {
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const [step, setStep] = React.useState<StepKey>(1);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [successMessage, setSuccessMessage] = React.useState('');
@@ -168,10 +170,12 @@ export function AddCustomerModal({ visible, onClose, onSuccess }: AddCustomerMod
       animationType="slide"
       transparent
       visible={visible}
+      statusBarTranslucent
+      navigationBarTranslucent
       onRequestClose={handleClose}
     >
       <View className="flex-1 justify-end bg-black/60">
-        <View className="max-h-[90%] rounded-t-3xl border-t border-border bg-surface">
+        <View className="max-h-[90%] rounded-t-3xl border-t border-border bg-surface" style={{ paddingBottom: insets.bottom }}>
           <View className="flex-row items-center justify-between border-b border-border/60 px-5 py-4">
             <View>
               <Text className="text-xl font-extrabold text-foreground">

@@ -4,7 +4,7 @@ import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { LoadError, Loading, ScreenHeader } from '@/components/common/shell';
-import { Button, Input, Pressable, Text, View } from '@/components/ui';
+import { Button, Input, Pill, Text, View } from '@/components/ui';
 import { useAvailableUnits } from '@/lib/hooks/api/use-inventory';
 import { useDebounced } from '@/lib/hooks/common/use-debounced';
 import { paise, useRechargeStore } from '@/lib/hooks/stores/use-recharge-store';
@@ -70,15 +70,14 @@ export function AddEquipmentScreen() {
         />
         <View className="flex-row flex-wrap gap-2">
           {types.map(option => (
-            <Pressable
+            <Pill
               key={option}
               accessibilityRole="radio"
-              accessibilityState={{ selected: type === option }}
+              label={option}
               onPress={() => setType(option)}
-              className={`rounded-full border px-3 py-1.5 ${type === option ? 'border-primary-500 bg-primary-500' : 'border-border bg-card'}`}
-            >
-              <Text className={`text-xs font-bold ${type === option ? 'text-white' : 'text-foreground'}`}>{option}</Text>
-            </Pressable>
+              selected={type === option}
+              size="sm"
+            />
           ))}
         </View>
       </View>

@@ -9,7 +9,7 @@ import { RefreshControl, TextInput } from 'react-native';
 import { ResolutionBadge } from '@/components/common/resolution-badge';
 import { ScreenHeader } from '@/components/common/screen-header';
 import { Card, Loading } from '@/components/common/shell';
-import { ActivityIndicator, colors, FocusAwareStatusBar, Pressable, SafeAreaView, ScrollView, Text, ThemedIcon, View } from '@/components/ui';
+import { ActivityIndicator, colors, FocusAwareStatusBar, Pill, Pressable, SafeAreaView, ScrollView, Text, ThemedIcon, View } from '@/components/ui';
 import { useChannels } from '@/lib/hooks/api/use-channels';
 import { useDebounced } from '@/lib/hooks/common/use-debounced';
 
@@ -126,28 +126,20 @@ export function ChannelsScreen() {
           className="pb-1.5"
           contentContainerClassName="px-3 gap-1.5"
         >
-          <Pressable
+          <Pill
+            label="All Genres"
             onPress={() => setSelectedGenre(null)}
-            className={`rounded-full px-2.5 py-1 ${
-              selectedGenre === null ? 'bg-primary-600' : 'border border-border bg-card'
-            }`}
-          >
-            <Text className={`text-[11px] font-semibold ${selectedGenre === null ? 'text-white' : 'text-foreground'}`}>
-              All Genres
-            </Text>
-          </Pressable>
+            selected={selectedGenre === null}
+            size="sm"
+          />
           {genres.map(g => (
-            <Pressable
+            <Pill
               key={g}
+              label={g}
               onPress={() => setSelectedGenre(selectedGenre === g ? null : g)}
-              className={`rounded-full px-2.5 py-1 ${
-                selectedGenre === g ? 'bg-primary-600' : 'border border-border bg-card'
-              }`}
-            >
-              <Text className={`text-[11px] font-semibold ${selectedGenre === g ? 'text-white' : 'text-foreground'}`}>
-                {g}
-              </Text>
-            </Pressable>
+              selected={selectedGenre === g}
+              size="sm"
+            />
           ))}
         </ScrollView>
       )}
@@ -160,36 +152,22 @@ export function ChannelsScreen() {
           className="pb-2.5"
           contentContainerClassName="px-3 gap-1.5"
         >
-          <Pressable
+          <Pill
+            label="All Languages"
             onPress={() => setSelectedLanguage(null)}
-            className={`rounded-full px-2.5 py-1 ${
-              selectedLanguage === null ? 'bg-neutral-800 dark:bg-neutral-200' : 'border border-border bg-card'
-            }`}
-          >
-            <Text
-              className={`text-[11px] font-semibold ${
-                selectedLanguage === null ? 'text-white dark:text-neutral-900' : 'text-foreground'
-              }`}
-            >
-              All Languages
-            </Text>
-          </Pressable>
+            selected={selectedLanguage === null}
+            size="sm"
+            variant="neutral"
+          />
           {languages.map(l => (
-            <Pressable
+            <Pill
               key={l}
+              label={l}
               onPress={() => setSelectedLanguage(selectedLanguage === l ? null : l)}
-              className={`rounded-full px-2.5 py-1 ${
-                selectedLanguage === l ? 'bg-neutral-800 dark:bg-neutral-200' : 'border border-border bg-card'
-              }`}
-            >
-              <Text
-                className={`text-[11px] font-semibold ${
-                  selectedLanguage === l ? 'text-white dark:text-neutral-900' : 'text-foreground'
-                }`}
-              >
-                {l}
-              </Text>
-            </Pressable>
+              selected={selectedLanguage === l}
+              size="sm"
+              variant="neutral"
+            />
           ))}
         </ScrollView>
       )}

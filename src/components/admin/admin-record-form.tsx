@@ -4,7 +4,8 @@ import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, Switch, TextInput } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
-import { Button, colors, Pressable, Text, ThemedIcon, View } from '@/components/ui';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Button, colors, Pill, Pressable, Text, ThemedIcon, View } from '@/components/ui';
 
 import { useDismissKeyboardOnExit } from '@/lib/hooks/common/use-dismiss-keyboard';
 
@@ -34,20 +35,18 @@ function ChoiceField({ field, value, onChange }: {
         {field.options?.map((option) => {
           const active = selected.includes(String(option.value));
           return (
-            <Pressable
+            <Pill
               key={option.value}
               accessibilityRole={multiple ? 'checkbox' : 'radio'}
-              accessibilityState={{ checked: active }}
+              label={option.label}
+              selected={active}
               onPress={() => {
                 if (!multiple)
                   return onChange(String(option.value));
                 const values = selected.filter(Boolean).map(String);
                 onChange(active ? values.filter(item => item !== String(option.value)) : [...values, String(option.value)]);
               }}
-              className={`rounded-full px-3 py-2 ${active ? 'bg-primary-500' : 'border border-border bg-card'}`}
-            >
-              <Text className={`text-xs font-bold ${active ? 'text-white' : 'text-foreground'}`}>{option.label}</Text>
-            </Pressable>
+            />
           );
         })}
       </View>
@@ -68,6 +67,7 @@ export function AdminRecordForm({ title, fields, initialValues, saving, error, o
   const [values, setValues] = React.useState(initialValues);
   const [missing, setMissing] = React.useState<string[]>([]);
 
+  const insets = useSafeAreaInsets();
   useDismissKeyboardOnExit();
 
   const submit = () => {
@@ -78,9 +78,9 @@ export function AdminRecordForm({ title, fields, initialValues, saving, error, o
   };
 
   return (
-    <Modal animationType="slide" transparent visible onRequestClose={onClose}>
+    <Modal animationType="slide" transparent visible statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
       <View className="flex-1 justify-end bg-black/60">
-        <View className="max-h-[92%] rounded-t-3xl border-t border-border bg-surface">
+        <View className="max-h-[92%] rounded-t-3xl border-t border-border bg-surface" style={{ paddingBottom: insets.bottom }}>
           <View className="flex-row items-center gap-3 border-b border-border px-5 py-4">
             <Text className="flex-1 text-xl font-extrabold text-foreground">{title}</Text>
             <Pressable accessibilityRole="button" accessibilityLabel={t('admin.close')} onPress={onClose} hitSlop={12}>

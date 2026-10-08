@@ -80,7 +80,7 @@ describe('button component ', () => {
   it('should apply correct styles based on size prop', () => {
     render(<Button testID="button" size="lg" label="Submit" />);
     const label = screen.getByTestId('button-label');
-    expect(label.props.className).toContain('text-xl');
+    expect(label.props.className).toContain('text-base');
   });
   it('should apply correct styles for label when variant is secondary', () => {
     render(<Button testID="button" variant="secondary" label="Submit" />);
@@ -90,6 +90,6 @@ describe('button component ', () => {
   it('should apply correct styles for label when is disabled', () => {
     render(<Button testID="button" label="Submit" disabled />);
     const label = screen.getByTestId('button-label');
-    expect(label.props.className).toContain('text-base');
+    expect(label.props.className).toContain('text-sm');
   });
 });

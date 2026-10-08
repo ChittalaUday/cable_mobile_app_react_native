@@ -23,7 +23,7 @@ const TAB_ROUTES = {
   home: '/admin',
   customers: '/admin/(tabs)/customers',
   payments: '/admin/(tabs)/payments',
-  remote: '/admin/(tabs)/remote',
+  visits: '/admin/(tabs)/visits',
   more: '/admin/(tabs)/more',
 } as const satisfies Record<TabKey, string>;
 

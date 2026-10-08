@@ -134,6 +134,14 @@
     "top_level": "Top level",
     "total_customers": "Total Customers"
   },
+  "date_picker": {
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "choose_future": "Choose tomorrow or a later date.",
+    "next_month": "Next month",
+    "previous_month": "Previous month",
+    "title": "Pick a future date"
+  },
   "inventory_validation": {
     "receive_quantity": "Enter a whole-number quantity from 1 to 1,000.",
     "transfer_quantity": "Transfer one equipment unit at a time."
@@ -201,6 +209,9 @@
     "verify_otp": "Verify OTP",
     "version": "Version {{version}}",
     "welcome_back": "Welcome Back"
+  },
+  "mark_visit": {
+    "custom_date": "Custom date"
   },
   "onboarding": {
     "message": "Welcome to Satya Cable & Broadband"

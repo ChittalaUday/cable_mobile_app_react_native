@@ -2,14 +2,15 @@
 import type { PressableProps, View } from 'react-native';
 import type { VariantProps } from 'tailwind-variants';
 import * as React from 'react';
-import { ActivityIndicator, Pressable, Text } from 'react-native';
+import { ActivityIndicator, Pressable } from 'react-native';
 import { tv } from 'tailwind-variants';
 import colors from './colors';
+import { Text } from './text';
 
 const button = tv({
   slots: {
     container: 'my-2 flex flex-row items-center justify-center rounded-md px-4',
-    label: 'font-inter text-base font-semibold',
+    label: 'text-center',
     indicator: 'h-6 text-white',
   },
 
@@ -24,7 +25,7 @@ const button = tv({
       },
       secondary: {
         container: 'bg-primary-600',
-        label: 'text-secondary-600',
+        label: 'text-secondary-600 dark:text-secondary-600',
         indicator: 'text-white',
       },
       outline: {
@@ -51,15 +52,12 @@ const button = tv({
     size: {
       default: {
         container: 'h-10 px-4',
-        label: 'text-base',
       },
       lg: {
-        container: 'h-12 px-8',
-        label: 'text-xl',
+        container: 'h-12 px-4',
       },
       sm: {
         container: 'h-8 px-3',
-        label: 'text-sm',
         indicator: 'h-2',
       },
       icon: { container: 'size-9' },
@@ -123,6 +121,11 @@ export function Button({ ref, label: text, loading = false, variant = 'default',
             )
           : (
               <Text
+                variant={size === 'lg' ? 'button-lg' : size === 'sm' ? 'button-sm' : 'button'}
+                // One line, shrinking a little before it would wrap: a long label on a half-width button.
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
                 testID={testID ? `${testID}-label` : undefined}
                 className={styles.label({ className: textClassName })}
               >

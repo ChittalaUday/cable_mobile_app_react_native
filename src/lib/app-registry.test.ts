@@ -9,17 +9,11 @@ describe('registryFor', () => {
     expect(staff.map(item => item.key)).not.toContain('plans');
   });
 
-  it('gives admins the plan and package actions and nothing to customers', () => {
-    expect(registryFor('admin').map(item => item.title)).toEqual(expect.arrayContaining([
-      'Plans',
-      'Add Plan',
-      'Edit Plans',
-      'Delete Plans',
-      'Provider Packages',
-      'Add Package',
-      'Edit Packages',
-      'Delete Packages',
-    ]));
+  it('lists plans and packages as screens, not quick actions, and offers Mark Visit', () => {
+    const admin = registryFor('admin');
+    expect(admin.filter(item => item.type === 'action').map(item => item.title)).toEqual(expect.arrayContaining(['Mark Visit']));
+    expect(admin.filter(item => item.type === 'action').map(item => item.key)).not.toEqual(expect.arrayContaining(['add-plan']));
+    expect(admin.map(item => item.title)).toEqual(expect.arrayContaining(['Plans', 'Provider Packages']));
     expect(registryFor('customer')).toEqual([]);
   });
 
@@ -32,7 +26,7 @@ describe('registryFor', () => {
 
   it('offers staff only the actions their layout has', () => {
     expect(registryFor('staff').filter(item => item.type === 'action').map(item => item.key)).toEqual(
-      ['add-customer', 'collect-payment', 'issue-equipment', 'send-notification'],
+      ['add-customer', 'collect-payment', 'mark-visit', 'issue-equipment', 'send-notification'],
     );
   });
 });

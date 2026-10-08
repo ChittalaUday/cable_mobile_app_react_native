@@ -72,7 +72,7 @@ function Breadcrumb({ trail, rootLabel, onJump }: {
       showsHorizontalScrollIndicator={false}
       // `grow-0`, or this horizontal strip expands to fill the sheet and
       // pushes the list off the bottom of it.
-      className="max-h-12 shrink-0 grow-0 border-b border-border"
+      className="max-h-12 shrink-0 grow-0"
       contentContainerClassName="items-center gap-1 px-4"
     >
       <Pressable
@@ -109,7 +109,7 @@ function PickerRow({ node, selected, multi, canOpen, onChoose, onOpen }: {
   onOpen: () => void;
 }) {
   return (
-    <View className="flex-row items-center gap-2 border-b border-border/40">
+    <View className="flex-row items-center gap-2">
       <Pressable
         accessibilityRole={multi ? 'checkbox' : 'radio'}
         accessibilityState={{ checked: selected, selected }}
@@ -202,6 +202,7 @@ export function LocationPickerSheet(props: SingleProps | MultiProps) {
 
     props.onSelect(fullById.current.get(node.id) ?? null);
     setTrail([]);
+    setAutoOpen(true);
   };
 
   const confirmCurrent = () => {
@@ -210,7 +211,23 @@ export function LocationPickerSheet(props: SingleProps | MultiProps) {
 
     props.onSelect(current === null ? null : (fullById.current.get(current.id) ?? null));
     setTrail([]);
+    setAutoOpen(true);
   };
+
+  /*
+   * A level with one place in it is not a choice, so it opens by itself — and
+   * again, down a single chain — for a person whose patch is one village.
+   * Stops the moment they step back up, or the level has more than one place.
+   * Single-pick only: a multi-pick needs to be able to choose that one place.
+   */
+  const [autoOpen, setAutoOpen] = React.useState(true);
+  React.useEffect(() => {
+    if (!autoOpen || multi || (isLoading && !atBoundedTop) || hasNextPage)
+      return;
+    const only = rows.length === 1 ? rows[0] : undefined;
+    if (only?.canOpen)
+      setTrail(trail => [...trail, only.node]);
+  }, [autoOpen, rows, multi, isLoading, atBoundedTop, hasNextPage]);
 
   const currentFull = current === null ? null : (fullById.current.get(current.id) ?? null);
   const level = props.mode === 'multi' ? undefined : props.describeLevel?.(currentFull);
@@ -218,7 +235,14 @@ export function LocationPickerSheet(props: SingleProps | MultiProps) {
   return (
     <Modal ref={ref} snapPoints={SNAP_POINTS} title={title ?? (multi ? 'Choose areas' : 'Choose location')}>
       <View className="flex-1">
-        <Breadcrumb trail={trail} rootLabel={roots ? 'Team areas' : 'Top level'} onJump={setTrail} />
+        <Breadcrumb
+          trail={trail}
+          rootLabel={roots ? 'Team areas' : 'Top level'}
+          onJump={(next) => {
+            setAutoOpen(false);
+            setTrail(next);
+          }}
+        />
 
         {isLoading && !atBoundedTop
           ? (
@@ -289,7 +313,7 @@ function Footer({ multi, count, hint, label, onPress }: {
   onPress: () => void;
 }) {
   return (
-    <View className="shrink-0 border-t border-border px-4 pt-3 pb-6">
+    <View className="shrink-0 px-4 pt-3 pb-6">
       {multi
         ? (
             <Text className="pb-2 text-center text-[11px] text-muted-foreground">

@@ -4,7 +4,7 @@ import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { ActivityIndicator, colors, Pressable, Text, View } from '@/components/ui';
+import { ActivityIndicator, colors, Pill, Pressable, Text, View } from '@/components/ui';
 import { isPowerKey, KEY_ICONS, labelFor } from './keys';
 import { PAD } from './remote-key';
 
@@ -69,19 +69,15 @@ export function RemoteCapturesView({ captures, disabled, sending, onPress }: {
         {CATEGORIES.map((key) => {
           const active = category === key;
           return (
-            <Pressable
+            <Pill
               key={key}
               accessibilityRole="tab"
-              accessibilityState={{ selected: active }}
+              label={t(`remote.categories.${key}`)}
               onPress={() => setCategory(key)}
-              className={`rounded-full border px-3 py-1.5 ${
-                active ? 'border-transparent bg-foreground' : 'border-border bg-card active:bg-muted'
-              }`}
-            >
-              <Text className={`text-xs font-semibold ${active ? 'text-white' : 'text-muted-foreground'}`}>
-                {t(`remote.categories.${key}`)}
-              </Text>
-            </Pressable>
+              selected={active}
+              size="sm"
+              variant="neutral"
+            />
           );
         })}
       </View>
