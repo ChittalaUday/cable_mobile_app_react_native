@@ -1,4 +1,5 @@
 import type { RecordVisitPayload } from '@/lib/hooks/api/use-visits';
+import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import * as React from 'react';
 import { dialogs } from '@/components/common/dialogs';
@@ -12,7 +13,7 @@ const mockResolve = jest.fn<Promise<unknown>, [unknown]>(() => Promise.resolve({
 const mockPush = jest.fn();
 let mockFix: Record<string, unknown> = { status: 'ready', latitude: 16.8697, longitude: 81.9342, gpsAccuracyM: 8, retry: jest.fn() };
 
-jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }));
+jest.mock('expo-router', () => ({ router: { push: (...args: unknown[]) => void mockPush(...args) } }));
 jest.mock('@/lib/hooks/api/use-visits', () => ({
   ...jest.requireActual<Record<string, unknown>>('@/lib/hooks/api/use-visits'),
   recordVisit: (customerId: string, payload: RecordVisitPayload) => mockRecord(customerId, payload),
@@ -114,9 +115,11 @@ describe('marking a visit', () => {
     fireEvent.changeText(screen.getByTestId('visit-choice-action'), '');
     fireEvent.press(screen.getByTestId('visit-submit'));
 
-    expect(mockPush).toHaveBeenCalledWith({ pathname: '/admin/recharge/[id]', params: { id: 'cust-1', subscriptionId: 'sub-1' } });
+    // The payment screen opens only once the sheet has closed: pushing mid-dismiss crashed Android.
     expect(useVisitFlow.getState().active?.stage).toBe('working');
-    expect(screen.queryByTestId('visit-submit')).toBeNull();
+    expect(mockPush).not.toHaveBeenCalled();
+    act(() => (screen.UNSAFE_getByType(BottomSheetModal).props as { onDismiss: () => void }).onDismiss());
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/admin/recharge/[id]', params: { id: 'cust-1', subscriptionId: 'sub-1' } });
     expect(mockRecord).not.toHaveBeenCalled();
 
     await act(() => completeVisitAfterPayment('cust-1', 'pay-9', 'subscription'));

@@ -14,7 +14,7 @@ import { translate } from '@/lib/i18n';
  * With no `variant` the text keeps its plain body style.
  */
 const text = tv({
-  base: 'font-inter text-base font-normal text-black dark:text-white',
+  base: 'font-inter text-base font-normal text-foreground',
   variants: {
     variant: {
       'body': '',

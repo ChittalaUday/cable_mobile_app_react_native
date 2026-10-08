@@ -218,6 +218,7 @@ export function MoreView({
         visible={openConfirmDialog}
         title="Sign Out"
         message="Are you sure you want to sign out of this device?"
+        confirmLabel="Sign out"
         onConfirm={handleConfirmSignOut}
         onCancel={handleCancelSignOut}
         icon={Logout01Icon}

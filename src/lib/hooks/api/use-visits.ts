@@ -34,6 +34,9 @@ export async function recordVisit(customerId: string, payload: RecordVisitPayloa
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: ['visits'] }),
     queryClient.invalidateQueries({ queryKey: ['customer-timeline'] }),
+    // Recent activity on the dashboards and analytics lists visits too.
+    queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] }),
+    queryClient.invalidateQueries({ queryKey: ['staff-dashboard'] }),
   ]);
   return response.data;
 }

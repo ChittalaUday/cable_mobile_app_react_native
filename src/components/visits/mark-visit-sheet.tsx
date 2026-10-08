@@ -1,7 +1,7 @@
 import type { VisitChoice, VisitTarget } from '@/lib/visits/visit-flow';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { Cancel01Icon } from '@hugeicons/core-free-icons';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,7 +21,8 @@ import { clearVisitFlow, useVisitFlow } from '@/lib/visits/visit-flow';
 
 export type MarkVisitTarget = VisitTarget;
 
-const SNAP_POINTS = ['50%', '80%'];
+// One snap point: the content is laid out at the tallest one, so a lower snap hid the footer off-screen.
+const SNAP_POINTS = ['80%'];
 
 const NEXT_VISIT: { key: string; label: string; days: number }[] = [
   { key: 'tomorrow', label: 'Tomorrow', days: 1 },
@@ -82,8 +83,20 @@ export function MarkVisitSheet() {
   const handleDismiss = React.useCallback(() => {
     // Launching a payment hides this sheet but keeps the visit alive until the
     // payment records it. A user-dismissed form, however, drops its draft.
-    if (useVisitFlow.getState().active?.stage === 'form')
+    const current = useVisitFlow.getState().active;
+    if (current?.stage === 'form') {
       clearVisitFlow();
+      return;
+    }
+    // Navigate only once the sheet is gone: pushing a screen while the sheet
+    // is still animating out crashes Android ("contains null child").
+    if (current?.stage === 'working') {
+      const { customerId, subscriptionId } = current.target;
+      router.push({
+        pathname: `${useAuthStore.getState().role === 'staff' ? '/staff' : '/admin'}/recharge/[id]`,
+        params: { id: customerId, ...(subscriptionId === undefined ? {} : { subscriptionId }) },
+      });
+    }
   }, []);
 
   const dismissForm = React.useCallback(() => {
@@ -105,17 +118,20 @@ export function MarkVisitSheet() {
       handleIndicatorStyle={{ backgroundColor: isDark ? colors.neutral[600] : colors.neutral[300] }}
       onDismiss={handleDismiss}
     >
-      {visible ? <Sheet key={active.reference} dismiss={dismissForm} bottomInset={insets.bottom} /> : null}
+      {active !== null ? <Sheet key={active.reference} dismiss={dismissForm} bottomInset={insets.bottom} /> : null}
     </BottomSheetModal>
   );
 }
 
 function Sheet({ dismiss, bottomInset }: { dismiss: () => void; bottomInset: number }) {
-  const router = useRouter();
   const { i18n, t } = useTranslation();
-  const role = useAuthStore.use.role();
-  const base = role === 'staff' ? '/staff' : '/admin';
-  const { target, draft, reference } = useVisitFlow(state => state.active!);
+  // The sheet stays mounted while it animates out, after a save has cleared the
+  // visit, so it keeps showing the last one it had instead of reading null.
+  const current = useVisitFlow(state => state.active);
+  const [last, setLast] = React.useState(current);
+  if (current !== null && current !== last)
+    setLast(current);
+  const { target, draft, reference } = (current ?? last)!;
   const patch = useVisitFlow(state => state.patch);
   const fix = useCollectionFix();
   const { mutateAsync: updateTicket } = useUpdateTicket();
@@ -147,12 +163,9 @@ function Sheet({ dismiss, bottomInset }: { dismiss: () => void; bottomInset: num
     const where = fixPayload(fix);
 
     if (isAction && action === 'collect_payment') {
-      // The payment screen takes over; the visit completes when the payment is recorded.
+      // The payment screen takes over once the sheet has closed (see handleDismiss);
+      // the visit completes when the payment is recorded.
       useVisitFlow.getState().launch(where);
-      router.push({
-        pathname: `${base}/recharge/[id]`,
-        params: { id: target.customerId, ...(target.subscriptionId === undefined ? {} : { subscriptionId: target.subscriptionId }) },
-      });
       return;
     }
 
