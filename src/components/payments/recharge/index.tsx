@@ -1,4 +1,4 @@
-import type { CustomerSubscription } from '@/lib/api/types';
+import type { CustomerDetail, CustomerSubscription } from '@/lib/api/types';
 import type { RecordCollectionPayload, RecordEquipmentPaymentPayload, ReplaceEquipmentPayload } from '@/lib/hooks/api/use-payments';
 import { useIsFocused } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -18,6 +18,7 @@ import {
   useReplaceEquipment,
 } from '@/lib/hooks/api/use-payments';
 import { fixPayload, useCollectionFix } from '@/lib/hooks/common/use-collection-fix';
+import { useRefetchOnFocus } from '@/lib/hooks/common/use-refetch-on-focus';
 import {
   canRecord,
   hasUnsavedWork,
@@ -28,6 +29,7 @@ import {
   useRechargeStore,
 } from '@/lib/hooks/stores/use-recharge-store';
 import { translate } from '@/lib/i18n/utils';
+import { balanceStillAgreed, isStale } from '@/lib/payments/fresh-balance';
 import { isPaymentReferenceConflict, isPaymentResultUnknown } from '@/lib/payments/payment-errors';
 import { metadata as pendingMetadata, renew as renewPendingReference } from '@/lib/payments/pending-reference';
 import { ensureFix } from '@/lib/payments/require-fix';
@@ -106,7 +108,9 @@ export function RechargeFlowScreen({ customerId, subscriptionId, basePath }: {
   basePath: '/admin' | '/staff';
 }) {
   const router = useRouter();
-  const { data: customer, isPending, error, refetch } = useCustomer({ variables: { id: customerId } });
+  const customerQuery = useCustomer({ variables: { id: customerId } });
+  const { data: customer, isPending, error, refetch } = customerQuery;
+  useRefetchOnFocus(refetch);
 
   // Where the collector stands, asked once when the flow opens. Never blocks a receipt.
   const fix = useCollectionFix();
@@ -220,7 +224,8 @@ export function RechargeFlowScreen({ customerId, subscriptionId, basePath }: {
     router.back();
   };
 
-  const record = () => {
+  // A retry resends the same reference, so the balance check is not asked again.
+  const record = async (retry = false) => {
     const state = useRechargeStore.getState();
     if (state.amount.trim() !== '' && (!isPaymentAmount(state.amount) || !Number.isFinite(paise(state.amount)) || paise(state.amount) > paise(MAX_COLLECTION_AMOUNT))) {
       void dialogs.notify(translate('payment_errors.invalid_amount_title'), translate('payment_errors.invalid_amount_message'));
@@ -293,7 +298,7 @@ export function RechargeFlowScreen({ customerId, subscriptionId, basePath }: {
           cancelLabel: translate('payment_errors.view_receipts'),
         }).then((shouldRetry) => {
           if (shouldRetry)
-            record();
+            void record(true);
           else
             viewReceipts();
         });
@@ -313,6 +318,12 @@ export function RechargeFlowScreen({ customerId, subscriptionId, basePath }: {
         void dialogs.notify('No connection', 'This customer has no connection to collect dues against.');
         return;
       }
+      // Another phone may have collected since this was opened.
+      const shownLineId = line.id;
+      const balanceOf = (fresh: CustomerDetail) => Number(fresh.subscriptions.find(option => option.id === shownLineId)?.outstandingBalance ?? fresh.outstandingBalance);
+      if (!retry && isStale(customerQuery) && !await balanceStillAgreed(customerQuery, balanceOf, Number(line.outstandingBalance)))
+        return;
+
       const payload: RecordCollectionPayload = { ...common, subscriptionId: line.id, amount: markedDue ? null : common.amount };
       const send = () => recordDues({ payload }, {
         onSuccess: (made) => {
@@ -441,7 +452,7 @@ export function RechargeFlowScreen({ customerId, subscriptionId, basePath }: {
           <Button
             label={isSaving ? 'Recording…' : isMarkedDue({ charge, amount }) ? 'Mark as due' : isFreeSwap({ charge, amount, target }) ? 'Record free swap' : `Record ${rupeesExact(paise(amount) / 100)}`}
             disabled={isSaving}
-            onPress={record}
+            onPress={() => void record()}
             className="bg-primary-600"
             testID="recharge-submit"
           />

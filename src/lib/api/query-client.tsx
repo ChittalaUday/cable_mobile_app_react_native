@@ -1,4 +1,5 @@
-import { QueryClient } from '@tanstack/react-query';
+import { focusManager, QueryClient } from '@tanstack/react-query';
+import { AppState } from 'react-native';
 
 /**
  * A 4xx is an answer, not a blip. Retrying it spends a phone's battery and data
@@ -24,6 +25,18 @@ export const queryClient = new QueryClient({
       },
     },
   },
+});
+
+/*
+ * React Query only knows "focus" from browser events. Coming back to the app is
+ * the phone's focus: without this, a collector who switches apps and returns
+ * sees the balance from before and may collect again. Registered once, at import.
+ * ponytail: no onlineManager — @react-native-community/netinfo isn't installed;
+ * add it if offline-then-online refetching matters.
+ */
+focusManager.setEventListener((handleFocus) => {
+  const subscription = AppState.addEventListener('change', state => handleFocus(state === 'active'));
+  return () => subscription.remove();
 });
 
 const REALTIME_QUERY_KEYS: Record<string, readonly string[]> = {

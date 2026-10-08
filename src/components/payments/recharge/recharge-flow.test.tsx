@@ -20,6 +20,7 @@ const mockBack = jest.fn();
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush, replace: mockReplace, back: mockBack }),
+  useFocusEffect: jest.fn(),
 }));
 
 jest.mock('@react-navigation/native', () => ({ useIsFocused: () => true }));
@@ -142,7 +143,7 @@ function customer(lines: CustomerDetail['subscriptions']): CustomerDetail {
 }
 
 function mount(lines: CustomerDetail['subscriptions'] = [line('sub-1', 'Gold HD', '500.00')], subscriptionId?: string) {
-  useCustomer.mockReturnValue({ data: customer(lines), isPending: false, error: null, refetch: jest.fn() });
+  useCustomer.mockReturnValue({ data: customer(lines), dataUpdatedAt: Date.now(), isPending: false, error: null, refetch: jest.fn() });
 
   return render(<RechargeFlowScreen customerId="cust-1" subscriptionId={subscriptionId} basePath="/admin" />);
 }

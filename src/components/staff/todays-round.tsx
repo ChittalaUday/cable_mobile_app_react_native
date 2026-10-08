@@ -5,7 +5,7 @@ import type { DueVisit } from '@/lib/hooks/api/use-visits';
 import type { RoundDate, RoundFilters, RoundType } from '@/lib/utils/round-filters';
 import { Alert02Icon, Calendar03Icon, CallIcon, CheckmarkCircle02Icon, HeadsetIcon, Location01Icon, Search01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { ActivityIndicator, Modal, ScrollView, TextInput } from 'react-native';
 
@@ -17,6 +17,7 @@ import { Button, colors, Pill, Pressable, Text, View } from '@/components/ui';
 import { startVisit } from '@/components/visits/mark-visit-sheet';
 import { openCallIntent } from '@/lib/call-intent';
 import { useDueVisits } from '@/lib/hooks/api/use-visits';
+import { useRefetchOnFocus } from '@/lib/hooks/common/use-refetch-on-focus';
 import { getItem, setItem } from '@/lib/storage';
 import { dateTime } from '@/lib/utils/admin-format';
 import { matchesRound, NO_FILTERS } from '@/lib/utils/round-filters';
@@ -69,12 +70,7 @@ export function TodaysRound({ basePath, compact = false, preset }: { basePath: '
   const placeSheet = React.useRef<BottomSheetModal>(null);
   const [announced, setAnnounced] = React.useState(() => getItem<string>(POPUP_KEY) === today());
 
-  const opened = React.useRef(false);
-  useFocusEffect(React.useCallback(() => {
-    if (opened.current)
-      void refetch();
-    opened.current = true;
-  }, [refetch]));
+  useRefetchOnFocus(refetch);
 
   const todo = items.filter(item => item.doneAt === null);
   const overdue = todo.filter(item => daysUntil(item) < 0).length;

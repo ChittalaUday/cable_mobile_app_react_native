@@ -26,8 +26,12 @@ jest.mock('expo-location', () => ({
   Accuracy: { Balanced: 3 },
 }));
 
+const mockFocusEffects: (() => void)[] = [];
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush, replace: mockReplace, back: jest.fn() }),
+  useFocusEffect: (effect: () => void) => {
+    mockFocusEffects.push(effect);
+  },
 }));
 
 jest.mock('@react-navigation/native', () => ({ useIsFocused: () => true }));
@@ -121,8 +125,8 @@ function customer(lines: CustomerDetail['subscriptions']): CustomerDetail {
  * here so none of them assert against a screen that is still mid-fix — which is
  * both what the collector sees and what stops React warning about it.
  */
-async function mount(lines = [line('sub-1', 'ACT9001', '500.00')]) {
-  useCustomer.mockReturnValue({ data: customer(lines), isPending: false, error: null, refetch: jest.fn() });
+async function mount(lines = [line('sub-1', 'ACT9001', '500.00')], query: Record<string, unknown> = {}) {
+  useCustomer.mockReturnValue({ data: customer(lines), dataUpdatedAt: Date.now(), isPending: false, error: null, refetch: jest.fn(), ...query });
 
   const view = render(<CollectPaymentScreen customerId="cust-1" basePath="/staff" />);
   await screen.findByText(/accurate to|Location permission off|No location fix/);
@@ -151,6 +155,43 @@ beforeEach(() => {
 });
 
 describe('collecting a payment', () => {
+  it('re-reads the customer when the screen comes back into view, not on first open', async () => {
+    const refetch = jest.fn();
+    mockFocusEffects.length = 0;
+    await mount(undefined, { refetch });
+    act(() => mockFocusEffects.at(-1)!());
+    expect(refetch).not.toHaveBeenCalled();
+    act(() => mockFocusEffects.at(-1)!());
+    expect(refetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('asks before paying when a screen opened over a minute ago finds the balance moved', async () => {
+    const confirm = jest.spyOn(dialogs, 'confirm').mockResolvedValue(false);
+    const refetch = jest.fn().mockResolvedValue({ data: customer([line('sub-1', 'ACT9001', '0.00')]) });
+    await mount(undefined, { dataUpdatedAt: Date.now() - 61_000, refetch });
+    fireEvent.press(screen.getByTestId('collect-submit'));
+
+    await waitFor(() => expect(confirm).toHaveBeenCalledWith(expect.objectContaining({ title: 'Balance changed', confirmLabel: 'Continue' })));
+    expect(mockRecord).not.toHaveBeenCalled();
+
+    confirm.mockResolvedValue(true);
+    fireEvent.press(screen.getByTestId('collect-submit'));
+    await waitFor(() => expect(mockRecord).toHaveBeenCalledTimes(1));
+    confirm.mockRestore();
+  });
+
+  it('pays straight away when the re-read finds the same balance', async () => {
+    const confirm = jest.spyOn(dialogs, 'confirm');
+    const refetch = jest.fn().mockResolvedValue({ data: customer([line('sub-1', 'ACT9001', '500.00')]) });
+    await mount(undefined, { dataUpdatedAt: Date.now() - 61_000, refetch });
+    fireEvent.press(screen.getByTestId('collect-submit'));
+
+    await waitFor(() => expect(mockRecord).toHaveBeenCalledTimes(1));
+    expect(refetch).toHaveBeenCalledTimes(1);
+    expect(confirm).not.toHaveBeenCalled();
+    confirm.mockRestore();
+  });
+
   it('accepts 99000 and blocks any payment above the limit', async () => {
     const alert = jest.spyOn(dialogs, 'notify').mockResolvedValue();
     await mount();

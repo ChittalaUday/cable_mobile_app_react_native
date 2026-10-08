@@ -1,4 +1,4 @@
-import type { CustomerSubscription, PaymentEntryMethod } from '@/lib/api/types';
+import type { CustomerDetail, CustomerSubscription, PaymentEntryMethod } from '@/lib/api/types';
 import type { RecordCollectionPayload } from '@/lib/hooks/api/use-payments';
 import type { CollectionFix } from '@/lib/hooks/common/use-collection-fix';
 import { CheckmarkCircle02Icon, Location01Icon } from '@hugeicons/core-free-icons';
@@ -21,7 +21,9 @@ import { MAX_COLLECTION_AMOUNT, PAYMENT_METHOD_LABELS, PAYMENT_METHODS } from '@
 import { useCustomer } from '@/lib/hooks/api/use-customers';
 import { useRecordCollection } from '@/lib/hooks/api/use-payments';
 import { fixPayload, useCollectionFix } from '@/lib/hooks/common/use-collection-fix';
+import { useRefetchOnFocus } from '@/lib/hooks/common/use-refetch-on-focus';
 import { translate } from '@/lib/i18n/utils';
+import { balanceStillAgreed, isStale } from '@/lib/payments/fresh-balance';
 import { isPaymentReferenceConflict, isPaymentResultUnknown } from '@/lib/payments/payment-errors';
 import { clear as clearPendingReference, get as getPendingReference, metadata as pendingMetadata, renew as renewPendingReference } from '@/lib/payments/pending-reference';
 import { ensureFix } from '@/lib/payments/require-fix';
@@ -69,7 +71,9 @@ export function CollectPaymentScreen({ customerId, basePath }: {
   basePath: '/admin' | '/staff';
 }) {
   const router = useRouter();
-  const { data: customer, isPending, error, refetch } = useCustomer({ variables: { id: customerId } });
+  const customerQuery = useCustomer({ variables: { id: customerId } });
+  const { data: customer, isPending, error, refetch } = customerQuery;
+  useRefetchOnFocus(refetch);
   const { mutate: record, isPending: isSaving } = useRecordCollection();
   const fix = useCollectionFix();
 
@@ -95,7 +99,9 @@ export function CollectPaymentScreen({ customerId, basePath }: {
   const amount = outcome === 'full' ? due.toFixed(2) : outcome === 'none' ? '0' : typedAmount;
   const takings = outcome === 'none' ? 0 : Number(amount || 0);
 
-  const submit = () => {
+  // A retry resends the same reference, so the balance check is not asked again:
+  // our own first attempt may be what moved the balance.
+  const submit = async (retry = false) => {
     // Dues are always paid against a line; hardware has its own screen.
     if (line === null) {
       void dialogs.notify('No connection', 'This customer has no connection to collect dues against.');
@@ -111,6 +117,14 @@ export function CollectPaymentScreen({ customerId, basePath }: {
       void dialogs.notify('Reason needed', 'Say why nothing was collected — it is the part of the round an operator actually reads.');
       return;
     }
+    // Another phone may have collected since this was opened.
+    const shownLineId = line.id;
+    const balanceOf = (fresh: CustomerDetail) => {
+      const now = fresh.subscriptions.find(option => option.id === shownLineId);
+      return now === undefined ? Number(fresh.outstandingBalance) : payable(now);
+    };
+    if (!retry && isStale(customerQuery) && !await balanceStillAgreed(customerQuery, balanceOf, due))
+      return;
 
     const payload: RecordCollectionPayload = {
       customerId,
@@ -159,7 +173,7 @@ export function CollectPaymentScreen({ customerId, basePath }: {
             cancelLabel: translate('payment_errors.view_receipts'),
           }).then((shouldRetry) => {
             if (shouldRetry)
-              submit();
+              void submit(true);
             else
               viewReceipts();
           });
@@ -301,7 +315,7 @@ export function CollectPaymentScreen({ customerId, basePath }: {
         <Button
           label={isSaving ? 'Recording…' : outcome === 'none' ? 'Record visit' : `Record ${rupees(takings)}`}
           disabled={isSaving}
-          onPress={submit}
+          onPress={() => void submit()}
           className="bg-primary-600"
           testID="collect-submit"
         />
