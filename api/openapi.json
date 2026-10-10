@@ -10236,9 +10236,118 @@
         }
       }
     },
+    "/api/v1/automations/providers": {
+      "get": {
+        "summary": "List the tenant's providers that have an automation portal account",
+        "tags": [
+          "jobs"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "items"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "providerId",
+                          "name",
+                          "code",
+                          "enabled"
+                        ],
+                        "properties": {
+                          "providerId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "code": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "enabled": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/automations/customer-sync/runs": {
       "post": {
-        "summary": "Start or open the active ACT customer hard sync",
+        "summary": "Start or open the active ACT customer hard sync for one provider",
         "tags": [
           "jobs"
         ],
@@ -10247,16 +10356,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "anyOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "type": "object",
-                    "properties": {},
-                    "additionalProperties": false
+                "type": "object",
+                "required": [
+                  "providerId"
+                ],
+                "properties": {
+                  "providerId": {
+                    "type": "string",
+                    "format": "uuid"
                   }
-                ]
+                },
+                "additionalProperties": false
               }
             }
           }
@@ -10278,6 +10388,8 @@
                       "required": [
                         "id",
                         "jobName",
+                        "providerId",
+                        "providerName",
                         "status",
                         "progress",
                         "progressMessage",
@@ -10293,6 +10405,27 @@
                         },
                         "jobName": {
                           "type": "string"
+                        },
+                        "providerId": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "providerName": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "status": {
                           "type": "string",
@@ -10468,6 +10601,15 @@
           {
             "schema": {
               "type": "string",
+              "format": "uuid"
+            },
+            "in": "query",
+            "name": "providerId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
               "format": "date-time"
             },
             "in": "query",
@@ -10528,6 +10670,8 @@
                         "required": [
                           "id",
                           "jobName",
+                          "providerId",
+                          "providerName",
                           "status",
                           "progress",
                           "progressMessage",
@@ -10543,6 +10687,27 @@
                           },
                           "jobName": {
                             "type": "string"
+                          },
+                          "providerId": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "providerName": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           },
                           "status": {
                             "type": "string",
@@ -10724,6 +10889,8 @@
                   "required": [
                     "id",
                     "jobName",
+                    "providerId",
+                    "providerName",
                     "status",
                     "progress",
                     "progressMessage",
@@ -10741,6 +10908,27 @@
                     },
                     "jobName": {
                       "type": "string"
+                    },
+                    "providerId": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "providerName": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "status": {
                       "type": "string",

@@ -4514,6 +4514,95 @@ export interface paths {
         };
         trace?: never;
     };
+    "/api/v1/automations/providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the tenant's providers that have an automation portal account */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            items: {
+                                /** Format: uuid */
+                                providerId: string;
+                                name: string;
+                                code: string | null;
+                                enabled: boolean;
+                            }[];
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/automations/customer-sync/runs": {
         parameters: {
             query?: never;
@@ -4523,7 +4612,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Start or open the active ACT customer hard sync */
+        /** Start or open the active ACT customer hard sync for one provider */
         post: {
             parameters: {
                 query?: never;
@@ -4533,7 +4622,10 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": null | Record<string, never>;
+                    "application/json": {
+                        /** Format: uuid */
+                        providerId: string;
+                    };
                 };
             };
             responses: {
@@ -4548,6 +4640,8 @@ export interface paths {
                                 /** Format: uuid */
                                 id: string;
                                 jobName: string;
+                                providerId: string | null;
+                                providerName: string | null;
                                 /** @enum {string} */
                                 status: "queued" | "running" | "succeeded" | "failed" | "cancelled" | "enqueue_failed";
                                 progress: number;
@@ -4630,6 +4724,7 @@ export interface paths {
                 query?: {
                     status?: "queued" | "running" | "succeeded" | "failed" | "cancelled" | "enqueue_failed";
                     jobName?: string;
+                    providerId?: string;
                     from?: string;
                     to?: string;
                     page?: number;
@@ -4652,6 +4747,8 @@ export interface paths {
                                 /** Format: uuid */
                                 id: string;
                                 jobName: string;
+                                providerId: string | null;
+                                providerName: string | null;
                                 /** @enum {string} */
                                 status: "queued" | "running" | "succeeded" | "failed" | "cancelled" | "enqueue_failed";
                                 progress: number;
@@ -4755,6 +4852,8 @@ export interface paths {
                             /** Format: uuid */
                             id: string;
                             jobName: string;
+                            providerId: string | null;
+                            providerName: string | null;
                             /** @enum {string} */
                             status: "queued" | "running" | "succeeded" | "failed" | "cancelled" | "enqueue_failed";
                             progress: number;
