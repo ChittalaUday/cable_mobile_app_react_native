@@ -71,3 +71,13 @@ export function presentRunResult(result: JobRunSummary['result']): RunResultCoun
     counts.warnings = result.warnings.length;
   return Object.keys(counts).length === 0 ? null : counts;
 }
+
+/** The localized line for a failed Hard sync start; the backend's own wording is not shown. */
+export function startFailureKey(error: unknown): TxKeyPath {
+  const status = (error as { response?: { status?: number } } | null)?.response?.status;
+  if (status === 401 || status === 403)
+    return 'automations.start_denied';
+  if (status === 503)
+    return 'automations.start_unavailable';
+  return 'automations.start_failed';
+}
