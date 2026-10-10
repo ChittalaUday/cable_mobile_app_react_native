@@ -19,3 +19,11 @@ export type ApiQuery<Path extends keyof paths>
     // Pagination defaults are applied by the server, so callers may omit them.
     ? Omit<NonNullable<Query>, 'page' | 'limit'> & Partial<Pick<NonNullable<Query>, Extract<keyof NonNullable<Query>, 'page' | 'limit'>>>
     : never;
+
+export type JobRunPage = ApiResponse<'/api/v1/job-runs'>;
+export type JobRunSummary = JobRunPage['items'][number];
+export type JobRunStatus = JobRunSummary['status'];
+export type JobRunDetail = ApiResponse<'/api/v1/job-runs/{id}'>;
+export type JobAttempt = JobRunDetail['attempts'][number];
+export type JobRunEvent = JobRunDetail['events'][number];
+export type StartCustomerSyncResponse = ApiResponse<'/api/v1/automations/customer-sync/runs', 'post', 202>;

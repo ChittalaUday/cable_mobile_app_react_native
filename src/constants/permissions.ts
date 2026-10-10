@@ -116,6 +116,10 @@ export const PERMISSIONS = {
   SETTINGS_VIEW: 'settings.view',
   SETTINGS_UPDATE: 'settings.update',
 
+  // Automations (ACT customer sync and its run history)
+  JOBS_VIEW: 'jobs.view',
+  JOBS_RUN: 'jobs.run',
+
   // Roles & Permissions
   ROLES_VIEW: 'roles.view',
   ROLES_CREATE: 'roles.create',
