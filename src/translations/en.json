@@ -90,8 +90,9 @@
     },
     "forbidden_message": "You do not have access to automations.",
     "forbidden_title": "Not available",
-    "hard_sync": "Hard sync customers",
-    "hard_sync_hint": "Pulls the latest customer list from the ACT portal now.",
+    "hard_sync": "Hard sync",
+    "hard_sync_disabled_hint": "This provider's portal account is disabled.",
+    "hard_sync_hint": "Pulls this provider's latest customer list from the ACT portal now.",
     "hard_sync_open_current": "Open the current run",
     "hard_sync_starting": "Starting…",
     "list": {
@@ -117,6 +118,16 @@
     },
     "menu_subtitle": "ACT customer sync, run history and live view",
     "menu_title": "Automations",
+    "provider": {
+      "disabled": "Disabled",
+      "empty_message": "A provider appears here once it has an ACT portal account. Add the portal login for a provider to enable Hard sync.",
+      "empty_title": "No providers to sync",
+      "enabled": "Enabled",
+      "error_title": "Could not load providers",
+      "generic": "Provider",
+      "retry": "Try again",
+      "title": "Providers"
+    },
     "run": {
       "created": "{{count}} new",
       "duration": "Took {{duration}}",
@@ -132,6 +143,8 @@
     },
     "start_denied": "You are not allowed to start a sync.",
     "start_failed": "Could not start the sync. Try again.",
+    "start_no_account": "This provider has no enabled ACT portal account. Add or enable it first.",
+    "start_provider_not_found": "This provider was not found. Pull to refresh and try again.",
     "start_unavailable": "The sync worker is not available right now. Try again in a minute.",
     "status": {
       "cancelled": "Cancelled",

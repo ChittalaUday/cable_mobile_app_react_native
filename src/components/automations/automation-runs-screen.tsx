@@ -1,4 +1,4 @@
-import type { JobRunSummary } from '@/lib/api/contracts';
+import type { AutomationProvider, JobRunSummary } from '@/lib/api/contracts';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -6,44 +6,54 @@ import { ActivityIndicator, RefreshControl } from 'react-native';
 import { Card, ScreenHeader, TINT } from '@/components/common/shell';
 import { Button, colors, List, Pressable, Text, View } from '@/components/ui';
 import { PERMISSIONS } from '@/constants/permissions';
-import { formatRunDuration, formatRunTime, isActiveRun, presentRunResult, presentRunStatus, startFailureKey } from '@/lib/automations/job-run-presenter';
-import { useJobRuns, useStartCustomerSync } from '@/lib/hooks/api/use-job-runs';
+import { activeRunForProvider, formatRunDuration, formatRunTime, presentProviderName, presentRunResult, presentRunStatus, startFailureKey } from '@/lib/automations/job-run-presenter';
+import { useAutomationProviders, useJobRuns, useStartCustomerSync } from '@/lib/hooks/api/use-job-runs';
 import { usePermissions } from '@/lib/hooks/common/use-permissions';
 
 /**
- * Every scheduled and manual automation run, newest first, with the Hard sync
- * action on top for whoever holds `jobs.run` across the whole tenant.
+ * Every scheduled and manual automation run, newest first, under a Providers
+ * section where each provider has its own Hard sync for whoever holds `jobs.run`
+ * across the whole tenant.
  */
 export function AutomationRunsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { hasScope } = usePermissions();
   const { data, isPending, isRefetching, error, refetch } = useJobRuns();
+  const providers = useAutomationProviders();
   const start = useStartCustomerSync();
-  const [startError, setStartError] = React.useState<string | null>(null);
+  const [startFailure, setStartFailure] = React.useState<{ providerId: string; message: string } | null>(null);
+  const [startingId, setStartingId] = React.useState<string | null>(null);
 
   const runs = data?.items ?? [];
-  const activeRun = runs.find(run => isActiveRun(run.status));
   const canStart = hasScope(PERMISSIONS.JOBS_RUN, 'ALL');
   const openRun = (id: string) => router.push(`/admin/automations/${id}`);
 
-  const hardSync = async () => {
-    if (activeRun !== undefined) {
-      openRun(activeRun.id);
+  const hardSync = async (providerId: string) => {
+    const active = activeRunForProvider(runs, providerId);
+    if (active !== undefined) {
+      openRun(active.id);
       return;
     }
-    setStartError(null);
+    setStartFailure(null);
+    setStartingId(providerId);
     try {
       // Created or reused, the answer is the run to look at.
-      const { run } = await start.mutateAsync();
+      const { run } = await start.mutateAsync({ providerId });
       openRun(run.id);
     }
     catch (failure) {
-      setStartError(t(startFailureKey(failure)));
+      setStartFailure({ providerId, message: t(startFailureKey(failure)) });
+    }
+    finally {
+      setStartingId(null);
     }
   };
 
-  const retry = () => void refetch();
+  const retry = () => {
+    void refetch();
+    void providers.refetch();
+  };
 
   return (
     <View className="flex-1 bg-surface">
@@ -53,20 +63,6 @@ export function AutomationRunsScreen() {
         showBack
         withSafeArea
       />
-
-      {canStart && (
-        <View className="gap-1 px-4 pb-2">
-          <Button
-            testID="hard-sync"
-            label={activeRun === undefined ? start.isPending ? t('automations.hard_sync_starting') : t('automations.hard_sync') : t('automations.hard_sync_open_current')}
-            disabled={start.isPending}
-            onPress={() => void hardSync()}
-          />
-          {startError === null
-            ? <Text className="text-xs text-muted-foreground">{t('automations.hard_sync_hint')}</Text>
-            : <Text className="text-xs text-red-600">{startError}</Text>}
-        </View>
-      )}
 
       {error && data !== undefined && (
         <Pressable accessibilityRole="button" onPress={retry} className="mx-4 mb-2 rounded-lg border border-border px-3 py-2" testID="runs-refresh-error">
@@ -84,6 +80,17 @@ export function AutomationRunsScreen() {
         : (
             <List
               testID="runs-list"
+              ListHeaderComponent={(
+                <ProvidersSection
+                  providers={providers}
+                  runs={runs}
+                  canStart={canStart}
+                  startPending={start.isPending}
+                  startingId={startingId}
+                  failure={startFailure}
+                  onHardSync={id => void hardSync(id)}
+                />
+              )}
               data={runs}
               keyExtractor={item => item.id}
               renderItem={({ item }) => <RunRow run={item} onPress={() => openRun(item.id)} />}
@@ -99,6 +106,95 @@ export function AutomationRunsScreen() {
                   )}
             />
           )}
+    </View>
+  );
+}
+
+type ProvidersQuery = ReturnType<typeof useAutomationProviders>;
+
+function ProvidersSection({ providers, runs, canStart, startPending, startingId, failure, onHardSync }: {
+  providers: ProvidersQuery;
+  runs: JobRunSummary[];
+  canStart: boolean;
+  startPending: boolean;
+  startingId: string | null;
+  failure: { providerId: string; message: string } | null;
+  onHardSync: (providerId: string) => void;
+}) {
+  const { t } = useTranslation();
+  const items = providers.data?.items ?? [];
+
+  return (
+    <View className="gap-2 px-4 pb-3" testID="providers-section">
+      <Text className="text-sm font-bold text-foreground">{t('automations.provider.title')}</Text>
+      {providers.isPending
+        ? <ActivityIndicator color={colors.primary[500]} />
+        : providers.error && providers.data === undefined
+          ? (
+              <View className="items-start gap-2">
+                <Text className="text-xs text-red-600">{t('automations.provider.error_title')}</Text>
+                <Button label={t('automations.provider.retry')} variant="outline" size="sm" onPress={() => void providers.refetch()} />
+              </View>
+            )
+          : items.length === 0
+            ? (
+                <View className="gap-1 rounded-2xl border border-border bg-card p-3" testID="providers-empty">
+                  <Text className="text-[15px] font-semibold text-foreground">{t('automations.provider.empty_title')}</Text>
+                  <Text className="text-sm text-muted-foreground">{t('automations.provider.empty_message')}</Text>
+                </View>
+              )
+            : items.map(provider => (
+                <ProviderCard
+                  key={provider.providerId}
+                  provider={provider}
+                  activeRunId={activeRunForProvider(runs, provider.providerId)?.id}
+                  canStart={canStart}
+                  starting={startPending && startingId === provider.providerId}
+                  busy={startPending}
+                  failure={failure?.providerId === provider.providerId ? failure.message : null}
+                  onHardSync={() => onHardSync(provider.providerId)}
+                />
+              ))}
+    </View>
+  );
+}
+
+function ProviderCard({ provider, activeRunId, canStart, starting, busy, failure, onHardSync }: {
+  provider: AutomationProvider;
+  activeRunId: string | undefined;
+  canStart: boolean;
+  starting: boolean;
+  busy: boolean;
+  failure: string | null;
+  onHardSync: () => void;
+}) {
+  const { t } = useTranslation();
+  const active = activeRunId !== undefined;
+  const label = active ? t('automations.hard_sync_open_current') : starting ? t('automations.hard_sync_starting') : t('automations.hard_sync');
+
+  return (
+    <View className="gap-2 rounded-2xl border border-border bg-card p-3" testID={`provider-${provider.providerId}`}>
+      <View className="flex-row items-center justify-between gap-2">
+        <View className="flex-1">
+          <Text className="text-[15px] font-semibold text-foreground">{provider.name}</Text>
+          {provider.code !== null && <Text className="text-xs text-muted-foreground">{provider.code}</Text>}
+        </View>
+        <Text className="text-xs font-semibold text-muted-foreground">{provider.enabled ? t('automations.provider.enabled') : t('automations.provider.disabled')}</Text>
+      </View>
+      {canStart && (
+        <>
+          <Button
+            testID={`hard-sync-${provider.providerId}`}
+            label={label}
+            // An active run is always openable; only a new start needs an enabled account.
+            disabled={active ? false : !provider.enabled || busy}
+            onPress={onHardSync}
+          />
+          {failure !== null
+            ? <Text className="text-xs text-red-600">{failure}</Text>
+            : <Text className="text-xs text-muted-foreground">{!provider.enabled && !active ? t('automations.hard_sync_disabled_hint') : t('automations.hard_sync_hint')}</Text>}
+        </>
+      )}
     </View>
   );
 }
@@ -135,6 +231,7 @@ function RunRow({ run, onPress }: { run: JobRunSummary; onPress: () => void }) {
           </View>
           {duration !== null && <Text className="text-xs text-muted-foreground">{t('automations.run.duration', { duration })}</Text>}
         </View>
+        <Text className="text-xs font-semibold text-muted-foreground">{presentProviderName(run.providerName) ?? t('automations.provider.generic')}</Text>
         <Text className="text-sm font-semibold text-foreground">
           {started !== null ? t('automations.run.started', { time: started }) : queued !== null ? t('automations.run.queued', { time: queued }) : t('automations.run.not_started')}
         </Text>

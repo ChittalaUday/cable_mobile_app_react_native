@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import * as React from 'react';
 import { httpResponse } from '@/test/http';
-import { ACTIVE_POLL_MS, jobRunKeys, useJobRun, useJobRuns, useStartCustomerSync } from './use-job-runs';
+import { ACTIVE_POLL_MS, jobRunKeys, useAutomationProviders, useJobRun, useJobRuns, useStartCustomerSync } from './use-job-runs';
 
 const mockAuth = { tenantId: 'tenant-a' as string | null, status: 'signIn' as string };
 const mockGet = jest.fn<Promise<unknown>, unknown[]>();
@@ -30,6 +30,8 @@ function run(overrides: Partial<JobRunSummary> = {}): JobRunSummary {
     queuedAt: '2026-10-10T10:00:00.000Z',
     startedAt: '2026-10-10T10:00:01.000Z',
     finishedAt: null,
+    providerId: 'prov-1',
+    providerName: 'ACT Hyderabad',
     ...overrides,
   };
 }
@@ -100,6 +102,28 @@ describe('useJobRuns', () => {
   });
 });
 
+describe('useAutomationProviders', () => {
+  const providers = { items: [{ providerId: 'prov-1', name: 'ACT Hyderabad', code: 'ACT-HYD', enabled: true }] };
+
+  it('loads the tenant providers and forwards the abort signal', async () => {
+    mockGet.mockResolvedValue(httpResponse(providers));
+
+    const { result } = renderHook(() => useAutomationProviders(), { wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(result.current.data).toEqual(providers);
+    expect(mockGet).toHaveBeenCalledWith('/automations/providers', { signal: expect.any(AbortSignal) as AbortSignal });
+  });
+
+  it('is keyed by tenant and waits for auth', () => {
+    expect(jobRunKeys.providers('a')).not.toEqual(jobRunKeys.providers('b'));
+    mockAuth.status = 'idle';
+    renderHook(() => useAutomationProviders(), { wrapper });
+
+    expect(mockGet).not.toHaveBeenCalled();
+  });
+});
+
 describe('useJobRun', () => {
   it('is disabled without an id or a tenant', () => {
     renderHook(() => useJobRun(undefined), { wrapper });
@@ -136,18 +160,19 @@ describe('useJobRun', () => {
 });
 
 describe('useStartCustomerSync', () => {
-  it.each([false, true])('posts with no body and resolves identically when reused is %s', async (reused) => {
+  it.each([false, true])('posts the providerId and resolves identically when reused is %s', async (reused) => {
     mockPost.mockResolvedValue(httpResponse({ run: run({ id: 'run-9', status: 'queued' }), reused }));
     const invalidate = jest.spyOn(queryClient, 'invalidateQueries');
 
     const { result } = renderHook(() => useStartCustomerSync(), { wrapper });
-    const response = await act(async () => result.current.mutateAsync());
+    const response = await act(async () => result.current.mutateAsync({ providerId: 'prov-1' }));
 
     expect(mockPost).toHaveBeenCalledTimes(1);
-    expect(mockPost).toHaveBeenCalledWith('/automations/customer-sync/runs');
+    expect(mockPost).toHaveBeenCalledWith('/automations/customer-sync/runs', { providerId: 'prov-1' });
     expect(response).toMatchObject({ run: { id: 'run-9' }, reused });
     expect(queryClient.getQueryData<JobRunDetail>(jobRunKeys.detail('tenant-a', 'run-9'))).toMatchObject({ id: 'run-9', attempts: [], events: [] });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: jobRunKeys.lists('tenant-a') });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: jobRunKeys.providers('tenant-a') });
   });
 
   it('does not overwrite a fuller cached detail', async () => {
@@ -156,7 +181,7 @@ describe('useStartCustomerSync', () => {
     mockPost.mockResolvedValue(httpResponse({ run: run({ id: 'run-9' }), reused: true }));
 
     const { result } = renderHook(() => useStartCustomerSync(), { wrapper });
-    await act(async () => result.current.mutateAsync());
+    await act(async () => result.current.mutateAsync({ providerId: 'prov-1' }));
 
     expect(queryClient.getQueryData(jobRunKeys.detail('tenant-a', 'run-9'))).toBe(full);
   });
@@ -165,7 +190,7 @@ describe('useStartCustomerSync', () => {
     mockPost.mockRejectedValue(Object.assign(new Error('down'), { response: { status: 503 } }));
 
     const { result } = renderHook(() => useStartCustomerSync(), { wrapper });
-    await act(async () => result.current.mutateAsync().catch(() => undefined));
+    await act(async () => result.current.mutateAsync({ providerId: 'prov-1' }).catch(() => undefined));
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(mockPost).toHaveBeenCalledTimes(1);

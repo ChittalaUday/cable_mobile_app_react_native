@@ -65,6 +65,8 @@ function detail(overrides: Partial<JobRunDetail> = {}): JobRunDetail {
     queuedAt: '2026-10-02T14:29:00',
     startedAt: '2026-10-02T14:30:00',
     finishedAt: null,
+    providerId: 'prov-1',
+    providerName: 'ACT Hyderabad',
     attempts: [],
     events: [],
     ...overrides,
@@ -103,6 +105,21 @@ beforeEach(async () => {
 afterEach(() => {
   queryClient.clear();
   jest.restoreAllMocks();
+});
+
+describe('run provider', () => {
+  it('shows the provider name in the summary', () => {
+    mount();
+
+    expect(screen.getByTestId('run-provider').props.children).toBe('ACT Hyderabad');
+  });
+
+  it('falls back to a generic label when the run has no provider', () => {
+    mockDetail = { data: detail({ providerId: null, providerName: null }) };
+    mount();
+
+    expect(screen.getByTestId('run-provider').props.children).toBe('Provider');
+  });
 });
 
 describe('run detail states', () => {

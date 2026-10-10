@@ -1,10 +1,10 @@
-import type { ApiQuery, JobRunDetail, JobRunPage, StartCustomerSyncResponse } from '@/lib/api/contracts';
+import type { AutomationProviderList, JobRunDetail, JobRunPage, JobRunQuery, StartCustomerSyncBody, StartCustomerSyncResponse } from '@/lib/api/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { client } from '@/lib/api/client';
 import { isActiveRun } from '@/lib/automations/job-run-presenter';
 import { useAuthStore } from '@/lib/hooks/stores/use-auth-store';
 
-export type JobRunFilters = ApiQuery<'/api/v1/job-runs'>;
+export type JobRunFilters = JobRunQuery;
 
 /** How often a queued or running run is re-read; the live socket only makes it quicker. */
 export const ACTIVE_POLL_MS = 5000;
@@ -16,6 +16,7 @@ export const jobRunKeys = {
   all: (tenantId: string | null) => ['job-runs', tenantId] as const,
   lists: (tenantId: string | null) => [...jobRunKeys.all(tenantId), 'list'] as const,
   list: (tenantId: string | null, filters: JobRunFilters) => [...jobRunKeys.lists(tenantId), filters] as const,
+  providers: (tenantId: string | null) => [...jobRunKeys.all(tenantId), 'providers'] as const,
   detail: (tenantId: string | null, id: string) => [...jobRunKeys.all(tenantId), 'detail', id] as const,
 };
 
@@ -38,6 +39,16 @@ export function useJobRuns(filters: JobRunFilters = {}) {
   });
 }
 
+/** The tenant's providers that have a portal account: what Hard sync can target. */
+export function useAutomationProviders() {
+  const { tenantId, ready } = useReady();
+  return useQuery<AutomationProviderList, Error>({
+    queryKey: jobRunKeys.providers(tenantId),
+    queryFn: async ({ signal }) => (await client.get<AutomationProviderList>('/automations/providers', { signal })).data,
+    enabled: ready,
+  });
+}
+
 /** One run with its attempts and sanitized events. Polls until the run is terminal. */
 export function useJobRun(id: string | undefined) {
   const { tenantId, ready } = useReady();
@@ -51,16 +62,16 @@ export function useJobRun(id: string | undefined) {
 }
 
 /**
- * Starts the ACT customer hard sync, or finds the run already doing it. `reused`
+ * Starts the ACT customer hard sync for one provider, or finds the run already doing it. `reused`
  * is only navigation context: both answers carry the run to open. Never retried,
  * so a lost response cannot turn into a second POST.
  */
 export function useStartCustomerSync() {
   const queryClient = useQueryClient();
   const tenantId = useAuthStore.use.tenantId();
-  return useMutation<StartCustomerSyncResponse, Error, void>({
+  return useMutation<StartCustomerSyncResponse, Error, StartCustomerSyncBody>({
     retry: false,
-    mutationFn: async () => (await client.post<StartCustomerSyncResponse>(START_PATH)).data,
+    mutationFn: async body => (await client.post<StartCustomerSyncResponse>(START_PATH, body)).data,
     onSuccess: ({ run }) => {
       // A placeholder until the detail fetch lands; an existing (fuller) detail is left alone.
       queryClient.setQueryData<JobRunDetail>(
@@ -68,6 +79,7 @@ export function useStartCustomerSync() {
         existing => existing ?? { ...run, attempts: [], events: [] },
       );
       void queryClient.invalidateQueries({ queryKey: jobRunKeys.lists(tenantId) });
+      void queryClient.invalidateQueries({ queryKey: jobRunKeys.providers(tenantId) });
     },
   });
 }

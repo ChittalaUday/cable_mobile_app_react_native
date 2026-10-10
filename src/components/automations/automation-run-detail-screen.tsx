@@ -6,7 +6,7 @@ import { ActivityIndicator, RefreshControl } from 'react-native';
 import { Card, ScreenHeader, TINT } from '@/components/common/shell';
 import { Button, colors, Image, Pressable, ScrollView, Text, View } from '@/components/ui';
 import { presentJobEvent } from '@/lib/automations/job-activity';
-import { formatRunDuration, formatRunTime, isTerminalRun, presentRunResult, presentRunStatus } from '@/lib/automations/job-run-presenter';
+import { formatRunDuration, formatRunTime, isTerminalRun, presentProviderName, presentRunResult, presentRunStatus } from '@/lib/automations/job-run-presenter';
 import { useJobRun } from '@/lib/hooks/api/use-job-runs';
 import { useJobLiveStream } from '@/lib/hooks/common/use-job-live-stream';
 
@@ -141,6 +141,7 @@ function RunSummary({ run }: { run: JobRunDetail }) {
         </View>
         <Text className="text-xs font-semibold text-muted-foreground">{t('automations.detail.progress', { count: run.progress })}</Text>
       </View>
+      <Text className="text-sm font-semibold text-foreground" testID="run-provider">{presentProviderName(run.providerName) ?? t('automations.provider.generic')}</Text>
       <Text className="text-xs text-muted-foreground">{t('automations.detail.queued_at', { time: formatRunTime(run.queuedAt) ?? '-' })}</Text>
       {finished !== null && <Text className="text-xs text-muted-foreground">{t('automations.run.finished', { time: finished })}</Text>}
       {duration !== null && <Text className="text-xs text-muted-foreground">{t('automations.run.duration', { duration })}</Text>}

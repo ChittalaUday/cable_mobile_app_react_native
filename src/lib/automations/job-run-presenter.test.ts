@@ -1,6 +1,6 @@
 import { PERMISSIONS } from '@/constants/permissions';
 import openapi from '../../../api/openapi.json';
-import { formatRunDuration, formatRunTime, isActiveRun, isTerminalRun, presentRunResult, presentRunStatus } from './job-run-presenter';
+import { activeRunForProvider, formatRunDuration, formatRunTime, isActiveRun, isTerminalRun, presentProviderName, presentRunResult, presentRunStatus, startFailureKey } from './job-run-presenter';
 
 describe('generated automation contract', () => {
   const paths = openapi.paths as Record<string, Record<string, { responses: Record<string, unknown> }>>;
@@ -103,5 +103,41 @@ describe('presentRunResult', () => {
   it('has nothing to show for no result or an unrecognised one', () => {
     expect(presentRunResult(null)).toBeNull();
     expect(presentRunResult({ downloadedRows: 'many', other: 1 })).toBeNull();
+  });
+});
+
+describe('provider presenters', () => {
+  const run = (id: string, providerId: string | null, status: string) => ({ id, providerId, status }) as Parameters<typeof activeRunForProvider>[0][number];
+
+  it('trims a provider name and treats blank or missing as none', () => {
+    expect(presentProviderName(' ACT Hyderabad ')).toBe('ACT Hyderabad');
+    expect(presentProviderName('  ')).toBeNull();
+    expect(presentProviderName(null)).toBeNull();
+    expect(presentProviderName(undefined)).toBeNull();
+  });
+
+  it('finds a queued or running run for that provider only', () => {
+    const runs = [run('a', 'p2', 'running'), run('b', 'p1', 'succeeded'), run('c', 'p1', 'queued'), run('d', null, 'running')];
+
+    expect(activeRunForProvider(runs, 'p1')?.id).toBe('c');
+    expect(activeRunForProvider(runs, 'p2')?.id).toBe('a');
+    expect(activeRunForProvider(runs, 'p3')).toBeUndefined();
+    expect(activeRunForProvider([run('b', 'p1', 'failed')], 'p1')).toBeUndefined();
+  });
+
+  it.each([
+    [401, 'automations.start_denied'],
+    [403, 'automations.start_denied'],
+    [404, 'automations.start_provider_not_found'],
+    [409, 'automations.start_no_account'],
+    [422, 'automations.start_no_account'],
+    [503, 'automations.start_unavailable'],
+    [500, 'automations.start_failed'],
+  ])('maps a %s start failure to %s', (status, key) => {
+    expect(startFailureKey({ response: { status } })).toBe(key);
+  });
+
+  it('maps a network failure to the generic line', () => {
+    expect(startFailureKey(new Error('offline'))).toBe('automations.start_failed');
   });
 });

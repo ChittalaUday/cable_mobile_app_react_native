@@ -1,5 +1,5 @@
 import type { JobRunSummary } from '@/lib/api/contracts';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import * as React from 'react';
 import i18n from '@/lib/i18n';
 import { AutomationRunsScreen } from './automation-runs-screen';
@@ -9,7 +9,12 @@ const mockRefetch = jest.fn();
 const mockStart = jest.fn();
 const mockScopes: Record<string, string> = {};
 let mockList: { data?: unknown; isPending?: boolean; isRefetching?: boolean; error?: Error | null } = {};
+let mockProviders: { data?: unknown; isPending?: boolean; error?: Error | null } = {};
+const mockProvidersRefetch = jest.fn();
 let mockStartPending = false;
+
+type Provider = { providerId: string; name: string; code: string | null; enabled: boolean };
+const provider = (overrides: Partial<Provider> = {}): Provider => ({ providerId: 'prov-1', name: 'ACT Hyderabad', code: 'ACT-HYD', enabled: true, ...overrides });
 
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, back: jest.fn() }) }));
 jest.mock('@/lib/hooks/common/use-permissions', () => ({
@@ -19,6 +24,7 @@ jest.mock('@/lib/hooks/common/use-permissions', () => ({
 }));
 jest.mock('@/lib/hooks/api/use-job-runs', () => ({
   useJobRuns: () => ({ isPending: false, isRefetching: false, error: null, refetch: mockRefetch, ...mockList }),
+  useAutomationProviders: () => ({ isPending: false, error: null, refetch: mockProvidersRefetch, ...mockProviders }),
   useStartCustomerSync: () => ({ mutateAsync: mockStart, isPending: mockStartPending }),
 }));
 
@@ -33,6 +39,8 @@ function run(overrides: Partial<JobRunSummary> = {}): JobRunSummary {
     queuedAt: '2026-10-02T14:29:00',
     startedAt: '2026-10-02T14:30:00',
     finishedAt: '2026-10-02T14:33:05',
+    providerId: 'prov-1',
+    providerName: 'ACT Hyderabad',
     ...overrides,
   };
 }
@@ -45,6 +53,8 @@ beforeEach(async () => {
   mockStart.mockReset();
   mockStartPending = false;
   mockList = { data: page([run()]) };
+  mockProviders = { data: { items: [provider()] } };
+  mockProvidersRefetch.mockReset();
   for (const key of Object.keys(mockScopes))
     delete mockScopes[key];
   await act(async () => i18n.changeLanguage('en'));
@@ -59,6 +69,14 @@ describe('automation run history', () => {
     expect(screen.getByText('Started 02 Oct 2026, 02:30 PM')).toBeTruthy();
     expect(screen.getByText('Took 3m 05s')).toBeTruthy();
     expect(screen.getByText('1200 rows · 3 new · 10 updated · 1187 unchanged')).toBeTruthy();
+  });
+
+  it('names the provider on each run, with a generic fallback', () => {
+    mockList = { data: page([run({ id: 'run-1' }), run({ id: 'run-2', providerId: null, providerName: null })]) };
+    render(<AutomationRunsScreen />);
+
+    expect(within(screen.getByTestId('run-row-run-1')).getByText('ACT Hyderabad')).toBeTruthy();
+    expect(within(screen.getByTestId('run-row-run-2')).getByText('Provider')).toBeTruthy();
   });
 
   it('opens a run when its row is pressed', () => {
@@ -124,29 +142,44 @@ describe('automation run history', () => {
   });
 });
 
-describe('hard sync action', () => {
-  it('is hidden without jobs.run', () => {
+describe('providers and per-provider hard sync', () => {
+  const sync = () => screen.getByTestId('hard-sync-prov-1');
+
+  it('lists each provider with its code and state, and no global button', () => {
+    mockProviders = { data: { items: [provider(), provider({ providerId: 'prov-2', name: 'ACT Warangal', code: null, enabled: false })] } };
     render(<AutomationRunsScreen />);
 
-    expect(screen.queryByText('Hard sync customers')).toBeNull();
+    expect(screen.getByText('Providers')).toBeTruthy();
+    expect(within(screen.getByTestId('provider-prov-1')).getByText('ACT-HYD')).toBeTruthy();
+    expect(within(screen.getByTestId('provider-prov-1')).getByText('Enabled')).toBeTruthy();
+    expect(within(screen.getByTestId('provider-prov-2')).getByText('Disabled')).toBeTruthy();
+    expect(screen.queryByTestId('hard-sync')).toBeNull();
   });
 
-  it('is hidden when jobs.run is below ALL scope', () => {
+  it('hides every Hard sync button without jobs.run', () => {
+    render(<AutomationRunsScreen />);
+
+    expect(screen.getByTestId('provider-prov-1')).toBeTruthy();
+    expect(screen.queryByTestId('hard-sync-prov-1')).toBeNull();
+  });
+
+  it('hides them when jobs.run is below ALL scope', () => {
     mockScopes['jobs.run'] = 'LOCATION';
     render(<AutomationRunsScreen />);
 
-    expect(screen.queryByText('Hard sync customers')).toBeNull();
+    expect(screen.queryByTestId('hard-sync-prov-1')).toBeNull();
   });
 
-  it.each([false, true])('opens the returned run when reused is %s', async (reused) => {
+  it.each([false, true])('starts the pressed provider and opens the returned run when reused is %s', async (reused) => {
     mockScopes['jobs.run'] = 'ALL';
-    mockStart.mockResolvedValue({ run: run({ id: 'run-7', status: 'queued' }), reused });
+    mockProviders = { data: { items: [provider(), provider({ providerId: 'prov-2', name: 'ACT Warangal' })] } };
+    mockStart.mockResolvedValue({ run: run({ id: 'run-7', status: 'queued', providerId: 'prov-2' }), reused });
     render(<AutomationRunsScreen />);
-    fireEvent.press(screen.getByText('Hard sync customers'));
+    fireEvent.press(screen.getByTestId('hard-sync-prov-2'));
 
     await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/admin/automations/run-7'));
     expect(mockStart).toHaveBeenCalledTimes(1);
-    expect(screen.queryByText('Could not start the sync. Try again.')).toBeNull();
+    expect(mockStart).toHaveBeenCalledWith({ providerId: 'prov-2' });
   });
 
   it('cannot be tapped again while starting', () => {
@@ -154,33 +187,73 @@ describe('hard sync action', () => {
     mockStartPending = true;
     render(<AutomationRunsScreen />);
 
-    expect(screen.getByText('Starting…')).toBeTruthy();
-    fireEvent.press(screen.getByTestId('hard-sync'));
+    fireEvent.press(sync());
     expect(mockStart).not.toHaveBeenCalled();
   });
 
-  it('opens the active run instead of starting another', () => {
+  it('is disabled with a hint when the provider account is disabled', () => {
     mockScopes['jobs.run'] = 'ALL';
-    mockList = { data: page([run({ id: 'run-5', status: 'running', finishedAt: null }), run()]) };
+    mockProviders = { data: { items: [provider({ enabled: false })] } };
     render(<AutomationRunsScreen />);
-    fireEvent.press(screen.getByText('Open the current run'));
+    fireEvent.press(sync());
+
+    expect(screen.getByText('This provider\'s portal account is disabled.')).toBeTruthy();
+    expect(mockStart).not.toHaveBeenCalled();
+  });
+
+  it('opens that provider\'s active run instead of starting another', () => {
+    mockScopes['jobs.run'] = 'ALL';
+    mockProviders = { data: { items: [provider(), provider({ providerId: 'prov-2', name: 'ACT Warangal' })] } };
+    mockList = { data: page([run({ id: 'run-5', status: 'running', finishedAt: null, providerId: 'prov-1' })]) };
+    render(<AutomationRunsScreen />);
+
+    expect(within(screen.getByTestId('provider-prov-2')).getByText('Hard sync')).toBeTruthy();
+    fireEvent.press(within(screen.getByTestId('provider-prov-1')).getByText('Open the current run'));
 
     expect(mockStart).not.toHaveBeenCalled();
     expect(mockPush).toHaveBeenCalledWith('/admin/automations/run-5');
   });
 
+  it('ignores another provider\'s active run and finished runs', () => {
+    mockScopes['jobs.run'] = 'ALL';
+    mockList = { data: page([run({ id: 'run-5', status: 'running', providerId: 'prov-9' }), run({ id: 'run-6', status: 'failed' })]) };
+    render(<AutomationRunsScreen />);
+
+    expect(screen.queryByText('Open the current run')).toBeNull();
+  });
+
   it.each([
     [503, 'The sync worker is not available right now. Try again in a minute.'],
     [403, 'You are not allowed to start a sync.'],
+    [404, 'This provider was not found. Pull to refresh and try again.'],
+    [409, 'This provider has no enabled ACT portal account. Add or enable it first.'],
+    [422, 'This provider has no enabled ACT portal account. Add or enable it first.'],
     [500, 'Could not start the sync. Try again.'],
   ])('says so in words when the start fails with %s', async (status, message) => {
     mockScopes['jobs.run'] = 'ALL';
     mockStart.mockRejectedValue(Object.assign(new Error('x'), { response: { status } }));
     render(<AutomationRunsScreen />);
-    fireEvent.press(screen.getByText('Hard sync customers'));
+    fireEvent.press(sync());
 
     expect(await screen.findByText(message)).toBeTruthy();
     expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it('explains when there are no providers', () => {
+    mockProviders = { data: { items: [] } };
+    render(<AutomationRunsScreen />);
+
+    expect(screen.getByText('No providers to sync')).toBeTruthy();
+    expect(screen.getByText(/A provider appears here once it has an ACT portal account/)).toBeTruthy();
+  });
+
+  it('offers a retry when providers fail to load', () => {
+    mockProviders = { data: undefined, error: new Error('boom') };
+    render(<AutomationRunsScreen />);
+    fireEvent.press(screen.getByText('Try again'));
+
+    expect(screen.getByText('Could not load providers')).toBeTruthy();
+    expect(mockProvidersRefetch).toHaveBeenCalledTimes(1);
   });
 
   it('is localized in Telugu', async () => {
@@ -188,7 +261,17 @@ describe('hard sync action', () => {
     mockScopes['jobs.run'] = 'ALL';
     render(<AutomationRunsScreen />);
 
-    expect(screen.getByText('కస్టమర్లను హార్డ్ సింక్ చేయండి')).toBeTruthy();
-    expect(screen.getByText('ACT పోర్టల్ నుండి తాజా కస్టమర్ జాబితాను ఇప్పుడే తీసుకుంటుంది.')).toBeTruthy();
+    expect(screen.getByText('ప్రొవైడర్లు')).toBeTruthy();
+    expect(screen.getByText('ఎనేబుల్')).toBeTruthy();
+    expect(screen.getByText('హార్డ్ సింక్')).toBeTruthy();
+    expect(screen.getByText('ఈ ప్రొవైడర్ తాజా కస్టమర్ జాబితాను ACT పోర్టల్ నుండి ఇప్పుడే తీసుకుంటుంది.')).toBeTruthy();
+  });
+
+  it('shows the empty-state explanation in Telugu', async () => {
+    await act(async () => i18n.changeLanguage('te'));
+    mockProviders = { data: { items: [] } };
+    render(<AutomationRunsScreen />);
+
+    expect(screen.getByText('సింక్ చేయడానికి ప్రొవైడర్లు లేరు')).toBeTruthy();
   });
 });

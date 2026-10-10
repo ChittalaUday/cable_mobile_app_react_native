@@ -1,4 +1,7 @@
+import type { WithProvider, WithProviderQuery } from './provider-contract';
 import type { paths } from './schema.generated';
+
+export type { AutomationProvider, AutomationProviderList, StartCustomerSyncBody } from './provider-contract';
 
 type Method = 'get' | 'post' | 'put' | 'patch' | 'delete';
 type Operation<Path extends keyof paths, Verb extends Method> = NonNullable<paths[Path][Verb]>;
@@ -20,10 +23,13 @@ export type ApiQuery<Path extends keyof paths>
     ? Omit<NonNullable<Query>, 'page' | 'limit'> & Partial<Pick<NonNullable<Query>, Extract<keyof NonNullable<Query>, 'page' | 'limit'>>>
     : never;
 
-export type JobRunPage = ApiResponse<'/api/v1/job-runs'>;
-export type JobRunSummary = JobRunPage['items'][number];
+type GeneratedJobRunPage = ApiResponse<'/api/v1/job-runs'>;
+export type JobRunQuery = WithProviderQuery<ApiQuery<'/api/v1/job-runs'>>;
+export type JobRunSummary = WithProvider<GeneratedJobRunPage['items'][number]>;
+export type JobRunPage = Omit<GeneratedJobRunPage, 'items'> & { items: JobRunSummary[] };
 export type JobRunStatus = JobRunSummary['status'];
-export type JobRunDetail = ApiResponse<'/api/v1/job-runs/{id}'>;
+export type JobRunDetail = WithProvider<ApiResponse<'/api/v1/job-runs/{id}'>>;
 export type JobAttempt = JobRunDetail['attempts'][number];
 export type JobRunEvent = JobRunDetail['events'][number];
-export type StartCustomerSyncResponse = ApiResponse<'/api/v1/automations/customer-sync/runs', 'post', 202>;
+type GeneratedStart = ApiResponse<'/api/v1/automations/customer-sync/runs', 'post', 202>;
+export type StartCustomerSyncResponse = Omit<GeneratedStart, 'run'> & { run: WithProvider<GeneratedStart['run']> };

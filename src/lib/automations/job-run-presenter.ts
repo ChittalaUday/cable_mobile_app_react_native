@@ -72,11 +72,26 @@ export function presentRunResult(result: JobRunSummary['result']): RunResultCoun
   return Object.keys(counts).length === 0 ? null : counts;
 }
 
+/** The run's provider name, or null when it has none (older runs, or the provider was removed). */
+export function presentProviderName(name: string | null | undefined): string | null {
+  const trimmed = name?.trim();
+  return trimmed || null;
+}
+
+/** The run to open instead of starting another for this provider: queued or running. */
+export function activeRunForProvider(runs: readonly JobRunSummary[], providerId: string): JobRunSummary | undefined {
+  return runs.find(run => run.providerId === providerId && isActiveRun(run.status));
+}
+
 /** The localized line for a failed Hard sync start; the backend's own wording is not shown. */
 export function startFailureKey(error: unknown): TxKeyPath {
   const status = (error as { response?: { status?: number } } | null)?.response?.status;
   if (status === 401 || status === 403)
     return 'automations.start_denied';
+  if (status === 404)
+    return 'automations.start_provider_not_found';
+  if (status === 409 || status === 422)
+    return 'automations.start_no_account';
   if (status === 503)
     return 'automations.start_unavailable';
   return 'automations.start_failed';
