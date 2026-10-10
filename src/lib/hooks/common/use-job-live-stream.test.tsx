@@ -237,16 +237,17 @@ describe('reconnecting', () => {
     expect(last().options.headers).toEqual({ 'Authorization': 'Bearer token-2', 'X-Tenant-Id': 'tenant-b' });
   });
 
-  it('refetches the run detail once the new socket is ready, so missed events are backfilled', () => {
+  it('refetches the run detail on every ready, so events before it or missed while offline are backfilled', () => {
     const invalidate = jest.spyOn(queryClient, 'invalidateQueries');
     mount();
     act(() => last().ready());
-    expect(invalidate).not.toHaveBeenCalled();
+    expect(invalidate).toHaveBeenCalledTimes(1);
 
     act(() => last().drop());
     tick(1000);
     act(() => last().ready());
 
+    expect(invalidate).toHaveBeenCalledTimes(2);
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['detail', 'tenant-a', RUN] });
   });
 

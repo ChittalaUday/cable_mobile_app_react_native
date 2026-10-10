@@ -128,9 +128,9 @@ export function useJobLiveStream({ runId, enabled, terminal, persistedEvents }: 
           return;
         switch (message.type) {
           case 'ready':
-            // A reconnect may have missed events; REST is the source of truth for them.
-            if (attempts > 0)
-              refetchDetail();
+            // Ready follows the server's subscription: anything before it (and any gap while
+            // disconnected) is only in REST, the source of truth for events.
+            refetchDetail();
             attempts = 0;
             setPhase('live');
             break;
