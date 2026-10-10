@@ -1,6 +1,7 @@
 import type { IconSvgElement } from '@hugeicons/react-native';
 import type { Href } from 'expo-router';
 import type { TintKey } from '@/components/common/shell';
+import type { TxKeyPath } from '@/lib/i18n';
 import {
   ArrowRight01Icon,
   DiscountTag01Icon,
@@ -8,6 +9,7 @@ import {
   Location01Icon,
   Logout01Icon,
   Package01Icon,
+  RoboticIcon,
   Tv01Icon,
   UserGroupIcon,
   UserIcon,
@@ -15,6 +17,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 import { ScreenHeader } from '@/components/common/screen-header';
 import { Card, IconTile, TINT } from '@/components/common/shell';
 import {
@@ -26,6 +29,8 @@ import {
   ThemedIcon,
   View,
 } from '@/components/ui';
+import { PERMISSIONS } from '@/constants/permissions';
+import { usePermissions } from '@/lib/hooks/common/use-permissions';
 import { useAuthStore } from '@/lib/hooks/stores/use-auth-store';
 import { initials } from '@/lib/utils/admin-format';
 import { ConfirmDialog } from '../common/confirm-dialog';
@@ -37,6 +42,10 @@ type NavItem = {
   icon: IconSvgElement;
   tint: TintKey;
   route: Href;
+  /** Hidden from anyone who lacks this permission. */
+  permission?: string;
+  /** Localized title and subtitle, used instead of the plain strings above. */
+  tx?: { title: TxKeyPath; subtitle: TxKeyPath };
 };
 
 const NAV_ITEMS: NavItem[] = [
@@ -97,6 +106,16 @@ const NAV_ITEMS: NavItem[] = [
     route: '/admin/tickets',
   },
   {
+    key: 'automations',
+    title: 'Automations',
+    subtitle: 'ACT customer sync, run history and live view',
+    tx: { title: 'automations.menu_title', subtitle: 'automations.menu_subtitle' },
+    icon: RoboticIcon,
+    tint: 'purple',
+    route: '/admin/automations',
+    permission: PERMISSIONS.JOBS_VIEW,
+  },
+  {
     key: 'profile',
     title: 'Profile',
     subtitle: 'Account, theme, language and sign-in',
@@ -118,6 +137,8 @@ export function MoreView({
   subtitle?: string;
 }) {
   const router = useRouter();
+  const { t } = useTranslation();
+  const { can } = usePermissions();
   const user = useAuthStore.use.user();
   const role = useAuthStore.use.role();
   const signOut = useAuthStore.use.signOut();
@@ -184,7 +205,7 @@ export function MoreView({
         </Card>
 
         <Card className="gap-1 border border-border p-2">
-          {items.map((item, index) => (
+          {items.filter(item => item.permission === undefined || can(item.permission)).map((item, index) => (
             <Pressable
               key={item.key}
               accessibilityRole="button"
@@ -196,8 +217,8 @@ export function MoreView({
               <View className="flex-row items-center gap-3">
                 <IconTile icon={item.icon} tint={item.tint} size={36} iconSize={18} />
                 <View>
-                  <Text className="text-sm font-bold text-foreground">{item.title}</Text>
-                  <Text className="text-xs text-muted-foreground">{item.subtitle}</Text>
+                  <Text className="text-sm font-bold text-foreground">{item.tx ? t(item.tx.title) : item.title}</Text>
+                  <Text className="text-xs text-muted-foreground">{item.tx ? t(item.tx.subtitle) : item.subtitle}</Text>
                 </View>
               </View>
               <ThemedIcon icon={ArrowRight01Icon} size={18} strokeWidth={2} colorClassName="text-muted-foreground" />
