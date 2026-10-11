@@ -59,6 +59,7 @@ function detail(overrides: Partial<JobRunDetail> = {}): JobRunDetail {
     id: RUN,
     jobName: 'automation.act-total-customer',
     status: 'running',
+    trigger: 'manual',
     progress: 40,
     progressMessage: null,
     result: null,
@@ -111,14 +112,21 @@ describe('run provider', () => {
   it('shows the provider name in the summary', () => {
     mount();
 
-    expect(screen.getByTestId('run-provider').props.children).toBe('ACT Hyderabad');
+    expect(screen.getByTestId('run-provider').props.children).toBe('ACT Hyderabad · Manual');
+  });
+
+  it('marks a scheduled run', () => {
+    mockDetail = { data: detail({ trigger: 'scheduled' }) };
+    mount();
+
+    expect(screen.getByTestId('run-provider').props.children).toBe('ACT Hyderabad · Scheduled');
   });
 
   it('falls back to a generic label when the run has no provider', () => {
     mockDetail = { data: detail({ providerId: null, providerName: null }) };
     mount();
 
-    expect(screen.getByTestId('run-provider').props.children).toBe('Provider');
+    expect(screen.getByTestId('run-provider').props.children).toBe('Provider · Manual');
   });
 });
 

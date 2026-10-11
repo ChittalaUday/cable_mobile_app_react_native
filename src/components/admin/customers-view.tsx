@@ -31,13 +31,13 @@ function CustomerRow({ customer, onPress }: { customer: ConsolidatedCustomer; on
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      className="flex-row items-center gap-3 py-3 active:opacity-70"
+      className="flex-row items-center gap-3 rounded-2xl border border-border bg-card p-3.5 active:opacity-70"
     >
       <Avatar name={customer.name} />
       <View className="flex-1 gap-0.5">
         <Text className="text-[15px] font-bold text-foreground" numberOfLines={1}>{customer.name}</Text>
         {customer.phone ? <Text className="text-[13px] text-muted-foreground">{customer.phone}</Text> : null}
-        {customer.address ? <Text className="text-[13px] text-muted-foreground">{customer.address}</Text> : null}
+        {customer.address ? <Text className="text-[13px] text-muted-foreground" numberOfLines={2}>{customer.address}</Text> : null}
       </View>
       <View className="items-end gap-1">
         <StatusPill status={customer.status} />
@@ -145,8 +145,8 @@ export function CustomersView({
         renderItem={({ item }) => (
           <CustomerRow customer={item} onPress={() => router.push(`${basePath}/customers/${item.id}`)} />
         )}
-        ItemSeparatorComponent={() => <View className="h-px bg-border/60" />}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
+        ItemSeparatorComponent={() => <View className="h-2.5" />}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 24 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         onEndReached={handleEndReached}

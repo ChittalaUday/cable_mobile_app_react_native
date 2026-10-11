@@ -33,6 +33,7 @@ function run(overrides: Partial<JobRunSummary> = {}): JobRunSummary {
     id: 'run-1',
     jobName: 'automation.act-total-customer',
     status: 'succeeded',
+    trigger: 'manual',
     progress: 100,
     progressMessage: null,
     result: { downloadedRows: 1200, created: 3, updated: 10, unchanged: 1187, warnings: [] },
@@ -75,8 +76,15 @@ describe('automation run history', () => {
     mockList = { data: page([run({ id: 'run-1' }), run({ id: 'run-2', providerId: null, providerName: null })]) };
     render(<AutomationRunsScreen />);
 
-    expect(within(screen.getByTestId('run-row-run-1')).getByText('ACT Hyderabad')).toBeTruthy();
-    expect(within(screen.getByTestId('run-row-run-2')).getByText('Provider')).toBeTruthy();
+    expect(within(screen.getByTestId('run-row-run-1')).getByText('ACT Hyderabad · Manual')).toBeTruthy();
+    expect(within(screen.getByTestId('run-row-run-2')).getByText('Provider · Manual')).toBeTruthy();
+  });
+
+  it('marks a run no person started as scheduled', () => {
+    mockList = { data: page([run({ id: 'run-1', trigger: 'scheduled' })]) };
+    render(<AutomationRunsScreen />);
+
+    expect(screen.getByTestId('run-trigger-run-1').props.children).toBe('ACT Hyderabad · Scheduled');
   });
 
   it('opens a run when its row is pressed', () => {

@@ -156,7 +156,11 @@
       "unknown": "తెలియదు"
     },
     "subtitle": "షెడ్యూల్ చేసిన మరియు మాన్యువల్ రన్‌లు",
-    "title": "ఆటోమేషన్లు"
+    "title": "ఆటోమేషన్లు",
+    "trigger": {
+      "manual": "మాన్యువల్",
+      "scheduled": "షెడ్యూల్ చేసినది"
+    }
   },
   "complete_profile": {
     "address_label": "చిరునామా",

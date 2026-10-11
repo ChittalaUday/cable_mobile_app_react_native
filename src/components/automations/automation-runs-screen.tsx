@@ -231,7 +231,7 @@ function RunRow({ run, onPress }: { run: JobRunSummary; onPress: () => void }) {
           </View>
           {duration !== null && <Text className="text-xs text-muted-foreground">{t('automations.run.duration', { duration })}</Text>}
         </View>
-        <Text className="text-xs font-semibold text-muted-foreground">{presentProviderName(run.providerName) ?? t('automations.provider.generic')}</Text>
+        <Text className="text-xs font-semibold text-muted-foreground" testID={`run-trigger-${run.id}`}>{`${presentProviderName(run.providerName) ?? t('automations.provider.generic')} · ${t(`automations.trigger.${run.trigger}`)}`}</Text>
         <Text className="text-sm font-semibold text-foreground">
           {started !== null ? t('automations.run.started', { time: started }) : queued !== null ? t('automations.run.queued', { time: queued }) : t('automations.run.not_started')}
         </Text>

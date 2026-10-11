@@ -141,7 +141,7 @@ function RunSummary({ run }: { run: JobRunDetail }) {
         </View>
         <Text className="text-xs font-semibold text-muted-foreground">{t('automations.detail.progress', { count: run.progress })}</Text>
       </View>
-      <Text className="text-sm font-semibold text-foreground" testID="run-provider">{presentProviderName(run.providerName) ?? t('automations.provider.generic')}</Text>
+      <Text className="text-sm font-semibold text-foreground" testID="run-provider">{`${presentProviderName(run.providerName) ?? t('automations.provider.generic')} · ${t(`automations.trigger.${run.trigger}`)}`}</Text>
       <Text className="text-xs text-muted-foreground">{t('automations.detail.queued_at', { time: formatRunTime(run.queuedAt) ?? '-' })}</Text>
       {finished !== null && <Text className="text-xs text-muted-foreground">{t('automations.run.finished', { time: finished })}</Text>}
       {duration !== null && <Text className="text-xs text-muted-foreground">{t('automations.run.duration', { duration })}</Text>}

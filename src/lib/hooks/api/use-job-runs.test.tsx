@@ -24,6 +24,7 @@ function run(overrides: Partial<JobRunSummary> = {}): JobRunSummary {
     id: 'run-1',
     jobName: 'automation.act-total-customer',
     status: 'running',
+    trigger: 'manual',
     progress: 10,
     progressMessage: null,
     result: null,

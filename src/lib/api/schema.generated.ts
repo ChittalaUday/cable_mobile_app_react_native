@@ -4644,6 +4644,8 @@ export interface paths {
                                 providerName: string | null;
                                 /** @enum {string} */
                                 status: "queued" | "running" | "succeeded" | "failed" | "cancelled" | "enqueue_failed";
+                                /** @enum {string} */
+                                trigger: "scheduled" | "manual";
                                 progress: number;
                                 progressMessage: string | null;
                                 result: {
@@ -4751,6 +4753,8 @@ export interface paths {
                                 providerName: string | null;
                                 /** @enum {string} */
                                 status: "queued" | "running" | "succeeded" | "failed" | "cancelled" | "enqueue_failed";
+                                /** @enum {string} */
+                                trigger: "scheduled" | "manual";
                                 progress: number;
                                 progressMessage: string | null;
                                 result: {
@@ -4856,6 +4860,8 @@ export interface paths {
                             providerName: string | null;
                             /** @enum {string} */
                             status: "queued" | "running" | "succeeded" | "failed" | "cancelled" | "enqueue_failed";
+                            /** @enum {string} */
+                            trigger: "scheduled" | "manual";
                             progress: number;
                             progressMessage: string | null;
                             result: {

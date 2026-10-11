@@ -156,7 +156,11 @@
       "unknown": "Unknown"
     },
     "subtitle": "Scheduled and manual runs",
-    "title": "Automations"
+    "title": "Automations",
+    "trigger": {
+      "manual": "Manual",
+      "scheduled": "Scheduled"
+    }
   },
   "complete_profile": {
     "address_label": "Address",

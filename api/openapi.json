@@ -10391,6 +10391,7 @@
                         "providerId",
                         "providerName",
                         "status",
+                        "trigger",
                         "progress",
                         "progressMessage",
                         "result",
@@ -10436,6 +10437,13 @@
                             "failed",
                             "cancelled",
                             "enqueue_failed"
+                          ]
+                        },
+                        "trigger": {
+                          "type": "string",
+                          "enum": [
+                            "scheduled",
+                            "manual"
                           ]
                         },
                         "progress": {
@@ -10673,6 +10681,7 @@
                           "providerId",
                           "providerName",
                           "status",
+                          "trigger",
                           "progress",
                           "progressMessage",
                           "result",
@@ -10718,6 +10727,13 @@
                               "failed",
                               "cancelled",
                               "enqueue_failed"
+                            ]
+                          },
+                          "trigger": {
+                            "type": "string",
+                            "enum": [
+                              "scheduled",
+                              "manual"
                             ]
                           },
                           "progress": {
@@ -10892,6 +10908,7 @@
                     "providerId",
                     "providerName",
                     "status",
+                    "trigger",
                     "progress",
                     "progressMessage",
                     "result",
@@ -10939,6 +10956,13 @@
                         "failed",
                         "cancelled",
                         "enqueue_failed"
+                      ]
+                    },
+                    "trigger": {
+                      "type": "string",
+                      "enum": [
+                        "scheduled",
+                        "manual"
                       ]
                     },
                     "progress": {
