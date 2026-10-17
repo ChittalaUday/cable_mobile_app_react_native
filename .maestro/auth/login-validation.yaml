@@ -19,7 +19,7 @@ tags:
 - assertVisible: Email Address
 - assertVisible: Password
 - assertVisible: Remember me
-- assertVisible: Forgot Password?
+- assertNotVisible: Forgot Password?
 - assertVisible: Sign In
 - assertVisible:
     id: phone-otp-option
@@ -91,10 +91,6 @@ tags:
 - assertVisible: Welcome Back
 - assertNotVisible: Operator Panel
 
-# "Forgot Password?" is not built yet; it says so instead of doing nothing.
-- tapOn: Forgot Password?
-- assertVisible: Password reset is coming soon.
-
-# Same for the support link in the footer.
+# The support link in the footer is not built yet; it says so instead of doing nothing.
 - tapOn: Contact support
 - assertVisible: Contact support is coming soon.

@@ -302,7 +302,6 @@
       "network_request_failed": "Check your internet connection and try again.",
       "weak_password": "Use a password with at least 6 characters."
     },
-    "forgot_password": "Forgot Password?",
     "guest_failed": "Guest sign-in failed",
     "hide_password": "Hide password",
     "need_help": "Need help?",
@@ -314,7 +313,6 @@
     "otp_sent": "OTP sent. It expires in {{seconds}} seconds.",
     "otp_sent_via": "Code sent on {{channel}}. It expires in {{seconds}} seconds.",
     "password_placeholder": "Password",
-    "password_reset_coming": "Password reset is coming soon.",
     "passwords_no_match": "Those passwords don't match.",
     "phone_placeholder": "Mobile Number",
     "remember_me": "Remember me",

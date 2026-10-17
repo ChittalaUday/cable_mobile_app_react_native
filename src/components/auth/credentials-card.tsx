@@ -5,7 +5,6 @@ import { ArrowRight02Icon, LockPasswordIcon, User03Icon, ViewIcon, ViewOffSlashI
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { MotiView } from 'moti';
 import * as React from 'react';
-import { showMessage } from 'react-native-flash-message';
 
 import { Button, Checkbox, Pressable, Text, ThemedIcon, View } from '@/components/ui';
 import { offersMode, openingMode } from '@/lib/auth/login-methods';
@@ -201,18 +200,11 @@ export function CredentialsCard(props: CredentialsCardProps) {
       <View className="mt-6 gap-3">{fields()}</View>
 
       {mode === 'password' && !waiting && (
-        <View className="mt-4 flex-row items-center justify-between">
+        <View className="mt-4 flex-row items-center">
           <Checkbox.Root checked={remember} onChange={setRemember} accessibilityLabel={translate('login.remember_me')} testID="remember-me">
             <Checkbox.Icon checked={remember} />
             <Text className="pl-2 text-xs font-medium text-foreground">{translate('login.remember_me')}</Text>
           </Checkbox.Root>
-          <Pressable
-            accessibilityRole="button"
-            hitSlop={8}
-            onPress={() => showMessage({ message: translate('login.password_reset_coming'), type: 'info' })}
-          >
-            <Text className="text-xs font-bold text-primary-600">{translate('login.forgot_password')}</Text>
-          </Pressable>
         </View>
       )}
 
