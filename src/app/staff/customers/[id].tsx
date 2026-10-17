@@ -4,7 +4,7 @@ import * as React from 'react';
 import { CustomerDetailScreen } from '@/components/customer/customer-detail-screen';
 
 export default function StaffCustomerDetailsRoute() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, tab } = useLocalSearchParams<{ id: string; tab?: string }>();
 
-  return <CustomerDetailScreen customerId={id} role="staff" />;
+  return <CustomerDetailScreen customerId={id} role="staff" initialTab={tab === 'timeline' ? 'timeline' : undefined} />;
 }

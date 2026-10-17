@@ -1,4 +1,5 @@
 import type { JobRunEvent } from '@/lib/api/contracts';
+import type { LiveFrame } from '@/lib/automations/live-protocol';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react-native';
 import * as React from 'react';
@@ -11,6 +12,8 @@ const JPEG_B = '/9j/4AAR';
 
 const mockCreds = { token: 'token-1' as string | null, tenant: 'tenant-a' as string | null };
 const mockSetItem = jest.fn();
+const mockSaved = { frames: [] as LiveFrame[] };
+const mockSave = jest.fn();
 
 jest.mock('env', () => ({ __esModule: true, default: { EXPO_PUBLIC_API_URL: 'https://api.test/api/v1' } }));
 jest.mock('@/lib/api/client', () => ({ devHostUrl: (url: string) => url }));
@@ -19,6 +22,10 @@ jest.mock('@/lib/auth/utils', () => ({
   getTenantId: () => mockCreds.tenant,
 }));
 jest.mock('@/lib/storage', () => ({ setItem: (...args: unknown[]) => mockSetItem(...args) as unknown, getItem: () => null }));
+jest.mock('@/lib/automations/live-frame-store', () => ({
+  listLiveFrames: () => mockSaved.frames,
+  saveLiveFrame: (...args: unknown[]) => mockSave(...args) as unknown,
+}));
 jest.mock('@/lib/hooks/api/use-job-runs', () => ({ jobRunKeys: { detail: (tenant: string | null, id: string) => ['detail', tenant, id] } }));
 
 type Handler<T> = ((event: T) => void) | null;
@@ -106,6 +113,8 @@ beforeEach(() => {
   mockCreds.token = 'token-1';
   mockCreds.tenant = 'tenant-a';
   mockSetItem.mockReset();
+  mockSaved.frames = [];
+  mockSave.mockReset();
   queryClient = new QueryClient({ defaultOptions: { queries: { gcTime: Infinity } } });
   removeAppState = jest.fn();
   appStateHandler = null;
@@ -219,7 +228,7 @@ describe('activity', () => {
 });
 
 describe('reconnecting', () => {
-  it('drops the picture, waits a bounded jittered delay and reconnects with the newest credentials', () => {
+  it('keeps the picture, waits a bounded jittered delay and reconnects with the newest credentials', () => {
     const { result } = mount();
     act(() => last().ready());
     act(() => last().frame(1));
@@ -229,7 +238,7 @@ describe('reconnecting', () => {
 
     act(() => first.drop());
 
-    expect(result.current).toMatchObject({ phase: 'reconnecting', frame: null });
+    expect(result.current).toMatchObject({ phase: 'reconnecting', frame: { sequence: 1 } });
     tick(999);
     expect(FakeSocket.instances).toHaveLength(1);
     tick(1);
@@ -316,7 +325,7 @@ describe('stopping for good', () => {
     expect(vanishedResult.current.phase).toBe('error');
   });
 
-  it('ends on a terminal status message: closes, drops the picture and refetches', () => {
+  it('ends on a terminal status message: closes, keeps the last picture and refetches', () => {
     const invalidate = jest.spyOn(queryClient, 'invalidateQueries');
     const { result } = mount();
     const socket = last();
@@ -326,7 +335,7 @@ describe('stopping for good', () => {
     act(() => socket.drop(1000));
     tick(60_000);
 
-    expect(result.current).toMatchObject({ phase: 'ended', frame: null });
+    expect(result.current).toMatchObject({ phase: 'ended', frame: { sequence: 1 } });
     expect(socket.closeCalls).toBeGreaterThan(0);
     expect(FakeSocket.instances).toHaveLength(1);
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['detail', 'tenant-a', RUN] });
@@ -344,7 +353,7 @@ describe('stopping for good', () => {
     expect(jest.getTimerCount()).toBe(0);
   });
 
-  it('closes and releases the picture in the background, and reconnects on return', () => {
+  it('closes in the background and keeps the last picture, and reconnects on return', () => {
     const { result } = mount();
     const socket = last();
     act(() => socket.ready());
@@ -353,7 +362,7 @@ describe('stopping for good', () => {
     act(() => appStateHandler?.('background'));
 
     expect(socket.closeCalls).toBeGreaterThan(0);
-    expect(result.current).toMatchObject({ phase: 'idle', frame: null });
+    expect(result.current).toMatchObject({ phase: 'idle', frame: { sequence: 1 } });
     expect(jest.getTimerCount()).toBe(0);
 
     act(() => appStateHandler?.('active'));
@@ -383,8 +392,57 @@ describe('stopping for good', () => {
   });
 });
 
+const SAVED = (sequence: number): LiveFrame => ({ uri: `file:///cache/automation-frames/run/${sequence}.jpg`, sequence, width: 800, height: 600, capturedAt: '2026-10-10T10:00:00.000Z' });
+
+describe('the pictures kept on the device', () => {
+  it('hands every frame to the frame store under its run', () => {
+    mount();
+    act(() => last().ready());
+    act(() => last().frame(1, JPEG_A));
+    act(() => last().frame(2, JPEG_B));
+
+    expect(mockSave).toHaveBeenCalledTimes(2);
+    expect(mockSave).toHaveBeenNthCalledWith(1, RUN, expect.objectContaining({ sequence: 1, uri: `data:image/jpeg;base64,${JPEG_A}` }));
+    expect(mockSave).toHaveBeenNthCalledWith(2, RUN, expect.objectContaining({ sequence: 2, uri: `data:image/jpeg;base64,${JPEG_B}` }));
+  });
+
+  it('shows the newest saved picture straight away, with all of them listed, for a run that is already over', () => {
+    mockSaved.frames = [SAVED(1), SAVED(2), SAVED(7)];
+
+    const { result } = mount({ terminal: true });
+
+    expect(result.current).toMatchObject({ phase: 'ended', frame: { sequence: 7 } });
+    expect(result.current.history.map(frame => frame.sequence)).toEqual([1, 2, 7]);
+    expect(FakeSocket.instances).toHaveLength(0);
+  });
+
+  it('lists no history while live, and the saved pictures once it is not', () => {
+    mockSaved.frames = [SAVED(1), SAVED(2)];
+    const { result } = mount();
+    act(() => last().ready());
+    act(() => last().frame(3, JPEG_B));
+
+    expect(result.current.phase).toBe('live');
+    expect(result.current.history).toEqual([]);
+
+    act(() => last().drop());
+
+    expect(result.current.phase).toBe('reconnecting');
+    expect(result.current.history.map(frame => frame.sequence)).toEqual([1, 2]);
+  });
+
+  it('shows a newer live frame over the saved ones', () => {
+    mockSaved.frames = [SAVED(7)];
+    const { result } = mount();
+    act(() => last().ready());
+    act(() => last().frame(1, JPEG_B));
+
+    expect(result.current.frame?.uri).toBe(`data:image/jpeg;base64,${JPEG_B}`);
+  });
+});
+
 describe('where the picture goes', () => {
-  it('never reaches storage, the query cache or the console', () => {
+  it('never reaches the generic storage helper, the query cache or the console', () => {
     const logs = [jest.spyOn(console, 'log'), jest.spyOn(console, 'warn'), jest.spyOn(console, 'error'), jest.spyOn(console, 'info')];
     const setQueryData = jest.spyOn(queryClient, 'setQueryData');
     const { result } = mount();

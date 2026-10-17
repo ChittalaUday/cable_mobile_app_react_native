@@ -33,6 +33,19 @@ jest.mock('@/lib/hooks/common/use-collection-fix', () => ({
   fixPayload: (fix: { latitude: number; longitude: number; gpsAccuracyM: number }) => ({ latitude: fix.latitude, longitude: fix.longitude, gpsAccuracyM: fix.gpsAccuracyM }),
 }));
 
+jest.mock('@/components/customer/activate-at-act-button', () => {
+  const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
+  return {
+    ActivateAtActButton: ({ customerEquipmentId, action = 'activate', collectionId, autoStart }: { customerEquipmentId: string; action?: string; collectionId?: string; autoStart?: boolean }) => (
+      <>
+        <Text>{`${action}-${customerEquipmentId}`}</Text>
+        {autoStart === true ? <Text>{`auto-${customerEquipmentId}-${collectionId ?? 'no-payment'}`}</Text> : null}
+        {collectionId === undefined ? null : <Text>{`for-${customerEquipmentId}-${collectionId}`}</Text>}
+      </>
+    ),
+  };
+});
+
 jest.mock('@/lib/hooks/api/use-customers', () => ({
   useCustomer: jest.fn(),
 }));
@@ -129,6 +142,7 @@ function customer(lines: CustomerDetail['subscriptions']): CustomerDetail {
     notes: null,
     subscriptions: lines,
     equipment: [],
+    providerActivations: [],
     recentTransactions: [],
     summary: {
       subscriptions: lines.length,
@@ -594,6 +608,34 @@ describe('the recharge flow', () => {
     expect(useRechargeStore.getState().receiptId).toBe('rcpt-9');
   });
 
+  it('offers an ACT renewal for a lapsed box once the payment is recorded, even after it looks active', async () => {
+    const box = { id: 'link-1', subscriptionId: 'sub-1', name: 'HD Set-Top Box', serialNumber: 'STB1', status: 'active' as const, assignedAt: '2026-01-01T00:00:00.000Z', returnedAt: null, canInstantRefresh: false, canActivateAtAct: false, canRenewAtAct: true };
+    const inactive = { ...customer([line('sub-1', 'Gold HD', '500.00')]), status: 'inactive' as const, equipment: [box] };
+    useCustomer.mockReturnValue({ data: inactive, dataUpdatedAt: Date.now(), isPending: false, error: null, refetch: jest.fn() });
+    const view = render(<RechargeFlowScreen customerId="cust-1" basePath="/admin" />);
+    expect(screen.queryByText('renew-link-1')).toBeNull();
+
+    mockReceipt = { ...mockReceipt!, id: 'rcpt-9' };
+    act(() => {
+      useRechargeStore.getState().recorded('rcpt-9');
+      useRechargeStore.getState().goTo('done');
+    });
+    expect(await screen.findByText('renew-link-1')).toBeTruthy();
+
+    // the refetch after the payment already shows the customer active: the offer stays
+    useCustomer.mockReturnValue({ data: { ...inactive, status: 'active', equipment: [{ ...box, canRenewAtAct: false }] }, dataUpdatedAt: Date.now(), isPending: false, error: null, refetch: jest.fn() });
+    view.rerender(<RechargeFlowScreen customerId="cust-1" basePath="/admin" />);
+    expect(screen.getByText('renew-link-1')).toBeTruthy();
+  });
+
+  it('does not offer an ACT renewal when nothing can be renewed', async () => {
+    recordedAt('printer');
+    act(() => useRechargeStore.getState().goTo('done'));
+
+    expect(await screen.findByTestId('recharge-finish')).toBeTruthy();
+    expect(screen.queryByText(/^(activate|renew)-/)).toBeNull();
+  });
+
   it('holds Next until a printer is connected, and lets printing be skipped', async () => {
     recordedAt('printer');
 
@@ -655,4 +697,127 @@ it('honors a newly selected connection when reopening the same customer', () => 
   fireEvent.changeText(screen.getByTestId('recharge-amount'), '100');
   fireEvent.press(screen.getByTestId('recharge-submit'));
   expect(duesPayload().subscriptionId).toBe('sub-2');
+});
+
+describe('renewing or activating on ACT for the next cycle', () => {
+  const box = (id: string, canRenewAtAct: boolean) => ({ id, subscriptionId: 'sub-1', name: 'HD Set-Top Box', serialNumber: `STB-${id}`, status: 'active' as const, assignedAt: '2026-01-01T00:00:00.000Z', returnedAt: null, canInstantRefresh: false, canActivateAtAct: !canRenewAtAct, canRenewAtAct });
+  const withBoxes = (boxes: ReturnType<typeof box>[], status: 'active' | 'inactive' = 'active') => {
+    useCustomer.mockReturnValue({ data: { ...customer([line('sub-1', 'Gold HD', '500.00')]), status, equipment: boxes }, dataUpdatedAt: Date.now(), isPending: false, error: null, refetch: jest.fn() });
+    return render(<RechargeFlowScreen customerId="cust-1" basePath="/admin" />);
+  };
+  const receipt = (overrides: Record<string, unknown> = {}) => {
+    mockReceipt = { id: 'rcpt-9', customerName: 'Kavitha Devi', customerCode: 'SSCN-1', serviceAccountNumber: 'ACT-sub-1', collectorName: 'Ravi', method: 'cash', duesPaid: '500.00', accessoryAmount: '0.00', planCharge: '0.00', accessories: [], totalCollected: '500.00', balanceAfter: '0.00', notes: null, collectedAt: '2026-10-02T06:00:00.000Z', subscriptionId: 'sub-1', customerEquipmentId: null, outcome: 'full', ...overrides };
+  };
+  const recordedDone = (actOnAct: boolean) => act(() => {
+    useRechargeStore.getState().setField('actOnAct', actOnAct);
+    useRechargeStore.getState().recorded('rcpt-9');
+    useRechargeStore.getState().goTo('done');
+  });
+
+  it('offers the switch on the amount step once money is typed, and it starts off', () => {
+    withBoxes([box('link-1', true)], 'inactive');
+    fireEvent.press(screen.getByTestId('recharge-next'));
+    expect(screen.queryByTestId('recharge-act-on-act')).toBeNull();
+
+    fireEvent.changeText(screen.getByTestId('recharge-amount'), '350');
+
+    expect(screen.getByText('Renew on ACT for the next cycle')).toBeTruthy();
+    expect(screen.getByTestId('recharge-act-on-act').props.value).toBe(false);
+    fireEvent(screen.getByTestId('recharge-act-on-act'), 'valueChange', true);
+    expect(useRechargeStore.getState().actOnAct).toBe(true);
+  });
+
+  it('calls it activate for a running box', () => {
+    withBoxes([box('link-1', false)]);
+    fireEvent.press(screen.getByTestId('recharge-next'));
+    fireEvent.changeText(screen.getByTestId('recharge-amount'), '350');
+
+    expect(screen.getByText('Activate on ACT for the next cycle')).toBeTruthy();
+    expect(screen.getByText(/This plan ends soon\. After the payment is recorded, ACT is asked to extend the box for the next cycle/)).toBeTruthy();
+  });
+
+  it('says when the plan ends', () => {
+    useCustomer.mockReturnValue({ data: { ...customer([{ ...line('sub-1', 'Gold HD', '500.00'), endDate: '2026-10-18T00:00:00.000Z' }]), equipment: [box('link-1', false)] }, dataUpdatedAt: Date.now(), isPending: false, error: null, refetch: jest.fn() });
+    render(<RechargeFlowScreen customerId="cust-1" basePath="/admin" />);
+    fireEvent.press(screen.getByTestId('recharge-next'));
+    fireEvent.changeText(screen.getByTestId('recharge-amount'), '350');
+    expect(screen.getByText(/This plan ends \w{3}, 1[78] Oct 2026\./)).toBeTruthy();
+  });
+
+  it('goes by the box\'s flags, not the customer\'s status, in both directions', () => {
+    const view = withBoxes([box('link-1', true)], 'active');
+    fireEvent.press(screen.getByTestId('recharge-next'));
+    fireEvent.changeText(screen.getByTestId('recharge-amount'), '350');
+    expect(screen.getByText('Renew on ACT for the next cycle')).toBeTruthy();
+    view.unmount();
+    act(() => useRechargeStore.getState().reset());
+
+    withBoxes([box('link-1', false)], 'inactive');
+    fireEvent.press(screen.getByTestId('recharge-next'));
+    fireEvent.changeText(screen.getByTestId('recharge-amount'), '350');
+    expect(screen.getByText('Activate on ACT for the next cycle')).toBeTruthy();
+  });
+
+  it('describes a renewal as one for an inactive box', () => {
+    withBoxes([box('link-1', true)], 'inactive');
+    fireEvent.press(screen.getByTestId('recharge-next'));
+    fireEvent.changeText(screen.getByTestId('recharge-amount'), '350');
+    expect(screen.getByText(/This box is inactive\. After the payment is recorded, ACT is asked to renew the box/)).toBeTruthy();
+  });
+
+  it('shows no switch when there is no box ACT can update, or nothing is being paid', () => {
+    withBoxes([]);
+    fireEvent.press(screen.getByTestId('recharge-next'));
+    fireEvent.changeText(screen.getByTestId('recharge-amount'), '350');
+    expect(screen.queryByTestId('recharge-act-on-act')).toBeNull();
+  });
+
+  it('starts the first box by itself after the payment, naming the payment, and leaves the rest to a tap', async () => {
+    withBoxes([box('link-1', true), box('link-2', true)], 'inactive');
+    receipt();
+    recordedDone(true);
+
+    expect(await screen.findByText('auto-link-1-rcpt-9')).toBeTruthy();
+    expect(screen.queryByText('auto-link-2-rcpt-9')).toBeNull();
+    expect(screen.getByText('renew-link-2')).toBeTruthy();
+    expect(screen.getByText('for-link-2-rcpt-9')).toBeTruthy();
+  });
+
+  it('activates a running box for the next cycle only when it was asked for', async () => {
+    withBoxes([box('link-1', false)]);
+    receipt();
+    recordedDone(true);
+    expect(await screen.findByText('auto-link-1-rcpt-9')).toBeTruthy();
+    expect(screen.getByText('activate-link-1')).toBeTruthy();
+  });
+
+  it('offers nothing for a running box nobody asked about, and never starts a lapsed box\'s renewal by itself', async () => {
+    withBoxes([box('link-1', false)]);
+    receipt();
+    recordedDone(false);
+    expect(await screen.findByTestId('recharge-finish')).toBeTruthy();
+    expect(screen.queryByText(/^(activate|renew)-/)).toBeNull();
+  });
+
+  it('keeps the manual renewal for a lapsed box nobody asked about, without starting it', async () => {
+    withBoxes([box('link-1', true)], 'inactive');
+    receipt();
+    recordedDone(false);
+
+    expect(await screen.findByText('renew-link-1')).toBeTruthy();
+    expect(screen.queryByText(/^auto-/)).toBeNull();
+  });
+
+  it.each([
+    ['a visit that collected nothing', { outcome: 'due', duesPaid: '0.00', totalCollected: '0.00' }],
+    ['an equipment payment', { customerEquipmentId: 'ce-1' }],
+  ])('does not start ACT by itself after %s', async (_label, overrides) => {
+    withBoxes([box('link-1', true)], 'inactive');
+    receipt(overrides);
+    recordedDone(true);
+
+    expect(await screen.findByText('renew-link-1')).toBeTruthy();
+    expect(screen.queryByText(/^auto-/)).toBeNull();
+    expect(screen.queryByText(/^for-/)).toBeNull();
+  });
 });

@@ -1,3 +1,4 @@
+import type { DetailTab } from '@/components/customer/customer-details-view';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -14,9 +15,10 @@ import { useCustomer } from '@/lib/hooks/api/use-customers';
  * already refuses anything outside the caller's reach, and answers 404 rather
  * than 403 for a customer in somebody else's area.
  */
-export function CustomerDetailScreen({ customerId, role }: {
+export function CustomerDetailScreen({ customerId, role, initialTab }: {
   customerId: string | undefined;
   role: 'admin' | 'staff' | 'customer';
+  initialTab?: DetailTab;
 }) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -82,6 +84,7 @@ export function CustomerDetailScreen({ customerId, role }: {
       <CustomerDetailsView
         customer={customer}
         role={role}
+        initialTab={initialTab}
         onBack={() => router.back()}
         onRefresh={() => refetch()}
         isRefreshing={isRefetching}

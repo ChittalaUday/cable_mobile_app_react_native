@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import { USER_ROLES } from '@/constants';
 import { client, setSessionExpiredHandler } from '@/lib/api/client';
 import { getTenantId, getToken, removeTenantId, removeToken, setTenantId, setToken } from '@/lib/auth/utils';
+import { clearLiveFrames } from '@/lib/automations/live-frame-store';
 import { createSelectors } from '@/lib/utils';
 
 export type { UserRole } from '@/lib/utils/user-role';
@@ -204,6 +205,7 @@ function restoreSession(set: (partial: Partial<AuthState>) => void, signedIn: bo
     if (isSessionRejected(error)) {
       removeToken();
       removeTenantId();
+      clearLiveFrames();
       set({ ...signedOut, error: message });
       return;
     }
@@ -322,6 +324,7 @@ const _useAuthStore = create<AuthState>((set, get) => ({
   clearTenant: () => {
     if (get().memberships.length > 1) {
       removeTenantId();
+      clearLiveFrames();
       set({ tenantId: null, role: null });
     }
   },
@@ -334,6 +337,7 @@ const _useAuthStore = create<AuthState>((set, get) => ({
     finally {
       removeToken();
       removeTenantId();
+      clearLiveFrames();
       set(signedOut);
     }
   },
@@ -345,6 +349,7 @@ const _useAuthStore = create<AuthState>((set, get) => ({
     finally {
       removeToken();
       removeTenantId();
+      clearLiveFrames();
       set(signedOut);
     }
   },
@@ -353,6 +358,7 @@ const _useAuthStore = create<AuthState>((set, get) => ({
 setSessionExpiredHandler(() => {
   removeToken();
   removeTenantId();
+  clearLiveFrames();
   _useAuthStore.setState(signedOut);
 });
 

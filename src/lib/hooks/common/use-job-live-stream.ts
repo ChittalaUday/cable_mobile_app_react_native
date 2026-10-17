@@ -7,6 +7,7 @@ import { AppState } from 'react-native';
 import { devHostUrl } from '@/lib/api/client';
 import { getTenantId, getToken } from '@/lib/auth/utils';
 import { mergeJobEvents } from '@/lib/automations/job-activity';
+import { listLiveFrames, saveLiveFrame } from '@/lib/automations/live-frame-store';
 import { liveSocketHeaders, liveSocketUrl, openLiveSocket, upgradeFailureStatus, validateLiveMessage } from '@/lib/automations/live-protocol';
 import { jobRunKeys } from '@/lib/hooks/api/use-job-runs';
 
@@ -14,8 +15,10 @@ export type LivePhase = 'idle' | 'connecting' | 'live' | 'reconnecting' | 'ended
 
 export type LiveStreamState = {
   phase: LivePhase;
-  /** The newest validated picture; only ever held in this hook's memory. */
+  /** The newest validated picture, also kept on this device so it outlasts navigation, reconnects and the run itself. */
   frame: LiveFrame | null;
+  /** Every picture saved for this run, oldest first; empty while the view is live, when `frame` is the newest. */
+  history: LiveFrame[];
   /** Persisted and live events as one list, ascending by sequence. */
   events: JobRunEvent[];
 };
@@ -41,17 +44,20 @@ type Options = {
 };
 
 const NO_EVENTS: JobRunEvent[] = [];
+const NO_FRAMES: LiveFrame[] = [];
 
 /**
  * Watches one active run: the newest browser picture and activity that arrives
- * before the next REST poll. Stops, and drops the picture, when the run ends,
- * the screen unmounts, the app goes to the background, or the server says no.
+ * before the next REST poll. Stops when the run ends, the screen unmounts, the
+ * app goes to the background, or the server says no. Every picture is saved on
+ * the device (see `live-frame-store`), so they are all still there after any of
+ * those, and when this screen is opened again.
  */
 export function useJobLiveStream({ runId, enabled, terminal, persistedEvents }: Options): LiveStreamState {
   const queryClient = useQueryClient();
   const [appActive, setAppActive] = React.useState(AppState.currentState !== 'background');
   const [phase, setPhase] = React.useState<LivePhase>('idle');
-  const [frame, setFrame] = React.useState<LiveFrame | null>(null);
+  const [liveFrame, setLiveFrame] = React.useState<LiveFrame | null>(null);
   const [liveEvents, setLiveEvents] = React.useState<JobRunEvent[]>(NO_EVENTS);
 
   React.useEffect(() => {
@@ -80,7 +86,6 @@ export function useJobLiveStream({ runId, enabled, terminal, persistedEvents }: 
         clearTimeout(timer);
       timer = null;
       detach();
-      setFrame(null);
       setPhase(next);
     };
     const detach = () => {
@@ -95,7 +100,6 @@ export function useJobLiveStream({ runId, enabled, terminal, persistedEvents }: 
     };
     const scheduleReconnect = () => {
       detach();
-      setFrame(null);
       attempts += 1;
       if (attempts > MAX_RECONNECTS) {
         release('error');
@@ -136,7 +140,8 @@ export function useJobLiveStream({ runId, enabled, terminal, persistedEvents }: 
             break;
           case 'frame':
             cursors.frame = message.frame.sequence;
-            setFrame(message.frame);
+            setLiveFrame(message.frame);
+            saveLiveFrame(runId!, message.frame);
             break;
           case 'activity':
             cursors.activity = message.event.sequence;
@@ -180,17 +185,23 @@ export function useJobLiveStream({ runId, enabled, terminal, persistedEvents }: 
       if (timer !== null)
         clearTimeout(timer);
       detach();
-      setFrame(null);
       setPhase('idle');
     };
   }, [active, runId, queryClient]);
 
-  // A different run starts its own live list.
-  React.useEffect(() => () => setLiveEvents(NO_EVENTS), [runId]);
+  // A different run starts its own live list and picture.
+  React.useEffect(() => () => {
+    setLiveEvents(NO_EVENTS);
+    setLiveFrame(null);
+  }, [runId]);
 
   const events = React.useMemo(() => mergeJobEvents(persistedEvents, liveEvents), [persistedEvents, liveEvents]);
 
+  const live = active && phase === 'live';
+  // Read from the device whenever the view is not live: on opening, after a reconnect, once the run is over.
+  const history = React.useMemo(() => (live || runId === undefined || runId === '' ? NO_FRAMES : listLiveFrames(runId)), [live, runId]);
+  const frame = liveFrame ?? history.at(-1) ?? null;
   if (!active)
-    return { phase: terminal ? 'ended' : 'idle', frame: null, events };
-  return { phase, frame, events };
+    return { phase: terminal ? 'ended' : 'idle', frame, history, events };
+  return { phase, frame, history, events };
 }

@@ -36,15 +36,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PlanPrice } from '@/components/common/plan-price';
 import { Avatar, IconTile, Segmented, StatusPill, TINT } from '@/components/common/shell';
+import { ActivateAtActButton } from '@/components/customer/activate-at-act-button';
 import { CustomerTimeline } from '@/components/customer/customer-timeline';
 import { EditCustomerSheet } from '@/components/customer/edit-customer-sheet';
+import { RefreshBoxButton } from '@/components/customer/refresh-box-button';
 import { RaiseTicketSheet } from '@/components/tickets/raise-ticket-sheet';
 import { Button, colors, Pressable, Text, ThemedIcon, View } from '@/components/ui';
 import { startVisit } from '@/components/visits/mark-visit-sheet';
 import { PERMISSIONS } from '@/constants/permissions';
 import { openCallIntent } from '@/lib/call-intent';
 import { usePermissions } from '@/lib/hooks/common/use-permissions';
-import { dateTime, dayMonthYear, planRupees } from '@/lib/utils/admin-format';
+import { dateTime, dayMonthYear, planRupees, rupeesExact } from '@/lib/utils/admin-format';
 
 export type CustomerDetailsData = {
   id: string;
@@ -100,8 +102,12 @@ const DEFAULT_CUSTOMER_DETAIL: CustomerDetail = {
       status: 'active',
       assignedAt: '2026-01-01T00:00:00Z',
       returnedAt: null,
+      canInstantRefresh: false,
+      canActivateAtAct: false,
+      canRenewAtAct: false,
     },
   ],
+  providerActivations: [],
   recentTransactions: [],
   summary: {
     subscriptions: 1,
@@ -167,9 +173,13 @@ function normalizeCustomerDetail(c: CustomerDetail | CustomerDetailsData | undef
             status: 'active',
             assignedAt: '2026-01-01T00:00:00Z',
             returnedAt: null,
+            canInstantRefresh: false,
+            canActivateAtAct: false,
+            canRenewAtAct: false,
           },
         ]
       : [],
+    providerActivations: [],
     recentTransactions: [],
     summary: {
       subscriptions: data.packageName ? 1 : 0,
@@ -186,6 +196,7 @@ function normalizeCustomerDetail(c: CustomerDetail | CustomerDetailsData | undef
 export type CustomerDetailsViewProps = {
   customer?: CustomerDetail | CustomerDetailsData;
   role?: 'admin' | 'staff' | 'customer';
+  initialTab?: DetailTab;
   onBack?: () => void;
   onRefresh?: () => void;
   isRefreshing?: boolean;
@@ -204,7 +215,7 @@ function balanceTone(value: number) {
   return { tint: undefined, text: 'text-foreground' };
 }
 
-type DetailTab = 'overview' | 'services' | 'payments' | 'timeline';
+export type DetailTab = 'overview' | 'services' | 'payments' | 'timeline';
 
 const DETAIL_TABS = [
   { key: 'overview', label: 'Overview' },
@@ -221,8 +232,8 @@ const PAYMENT_RANGES = [
   { days: 0, label: 'All' },
 ] as const;
 
-function Panel({ className = '', children }: { className?: string; children: React.ReactNode }) {
-  return <View className={`rounded-2xl border border-border bg-card p-4 ${className}`}>{children}</View>;
+function Panel({ className = '', testID, children }: { className?: string; testID?: string; children: React.ReactNode }) {
+  return <View className={`rounded-2xl border border-border bg-card p-4 ${className}`} testID={testID}>{children}</View>;
 }
 
 function ContactButton({ icon, color, label, onPress }: {
@@ -242,11 +253,12 @@ function ContactButton({ icon, color, label, onPress }: {
 }
 
 /** Label beside value. Values are selectable, so a long-press copies an account or serial number. */
-function DetailRow({ label, value, icon, valueClassName = 'text-foreground', children }: {
+function DetailRow({ label, value, icon, valueClassName = 'text-foreground', testID, children }: {
   label: string;
   value?: string | null;
   icon?: IconSvgElement;
   valueClassName?: string;
+  testID?: string;
   children?: React.ReactNode;
 }) {
   return (
@@ -264,7 +276,7 @@ function DetailRow({ label, value, icon, valueClassName = 'text-foreground', chi
         <Text className="flex-1 text-[13px] leading-[18px] text-muted-foreground">{label}</Text>
       </View>
       {children === undefined
-        ? <Text selectable className={`flex-1 text-[13px] leading-[18px] font-medium ${valueClassName}`}>{value || '—'}</Text>
+        ? <Text selectable testID={testID} className={`flex-1 text-[13px] leading-[18px] font-medium ${valueClassName}`}>{value || '—'}</Text>
         : <View className="min-h-[18px] flex-1 justify-center">{children}</View>}
     </View>
   );
@@ -356,6 +368,28 @@ function BalanceCard({ customer }: { customer: CustomerDetail }) {
   );
 }
 
+/** Reactivations done on the provider's own portal for this customer: when, the packages, and what ACT charged. */
+function ActivationsPanel({ activations }: { activations: CustomerDetail['providerActivations'] }) {
+  return (
+    <Panel testID="customer-activations">
+      <Text className="mb-1 text-[15px] font-bold text-foreground">Activated or renewed on ACT</Text>
+      {activations.map((activation) => {
+        const paid = activation.bill.totalMsoSharePayable;
+        const left = activation.bill.availableBalance;
+        return (
+          <View key={activation.id} className="gap-0.5 border-t border-border/60 py-2" testID={`activation-${activation.id}`}>
+            <Text className="text-[13px] font-semibold text-foreground">{`${activation.status === 'renewed' ? 'Renewed' : 'Activated'} · ${dateTime(activation.createdAt)}${paid == null ? '' : ` · ${rupeesExact(paid)} to ACT`}`}</Text>
+            {activation.bill.totalPayable != null
+              ? <Text className="text-xs text-muted-foreground">{`Bill ${rupeesExact(activation.bill.billAmount ?? 0)} + tax ${rupeesExact(activation.bill.taxAmount ?? 0)} = ${rupeesExact(activation.bill.totalPayable)}${paid != null && left != null ? ` · wallet ${rupeesExact(left)} → ${rupeesExact(left - paid)}` : ''}`}</Text>
+              : null}
+            <Text className="text-xs text-muted-foreground">{`${activation.packages.length} packages: ${activation.packages.join(', ')}`}</Text>
+          </View>
+        );
+      })}
+    </Panel>
+  );
+}
+
 function OverviewTab({ customer }: { customer: CustomerDetail }) {
   return (
     <View className="mt-4 gap-3">
@@ -395,6 +429,8 @@ function OverviewTab({ customer }: { customer: CustomerDetail }) {
             </Panel>
           )
         : null}
+
+      {customer.providerActivations.length > 0 ? <ActivationsPanel activations={customer.providerActivations} /> : null}
 
       {customer.notes
         ? (
@@ -442,7 +478,7 @@ function ServiceCard({ sub, onManage }: { sub: CustomerSubscription; onManage?: 
       </DetailRow>
       <DetailRow label="Outstanding" value={`₹${sub.outstandingBalance}`} valueClassName={balanceTone(outstanding).text} />
       <DetailRow label="Start Date" value={formatDate(sub.startDate)} />
-      <DetailRow label="Expires" value={formatDate(sub.endDate)} valueClassName={sub.endDate && new Date(sub.endDate) < new Date() ? 'text-red-600 font-bold' : undefined} />
+      <DetailRow label="Expires" testID="customer-expires" value={formatDate(sub.endDate)} valueClassName={sub.endDate && new Date(sub.endDate) < new Date() ? 'text-red-600 font-bold' : undefined} />
       <DetailRow label="Next Charge" value={Number(sub.nextPlanCharge) > 0 ? `₹${sub.nextPlanCharge}` : '—'} />
       <DetailRow label="Charged Through" value={formatDate(sub.chargedThrough)} />
       {sub.installationAddress
@@ -548,7 +584,7 @@ function PaymentsTab({ customer }: { customer: CustomerDetail }) {
   );
 }
 
-function EquipmentCard({ item, line }: { item: CustomerEquipment; line?: CustomerSubscription }) {
+function EquipmentCard({ item, line, customer, mayRefresh, mayActivate }: { item: CustomerEquipment; line?: CustomerSubscription; customer: { id: string; name: string }; mayRefresh: boolean; mayActivate: boolean }) {
   const active = item.status === 'active';
   const assignedTo = line ? `${line.serviceAccountNumber} (${line.service.name})` : null;
   return (
@@ -566,7 +602,15 @@ function EquipmentCard({ item, line }: { item: CustomerEquipment; line?: Custome
       <DetailRow label="Status">
         <StatusDot active={active} label={capitalize(item.status)} />
       </DetailRow>
-
+      {(mayRefresh && item.canInstantRefresh) || (mayActivate && (item.canActivateAtAct || item.canRenewAtAct))
+        ? (
+            <View className="mt-2 flex-row flex-wrap justify-end gap-2" testID={`equipment-actions-${item.id}`}>
+              {mayRefresh && item.canInstantRefresh ? <RefreshBoxButton customerEquipmentId={item.id} /> : null}
+              {mayActivate && item.canActivateAtAct ? <ActivateAtActButton customerEquipmentId={item.id} visit={{ customerId: customer.id, customerName: customer.name, subscriptionId: item.subscriptionId }} /> : null}
+              {mayActivate && item.canRenewAtAct ? <ActivateAtActButton customerEquipmentId={item.id} action="renew" visit={{ customerId: customer.id, customerName: customer.name, subscriptionId: item.subscriptionId }} /> : null}
+            </View>
+          )
+        : null}
       <View className="mt-2 pt-3">
         <Text className="mb-2 text-sm font-bold text-foreground">History</Text>
         <TimelineStep color="bg-green-500" title="Assigned" detail={`${dateTime(item.assignedAt)}${assignedTo ? `\nto ${assignedTo}` : ''}`} last={false} />
@@ -596,6 +640,7 @@ function TimelineStep({ color, title, detail, last }: { color: string; title: st
 export function CustomerDetailsView({
   customer: rawCustomer,
   role,
+  initialTab = 'overview',
   onBack,
   onRefresh,
   isRefreshing = false,
@@ -604,7 +649,7 @@ export function CustomerDetailsView({
   const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [tab, setTab] = React.useState<DetailTab>('overview');
+  const [tab, setTab] = React.useState<DetailTab>(initialTab);
   const { can } = usePermissions();
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [ticketFor, setTicketFor] = React.useState<RaiseTicketTarget | null>(null);
@@ -622,6 +667,9 @@ export function CustomerDetailsView({
    * against a round, and fitting a box moves stock.
    */
   const isOperator = role === 'admin' || role === 'staff';
+  const mayRefresh = isOperator && can(PERMISSIONS.INVENTORY_UPDATE);
+  const mayActivate = isOperator && can(PERMISSIONS.PAYMENTS_COLLECT);
+  const actBoxes = customer.equipment.filter(box => (mayRefresh && box.canInstantRefresh) || (mayActivate && (box.canActivateAtAct || box.canRenewAtAct)));
   const base = role === 'staff' ? '/staff' : '/admin';
   const recharge = (subscriptionId?: string) => router.push({
     pathname: `${base}/recharge/[id]`,
@@ -726,6 +774,30 @@ export function CustomerDetailsView({
             )
           : null}
 
+        {/* ACT actions per box: Instant Refresh, and activating a running box for its next cycle, and renewing a lapsed one. Each is offered by the box's own state. */}
+        {actBoxes.length > 0 && tab !== 'services'
+          ? (
+              <View className="mt-4 gap-2" testID="customer-refresh-boxes">
+                {actBoxes.map(box => (
+                  <View key={box.id} className="gap-2 rounded-xl border border-border bg-card px-3 py-2.5">
+                    <View className="flex-row items-center gap-3">
+                      <ThemedIcon icon={RouterIcon} size={20} colorClassName="text-foreground" />
+                      <View className="flex-1">
+                        <Text className="text-[13px] font-bold text-foreground" numberOfLines={1}>{box.name}</Text>
+                        {box.serialNumber ? <Text className="text-xs text-muted-foreground" numberOfLines={1}>{box.serialNumber}</Text> : null}
+                      </View>
+                    </View>
+                    <View className="flex-row flex-wrap justify-end gap-2">
+                      {mayRefresh && box.canInstantRefresh ? <RefreshBoxButton customerEquipmentId={box.id} /> : null}
+                      {mayActivate && box.canActivateAtAct ? <ActivateAtActButton customerEquipmentId={box.id} visit={{ customerId: customer.id, customerName: displayName, subscriptionId: box.subscriptionId }} /> : null}
+                      {mayActivate && box.canRenewAtAct ? <ActivateAtActButton customerEquipmentId={box.id} action="renew" visit={{ customerId: customer.id, customerName: displayName, subscriptionId: box.subscriptionId }} /> : null}
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )
+          : null}
+
         <View className="mt-4 rounded-2xl bg-primary-500/10 p-1.5">
           <Segmented options={DETAIL_TABS} value={tab} onChange={setTab} />
         </View>
@@ -763,7 +835,7 @@ export function CustomerDetailsView({
                   {customer.equipment.length === 0
                     ? <EmptyNote>{t('customer_details.no_equipment')}</EmptyNote>
                     : customer.equipment.map(eq => (
-                        <EquipmentCard key={eq.id} item={eq} line={customer.subscriptions.find(sub => sub.id === eq.subscriptionId)} />
+                        <EquipmentCard key={eq.id} item={eq} line={customer.subscriptions.find(sub => sub.id === eq.subscriptionId)} customer={{ id: customer.id, name: displayName }} mayRefresh={mayRefresh} mayActivate={mayActivate} />
                       ))}
                 </View>
               </>
@@ -792,10 +864,11 @@ export function CustomerDetailsView({
                   )
                 : null}
               <Button
-                label="Collect Payment"
+                label="Raise Complaint"
                 size="lg"
                 className="flex-1 rounded-xl"
-                onPress={() => recharge(plan?.id)}
+                testID="customer-raise-complaint"
+                onPress={raiseTicket}
               />
             </View>
           )

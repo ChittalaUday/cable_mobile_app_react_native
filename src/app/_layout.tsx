@@ -16,6 +16,7 @@ import { APIProvider, queryClient } from '@/lib/api';
 import { initFirebaseAppCheck } from '@/lib/app-check';
 import { setCrashlyticsUserId } from '@/lib/crashlytics';
 import { useNotificationSync } from '@/lib/hooks/common/use-notification-sync';
+import { useRealtimeRefresh } from '@/lib/hooks/common/use-realtime-refresh';
 import { loadSelectedTheme } from '@/lib/hooks/common/use-selected-theme';
 import { useAuthStore } from '@/lib/hooks/stores/use-auth-store';
 import { registerBackgroundHandler } from '@/lib/notifications';
@@ -106,6 +107,7 @@ export default function RootLayout() {
   return (
     <Providers onLayout={onLayoutRootView}>
       <NotificationSync />
+      <RealtimeSync />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="select-tenant" options={{ headerShown: false }} />
@@ -130,6 +132,12 @@ export default function RootLayout() {
  */
 function NotificationSync() {
   useNotificationSync();
+  return null;
+}
+
+/** Refetches what the open screens show whenever a sync finishes; a component for the same reason as `NotificationSync`. */
+function RealtimeSync() {
+  useRealtimeRefresh();
   return null;
 }
 

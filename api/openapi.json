@@ -3619,6 +3619,7 @@
                     "notes",
                     "subscriptions",
                     "equipment",
+                    "providerActivations",
                     "recentTransactions",
                     "summary",
                     "createdAt",
@@ -3951,7 +3952,10 @@
                           "serialNumber",
                           "status",
                           "assignedAt",
-                          "returnedAt"
+                          "returnedAt",
+                          "canInstantRefresh",
+                          "canActivateAtAct",
+                          "canRenewAtAct"
                         ],
                         "properties": {
                           "id": {
@@ -3999,6 +4003,64 @@
                                 "type": "null"
                               }
                             ]
+                          },
+                          "canInstantRefresh": {
+                            "type": "boolean"
+                          },
+                          "canActivateAtAct": {
+                            "type": "boolean"
+                          },
+                          "canRenewAtAct": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    },
+                    "providerActivations": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "createdAt",
+                          "status",
+                          "packages",
+                          "bill"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "activated",
+                              "renewed"
+                            ]
+                          },
+                          "packages": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "bill": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
                           }
                         }
                       }
@@ -4200,6 +4262,7 @@
                     "notes",
                     "subscriptions",
                     "equipment",
+                    "providerActivations",
                     "recentTransactions",
                     "summary",
                     "createdAt",
@@ -4532,7 +4595,10 @@
                           "serialNumber",
                           "status",
                           "assignedAt",
-                          "returnedAt"
+                          "returnedAt",
+                          "canInstantRefresh",
+                          "canActivateAtAct",
+                          "canRenewAtAct"
                         ],
                         "properties": {
                           "id": {
@@ -4580,6 +4646,64 @@
                                 "type": "null"
                               }
                             ]
+                          },
+                          "canInstantRefresh": {
+                            "type": "boolean"
+                          },
+                          "canActivateAtAct": {
+                            "type": "boolean"
+                          },
+                          "canRenewAtAct": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    },
+                    "providerActivations": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "createdAt",
+                          "status",
+                          "packages",
+                          "bill"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "activated",
+                              "renewed"
+                            ]
+                          },
+                          "packages": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "bill": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
                           }
                         }
                       }
@@ -4832,6 +4956,7 @@
                     "notes",
                     "subscriptions",
                     "equipment",
+                    "providerActivations",
                     "recentTransactions",
                     "summary",
                     "createdAt",
@@ -5164,7 +5289,10 @@
                           "serialNumber",
                           "status",
                           "assignedAt",
-                          "returnedAt"
+                          "returnedAt",
+                          "canInstantRefresh",
+                          "canActivateAtAct",
+                          "canRenewAtAct"
                         ],
                         "properties": {
                           "id": {
@@ -5212,6 +5340,64 @@
                                 "type": "null"
                               }
                             ]
+                          },
+                          "canInstantRefresh": {
+                            "type": "boolean"
+                          },
+                          "canActivateAtAct": {
+                            "type": "boolean"
+                          },
+                          "canRenewAtAct": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    },
+                    "providerActivations": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "createdAt",
+                          "status",
+                          "packages",
+                          "bill"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "activated",
+                              "renewed"
+                            ]
+                          },
+                          "packages": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "bill": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
                           }
                         }
                       }
@@ -10573,6 +10759,1275 @@
         }
       }
     },
+    "/api/v1/automations/instant-refresh": {
+      "post": {
+        "summary": "Start the ACT dashboard's Instant Refresh for one set-top box a customer has",
+        "tags": [
+          "jobs"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "customerEquipmentId"
+                ],
+                "properties": {
+                  "customerEquipmentId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "run"
+                  ],
+                  "properties": {
+                    "run": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "jobName",
+                        "providerId",
+                        "providerName",
+                        "status",
+                        "trigger",
+                        "progress",
+                        "progressMessage",
+                        "result",
+                        "queuedAt",
+                        "startedAt",
+                        "finishedAt"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "jobName": {
+                          "type": "string"
+                        },
+                        "providerId": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "providerName": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "queued",
+                            "running",
+                            "succeeded",
+                            "failed",
+                            "cancelled",
+                            "enqueue_failed"
+                          ]
+                        },
+                        "trigger": {
+                          "type": "string",
+                          "enum": [
+                            "scheduled",
+                            "manual"
+                          ]
+                        },
+                        "progress": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 100
+                        },
+                        "progressMessage": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "result": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "maxProperties": 50,
+                              "propertyNames": {
+                                "maxLength": 64
+                              },
+                              "additionalProperties": {
+                                "if": {
+                                  "type": "string"
+                                },
+                                "then": {
+                                  "type": "string",
+                                  "maxLength": 1000
+                                }
+                              }
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "queuedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "startedAt": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "finishedAt": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/automations/instant-refresh/{id}": {
+      "get": {
+        "summary": "Where one instant refresh stands, for whoever may start one",
+        "tags": [
+          "jobs"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "queued",
+                        "running",
+                        "succeeded",
+                        "failed",
+                        "cancelled",
+                        "enqueue_failed"
+                      ]
+                    },
+                    "message": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/automations/act-activation": {
+      "post": {
+        "summary": "Start activating a running customer's set-top box on ACT again, or renewing an expired one; the run waits for the person's answer before anything is spent",
+        "tags": [
+          "jobs"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "customerEquipmentId"
+                ],
+                "properties": {
+                  "customerEquipmentId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "activate",
+                      "renew"
+                    ]
+                  },
+                  "collectionId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "visitId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "run"
+                  ],
+                  "properties": {
+                    "run": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "jobName",
+                        "providerId",
+                        "providerName",
+                        "status",
+                        "trigger",
+                        "progress",
+                        "progressMessage",
+                        "result",
+                        "queuedAt",
+                        "startedAt",
+                        "finishedAt"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "jobName": {
+                          "type": "string"
+                        },
+                        "providerId": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "providerName": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "queued",
+                            "running",
+                            "succeeded",
+                            "failed",
+                            "cancelled",
+                            "enqueue_failed"
+                          ]
+                        },
+                        "trigger": {
+                          "type": "string",
+                          "enum": [
+                            "scheduled",
+                            "manual"
+                          ]
+                        },
+                        "progress": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 100
+                        },
+                        "progressMessage": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "result": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "maxProperties": 50,
+                              "propertyNames": {
+                                "maxLength": 64
+                              },
+                              "additionalProperties": {
+                                "if": {
+                                  "type": "string"
+                                },
+                                "then": {
+                                  "type": "string",
+                                  "maxLength": 1000
+                                }
+                              }
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "queuedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "startedAt": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "finishedAt": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/automations/act-activation/{id}/decision": {
+      "post": {
+        "summary": "Approve or decline what ACT offered a waiting run; an approval names the amount shown and the worker accepts only that",
+        "tags": [
+          "jobs"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "decision"
+                ],
+                "properties": {
+                  "decision": {
+                    "type": "string",
+                    "enum": [
+                      "approve",
+                      "cancel"
+                    ]
+                  },
+                  "approvedTotal": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1000000
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message",
+                    "action",
+                    "progress",
+                    "step",
+                    "awaitingConfirmation",
+                    "outcome",
+                    "packages",
+                    "bill",
+                    "endDate"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "queued",
+                        "running",
+                        "succeeded",
+                        "failed",
+                        "cancelled",
+                        "enqueue_failed"
+                      ]
+                    },
+                    "message": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "action": {
+                      "type": "string",
+                      "enum": [
+                        "activate",
+                        "renew"
+                      ]
+                    },
+                    "progress": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "step": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "awaitingConfirmation": {
+                      "type": "boolean"
+                    },
+                    "outcome": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "previewed",
+                            "activated",
+                            "renewed"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "packages": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "bill": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "billAmount",
+                            "taxAmount",
+                            "totalPayable",
+                            "networkCapacityFee",
+                            "msoShare",
+                            "outstanding",
+                            "tax1",
+                            "tax2",
+                            "totalMsoSharePayable",
+                            "availableBalance"
+                          ],
+                          "properties": {
+                            "billAmount": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "taxAmount": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "totalPayable": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "networkCapacityFee": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "msoShare": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "outstanding": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "tax1": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "tax2": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "totalMsoSharePayable": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "availableBalance": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "endDate": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "before",
+                            "after",
+                            "extended"
+                          ],
+                          "properties": {
+                            "before": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date-time"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "after": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date-time"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "extended": {
+                              "anyOf": [
+                                {
+                                  "type": "boolean"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/automations/act-activation/{id}": {
+      "get": {
+        "summary": "Where an ACT activation or renewal stands: its step, what ACT offered, and the outcome",
+        "tags": [
+          "jobs"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message",
+                    "action",
+                    "progress",
+                    "step",
+                    "awaitingConfirmation",
+                    "outcome",
+                    "packages",
+                    "bill",
+                    "endDate"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "queued",
+                        "running",
+                        "succeeded",
+                        "failed",
+                        "cancelled",
+                        "enqueue_failed"
+                      ]
+                    },
+                    "message": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "action": {
+                      "type": "string",
+                      "enum": [
+                        "activate",
+                        "renew"
+                      ]
+                    },
+                    "progress": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "step": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "awaitingConfirmation": {
+                      "type": "boolean"
+                    },
+                    "outcome": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "previewed",
+                            "activated",
+                            "renewed"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "packages": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "bill": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "billAmount",
+                            "taxAmount",
+                            "totalPayable",
+                            "networkCapacityFee",
+                            "msoShare",
+                            "outstanding",
+                            "tax1",
+                            "tax2",
+                            "totalMsoSharePayable",
+                            "availableBalance"
+                          ],
+                          "properties": {
+                            "billAmount": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "taxAmount": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "totalPayable": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "networkCapacityFee": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "msoShare": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "outstanding": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "tax1": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "tax2": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "totalMsoSharePayable": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "availableBalance": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "endDate": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "before",
+                            "after",
+                            "extended"
+                          ],
+                          "properties": {
+                            "before": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date-time"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "after": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date-time"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "extended": {
+                              "anyOf": [
+                                {
+                                  "type": "boolean"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/job-runs": {
       "get": {
         "summary": "List durable automation job history for the current tenant",
@@ -14136,7 +15591,12 @@
                 "promotional",
                 "billing",
                 "service",
-                "staff"
+                "staff",
+                "activation",
+                "renewal",
+                "refresh",
+                "sync",
+                "activity"
               ]
             },
             "in": "query",
@@ -14199,7 +15659,12 @@
                               "promotional",
                               "billing",
                               "service",
-                              "staff"
+                              "staff",
+                              "activation",
+                              "renewal",
+                              "refresh",
+                              "sync",
+                              "activity"
                             ]
                           },
                           "delivery": {
@@ -14486,7 +15951,12 @@
                         "promotional",
                         "billing",
                         "service",
-                        "staff"
+                        "staff",
+                        "activation",
+                        "renewal",
+                        "refresh",
+                        "sync",
+                        "activity"
                       ]
                     },
                     "delivery": {
@@ -14645,7 +16115,12 @@
                       "promotional",
                       "billing",
                       "service",
-                      "staff"
+                      "staff",
+                      "activation",
+                      "renewal",
+                      "refresh",
+                      "sync",
+                      "activity"
                     ]
                   }
                 },
@@ -14941,7 +16416,12 @@
                       "promotional",
                       "billing",
                       "service",
-                      "staff"
+                      "staff",
+                      "activation",
+                      "renewal",
+                      "refresh",
+                      "sync",
+                      "activity"
                     ]
                   },
                   "delivery": {
@@ -33003,6 +34483,8 @@
                       "payment",
                       "complaint",
                       "installation",
+                      "activation",
+                      "renewal",
                       "other"
                     ]
                   },
@@ -33171,6 +34653,8 @@
                         "payment",
                         "complaint",
                         "installation",
+                        "activation",
+                        "renewal",
                         "other"
                       ]
                     },
@@ -33340,6 +34824,8 @@
                               "payment",
                               "complaint",
                               "installation",
+                              "activation",
+                              "renewal",
                               "other"
                             ]
                           },
@@ -33587,6 +35073,8 @@
                 "payment",
                 "complaint",
                 "installation",
+                "activation",
+                "renewal",
                 "other"
               ]
             },
@@ -33750,6 +35238,8 @@
                               "payment",
                               "complaint",
                               "installation",
+                              "activation",
+                              "renewal",
                               "other"
                             ]
                           },

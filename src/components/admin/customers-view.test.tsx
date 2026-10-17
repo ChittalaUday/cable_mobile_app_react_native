@@ -1,7 +1,7 @@
 import type { CustomerListItem } from '@/lib/api/types';
 import type * as UseCustomersModule from '@/lib/hooks/api/use-customers';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import * as React from 'react';
 
 import i18n from '@/lib/i18n';
@@ -22,7 +22,7 @@ const mockCustomerItems: CustomerListItem[] = [
     services: ['Cable TV'],
     createdAt: '2026-09-01T00:00:00.000Z',
     alternatePhone: null,
-    address: null,
+    address: '12 Main Street',
     locations: [{ locationId: 'loc-1', path: 'Governorpet', codes: ['GOV'], source: 'customer' }],
     serviceAccounts: [],
     equipment: [],
@@ -68,7 +68,7 @@ const mockCustomerItems: CustomerListItem[] = [
         accountNumber: 'ACC-001',
         installationAddress: null,
         outstandingBalance: '0.00',
-        endDate: null,
+        endDate: '2030-03-05T10:00:00.000Z',
         providerName: 'ACT Fibernet',
         providerLogoUrl: null,
         providerWebsiteUrl: null,
@@ -80,7 +80,7 @@ const mockCustomerItems: CustomerListItem[] = [
         accountNumber: 'ACC-002',
         installationAddress: null,
         outstandingBalance: '0.00',
-        endDate: null,
+        endDate: '2030-01-15T10:00:00.000Z',
         providerName: 'ACT Fibernet',
         providerLogoUrl: null,
         providerWebsiteUrl: null,
@@ -223,6 +223,24 @@ describe('customersView', () => {
     expect(screen.getByLabelText('Add customer')).toBeTruthy();
     expect(screen.getByText('Anil Reddy')).toBeTruthy();
     expect(screen.getByText('Bhavani Prasad')).toBeTruthy();
+  });
+
+  it('puts the location, provider and soonest expiry in the card body, once per provider', () => {
+    renderWithClient(<CustomersView basePath="/admin" />);
+
+    // Two accounts with the same provider make one chip, not two: getByTestId would throw on a second.
+    expect(within(screen.getByTestId('customer-provider-c3')).getByText('ACT Fibernet')).toBeTruthy();
+    expect(within(screen.getByTestId('customer-expiry-c3')).getByText('Expires 15 Jan 2030')).toBeTruthy();
+    expect(screen.getAllByText('Governorpet').length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('shows the location and the street address as two separate lines', () => {
+    renderWithClient(<CustomersView basePath="/admin" />);
+
+    expect(within(screen.getByTestId('customer-location-c1')).getByText('Governorpet')).toBeTruthy();
+    expect(within(screen.getByTestId('customer-address-c1')).getByText('12 Main Street')).toBeTruthy();
+    // A customer with no street address has no address line at all, not an empty one.
+    expect(screen.queryByTestId('customer-address-c2')).toBeNull();
   });
 
   it('filters customers list by search query input', () => {

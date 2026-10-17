@@ -54,6 +54,20 @@ describe('realtime cache sync', () => {
     for (const key of ['inventory', 'customers', 'customer', 'admin-dashboard', 'staff-dashboard'])
       expect(queryClientModule.queryClient.getQueryState([key])?.isInvalidated).toBe(true);
   });
+
+  it('invalidates visits, the customer timeline and both dashboards after a visit', () => {
+    expect(handleRealtimeSync).toEqual(expect.any(Function));
+    if (handleRealtimeSync === undefined)
+      return;
+
+    for (const key of ['visits', 'customer-timeline', 'admin-dashboard', 'staff-dashboard'])
+      queryClientModule.queryClient.setQueryData([key], { old: true });
+
+    expect(handleRealtimeSync({ sync: 'visits' })).toBe(true);
+
+    for (const key of ['visits', 'customer-timeline', 'admin-dashboard', 'staff-dashboard'])
+      expect(queryClientModule.queryClient.getQueryState([key])?.isInvalidated).toBe(true);
+  });
 });
 
 describe('app focus', () => {

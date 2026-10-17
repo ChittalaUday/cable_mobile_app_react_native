@@ -1,3 +1,4 @@
+import type { ActOffer } from './step-done';
 import type { CustomerDetail, CustomerSubscription } from '@/lib/api/types';
 import type { RecordCollectionPayload, RecordEquipmentPaymentPayload, ReplaceEquipmentPayload } from '@/lib/hooks/api/use-payments';
 import { useIsFocused } from '@react-navigation/native';
@@ -165,6 +166,16 @@ export function RechargeFlowScreen({ customerId, subscriptionId, basePath }: {
   // Derived, not synced: the picked line follows the data as it arrives without
   // an effect that could leave the screen showing a line the customer has not got.
   const line = lines.find(option => option.id === pickedId) ?? lines[0] ?? null;
+
+  // Taken until the payment is recorded: the refetch after it may already show the customer as active.
+  // Renew a lapsed box, activate a running one whose plan is about to end: each as the server says for the box on the line being paid, never by its customer's status.
+  const offerRef = React.useRef<ActOffer[]>([]);
+  if (step !== 'done') {
+    offerRef.current = (customer?.equipment ?? [])
+      .filter(box => (box.canRenewAtAct || box.canActivateAtAct) && (box.subscriptionId === null || line === null || box.subscriptionId === line.id))
+      .map(box => ({ id: box.id, action: box.canRenewAtAct ? 'renew' as const : 'activate' as const }));
+  }
+  const actOffers = offerRef.current;
 
   const leave = React.useCallback(async () => {
     const state = useRechargeStore.getState();
@@ -412,7 +423,7 @@ export function RechargeFlowScreen({ customerId, subscriptionId, basePath }: {
 
         {step === 'plan' && charge === 'subscription' && <StepPlan customer={customer} line={line} basePath={basePath} />}
         {step === 'plan' && charge === 'equipment' && <StepEquipment customer={customer} basePath={basePath} />}
-        {step === 'amount' && <StepAmount customer={customer} line={line} />}
+        {step === 'amount' && <StepAmount customer={customer} line={line} actOffers={actOffers} />}
         {step === 'printer' && (
           <StepPrinter printer={printer} onNext={next} onSkip={() => goTo('done')} />
         )}
@@ -428,6 +439,7 @@ export function RechargeFlowScreen({ customerId, subscriptionId, basePath }: {
         {step === 'done' && receipt !== undefined && (
           <StepDone
             receipt={receipt}
+            actOffers={actOffers}
             onPrintAgain={() => goTo(printer.connectedAddress === null ? 'printer' : 'preview')}
             onFinish={finish}
           />

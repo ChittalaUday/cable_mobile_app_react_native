@@ -2,6 +2,7 @@ import type { TicketCategory, TicketPriority } from '@/lib/hooks/api/use-tickets
 import * as React from 'react';
 import { Modal as RNModal } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { dialogs } from '@/components/common/dialogs';
 import { Button, Input, Pill, Text, View } from '@/components/ui';
 import {
@@ -78,90 +79,100 @@ function Sheet({ target, onClose, onRaised }: {
   };
 
   return (
-    <RNModal animationType="slide" transparent visible onRequestClose={onClose}>
-      <View className="flex-1 justify-end bg-black/60">
-        <View className="max-h-[90%] rounded-t-3xl border-t border-border bg-surface">
-          <View className="border-b border-border/60 px-5 py-4">
-            <Text className="text-xl font-extrabold text-foreground">Raise a complaint</Text>
-            <Text className="text-xs text-muted-foreground" numberOfLines={1}>
-              {[target.customerName, target.accountNumber].filter(part => part != null && part !== '').join(' • ')
-                || 'This customer'}
-            </Text>
-          </View>
-
-          <KeyboardAwareScrollView
-            style={{ paddingHorizontal: 20, paddingVertical: 16 }}
-            contentContainerStyle={{ gap: 16, paddingBottom: 24 }}
-            keyboardShouldPersistTaps="handled"
-            bottomOffset={24}
-          >
-            <Field label="What is wrong">
-              <View className="flex-row flex-wrap gap-2">
-                {TICKET_CATEGORIES.map(option => (
-                  <Pill
-                    key={option}
-                    accessibilityRole="radio"
-                    label={TICKET_CATEGORY_LABELS[option]}
-                    selected={option === category}
-                    onPress={() => setCategory(option)}
-                  />
-                ))}
-              </View>
-            </Field>
-
-            <Field label="How urgent">
-              <View className="flex-row flex-wrap gap-2">
-                {TICKET_PRIORITIES.map(option => (
-                  <Pill
-                    key={option}
-                    accessibilityRole="radio"
-                    label={TICKET_PRIORITY_LABELS[option]}
-                    selected={option === priority}
-                    onPress={() => setPriority(option)}
-                  />
-                ))}
-              </View>
-            </Field>
-
-            <Field label="Subject">
-              <Input
-                value={subject}
-                onChangeText={setSubject}
-                placeholder={TICKET_CATEGORY_LABELS[category]}
-                returnKeyType="next"
-                testID="ticket-subject"
-              />
-            </Field>
-
-            <Field label="Anything the engineer should know (optional)">
-              <Input
-                value={description}
-                onChangeText={setDescription}
-                placeholder="Whole block is dark since last night"
-                multiline
-                numberOfLines={3}
-                testID="ticket-description"
-              />
-            </Field>
-          </KeyboardAwareScrollView>
-
-          <View className="flex-row gap-3 border-t border-border/60 px-5 py-4">
-            <View className="flex-1">
-              <Button label="Cancel" variant="outline" size="lg" onPress={onClose} />
+    <RNModal animationType="slide" transparent visible statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
+      {/* A modal is a separate window: it needs its own insets to keep the buttons clear of the system navigation. */}
+      <SafeAreaProvider>
+        <View className="flex-1 justify-end bg-black/60">
+          <View className="max-h-[90%] rounded-t-3xl border-t border-border bg-surface">
+            <View className="border-b border-border/60 px-5 py-4">
+              <Text className="text-xl font-extrabold text-foreground">Raise a complaint</Text>
+              <Text className="text-xs text-muted-foreground" numberOfLines={1}>
+                {[target.customerName, target.accountNumber].filter(part => part != null && part !== '').join(' • ')
+                  || 'This customer'}
+              </Text>
             </View>
-            <View className="flex-1">
-              <Button
-                label={isPending ? 'Raising…' : 'Raise'}
-                size="lg"
-                disabled={isPending}
-                onPress={submit}
-                testID="ticket-submit"
-              />
-            </View>
+
+            <KeyboardAwareScrollView
+              style={{ paddingHorizontal: 20, paddingVertical: 16 }}
+              contentContainerStyle={{ gap: 16, paddingBottom: 24 }}
+              keyboardShouldPersistTaps="handled"
+              bottomOffset={24}
+            >
+              <Field label="What is wrong">
+                <View className="flex-row flex-wrap gap-2">
+                  {TICKET_CATEGORIES.map(option => (
+                    <Pill
+                      key={option}
+                      accessibilityRole="radio"
+                      label={TICKET_CATEGORY_LABELS[option]}
+                      selected={option === category}
+                      onPress={() => setCategory(option)}
+                    />
+                  ))}
+                </View>
+              </Field>
+
+              <Field label="How urgent">
+                <View className="flex-row flex-wrap gap-2">
+                  {TICKET_PRIORITIES.map(option => (
+                    <Pill
+                      key={option}
+                      accessibilityRole="radio"
+                      label={TICKET_PRIORITY_LABELS[option]}
+                      selected={option === priority}
+                      onPress={() => setPriority(option)}
+                    />
+                  ))}
+                </View>
+              </Field>
+
+              <Field label="Subject">
+                <Input
+                  value={subject}
+                  onChangeText={setSubject}
+                  placeholder={TICKET_CATEGORY_LABELS[category]}
+                  returnKeyType="next"
+                  testID="ticket-subject"
+                />
+              </Field>
+
+              <Field label="Anything the engineer should know (optional)">
+                <Input
+                  value={description}
+                  onChangeText={setDescription}
+                  placeholder="Whole block is dark since last night"
+                  multiline
+                  numberOfLines={3}
+                  testID="ticket-description"
+                />
+              </Field>
+            </KeyboardAwareScrollView>
+
+            <SheetFooter isPending={isPending} onClose={onClose} onSubmit={submit} />
           </View>
         </View>
-      </View>
+      </SafeAreaProvider>
     </RNModal>
+  );
+}
+
+function SheetFooter({ isPending, onClose, onSubmit }: { isPending: boolean; onClose: () => void; onSubmit: () => void }) {
+  const insets = useSafeAreaInsets();
+  return (
+    <View className="flex-row gap-3 border-t border-border/60 px-5 pt-4" style={{ paddingBottom: Math.max(insets.bottom, 16) }} testID="ticket-footer">
+      <View className="flex-1">
+        <Button label="Cancel" variant="outline" size="lg" onPress={onClose} />
+      </View>
+      <View className="flex-1">
+        <Button
+          label={isPending ? 'Raising…' : 'Raise'}
+          size="lg"
+          disabled={isPending}
+          onPress={onSubmit}
+          testID="ticket-submit"
+        />
+      </View>
+    </View>
   );
 }
 

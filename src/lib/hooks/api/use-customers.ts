@@ -203,12 +203,15 @@ export function customerItemToConsolidated(item: CustomerListItem): Consolidated
         locationLabel: item.locationPath ? item.locationPath.split(' / ').pop() : undefined,
       }));
 
+  const locationPath = item.locations?.[0]?.path || item.locationPath || undefined;
+
   return {
     id: item.id,
     customerCode: item.customerCode,
     name: item.name || item.customerCode || 'Customer',
     phone: item.phone || item.alternatePhone || '',
-    address: [item.locations?.[0]?.path || item.locationPath, item.address].filter(Boolean).join(', '),
+    ...(locationPath === undefined ? {} : { locationPath }),
+    address: item.address ?? '',
     status: item.status,
     connections,
     createdAt: item.createdAt,

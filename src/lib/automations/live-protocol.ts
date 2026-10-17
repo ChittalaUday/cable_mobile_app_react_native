@@ -44,6 +44,11 @@ export function liveSocketUrl(apiBaseUrl: string, runId: string): string {
   return `${apiBaseUrl.replace(/\/+$/, '').replace(/^http/i, 'ws')}/job-runs/${encodeURIComponent(runId)}/live`;
 }
 
+/** `https://api/x/api/v1` becomes `wss://api/x/api/v1/realtime`: `ready`, then `data-updated` each time a sync finishes. */
+export function realtimeSocketUrl(apiBaseUrl: string): string {
+  return `${apiBaseUrl.replace(/\/+$/, '').replace(/^http/i, 'ws')}/realtime`;
+}
+
 /** The same credentials the Axios client sends, for the native socket's upgrade request. */
 export function liveSocketHeaders(token: string, tenantId: string): Record<string, string> {
   return { 'Authorization': `Bearer ${token}`, 'X-Tenant-Id': tenantId };

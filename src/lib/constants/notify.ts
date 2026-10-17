@@ -18,8 +18,17 @@ export const NOTIFICATION_CATEGORIES = [
   'billing',
   'service',
   'staff',
+  'activation',
+  'renewal',
+  'refresh',
+  'sync',
+  'activity',
 ] as const;
 export type NotificationCategory = (typeof NOTIFICATION_CATEGORIES)[number];
+
+/** Raised by the server for admins, so never offered when somebody writes a message. */
+export const AUTOMATED_CATEGORIES: readonly NotificationCategory[] = ['activation', 'renewal', 'refresh', 'sync', 'activity'];
+export const SENDABLE_CATEGORIES = NOTIFICATION_CATEGORIES.filter(value => !AUTOMATED_CATEGORIES.includes(value));
 
 /**
  * How a notification is allowed to reach somebody.

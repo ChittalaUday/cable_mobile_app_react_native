@@ -1,5 +1,5 @@
 import type { JobAttempt, JobRunDetail, JobRunEvent } from '@/lib/api/contracts';
-import type { LivePhase } from '@/lib/hooks/common/use-job-live-stream';
+import type { LivePhase, LiveStreamState } from '@/lib/hooks/common/use-job-live-stream';
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, RefreshControl } from 'react-native';
@@ -64,7 +64,7 @@ export function AutomationRunDetailScreen({ id }: { id: string }) {
                   <Text className="text-xs text-foreground">{t('automations.detail.refresh_failed')}</Text>
                 </Pressable>
               )}
-              <LivePreview run={data} phase={live.phase} frame={live.frame} />
+              <LivePreview run={data} phase={live.phase} frame={live.frame} history={live.history} />
               <RunSummary run={data} />
               <Attempts attempts={data.attempts} />
               <Timeline events={live.events} />
@@ -83,9 +83,34 @@ const PHASE_TEXT: Record<LivePhase, 'live.connecting' | 'live.live' | 'live.reco
   error: 'live.error',
 };
 
-function LivePreview({ run, phase, frame }: { run: JobRunDetail; phase: LivePhase; frame: ReturnType<typeof useJobLiveStream>['frame'] }) {
+const JUMP = 10;
+
+function StepButton({ label, text, disabled, onPress, testID }: { label: string; text: string; disabled: boolean; onPress: () => void; testID: string }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      testID={testID}
+      className={`min-w-11 items-center rounded-lg border border-border px-3 py-1.5 active:opacity-70 ${disabled ? 'opacity-40' : ''}`}
+    >
+      <Text className="text-sm font-bold text-foreground">{text}</Text>
+    </Pressable>
+  );
+}
+
+function LivePreview({ run, phase, frame, history }: { run: JobRunDetail; phase: LivePhase; frame: LiveStreamState['frame']; history: LiveStreamState['history'] }) {
   const { t } = useTranslation();
   const finished = isTerminalRun(run.status);
+  // Every screenshot saved on this phone can be stepped through whenever the view is not live; null means the newest.
+  const [picked, setPicked] = React.useState<number | null>(null);
+  const newest = history.length - 1;
+  const position = history.length === 0 ? null : Math.min(picked ?? newest, newest);
+  const shown = position === null ? frame : history[position]!;
+  const go = (to: number) => setPicked(Math.min(newest, Math.max(0, to)) === newest ? null : Math.min(newest, Math.max(0, to)));
+  const takenAt = shown === null ? null : formatRunTime(shown.capturedAt);
 
   return (
     <Card className="gap-2 overflow-hidden border border-border p-3">
@@ -93,7 +118,7 @@ function LivePreview({ run, phase, frame }: { run: JobRunDetail; phase: LivePhas
         <Text className="text-sm font-bold text-foreground">{t('automations.live.title')}</Text>
         {!finished && <Text className="text-xs text-muted-foreground" testID="live-phase">{t(`automations.${PHASE_TEXT[phase]}`)}</Text>}
       </View>
-      {frame === null
+      {shown === null
         ? (
             <View className="items-center justify-center rounded-lg border border-border bg-muted px-4 py-10">
               <Text className="text-center text-xs text-muted-foreground" testID="live-placeholder">
@@ -102,18 +127,37 @@ function LivePreview({ run, phase, frame }: { run: JobRunDetail; phase: LivePhas
             </View>
           )
         : (
-            <View className="w-full overflow-hidden rounded-lg border border-border bg-black" style={{ aspectRatio: frame.width / frame.height }}>
+            <View className="w-full overflow-hidden rounded-lg border border-border bg-black" style={{ aspectRatio: shown.width / shown.height }}>
               <Image
                 testID="live-frame"
                 accessibilityLabel={t('automations.live.preview_label')}
-                source={{ uri: frame.uri }}
+                source={{ uri: shown.uri }}
                 placeholder={null}
                 contentFit="contain"
                 cachePolicy="none"
                 style={{ width: '100%', height: '100%' }}
               />
+              {/* Not live: the screenshot is one saved on this phone, so say when it was taken. */}
+              {(finished || phase !== 'live') && takenAt !== null && (
+                <View className="absolute inset-x-0 bottom-0 bg-black/60 px-2 py-1">
+                  <Text className="text-[11px] text-white" testID="live-frame-age">{t('automations.live.last_capture', { time: takenAt })}</Text>
+                </View>
+              )}
             </View>
           )}
+      {position !== null && history.length > 1 && (
+        <View className="flex-row items-center justify-between gap-2">
+          <View className="flex-row gap-1.5">
+            <StepButton testID="frame-back-10" label={t('automations.live.back_ten')} text="«" disabled={position === 0} onPress={() => go(position - JUMP)} />
+            <StepButton testID="frame-prev" label={t('automations.live.previous_frame')} text="‹" disabled={position === 0} onPress={() => go(position - 1)} />
+          </View>
+          <Text className="text-xs font-semibold text-muted-foreground" testID="frame-position">{t('automations.live.frame_position', { position: position + 1, count: history.length })}</Text>
+          <View className="flex-row gap-1.5">
+            <StepButton testID="frame-next" label={t('automations.live.next_frame')} text="›" disabled={position === newest} onPress={() => go(position + 1)} />
+            <StepButton testID="frame-forward-10" label={t('automations.live.forward_ten')} text="»" disabled={position === newest} onPress={() => go(position + JUMP)} />
+          </View>
+        </View>
+      )}
     </Card>
   );
 }

@@ -5,5 +5,5 @@ import { ReceiptView } from '@/components/payments/receipt-view';
 export default function StaffReceiptRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  return <ReceiptView id={id} />;
+  return <ReceiptView id={id} basePath="/staff" />;
 }

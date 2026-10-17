@@ -1,0 +1,128 @@
+appId: ${APP_ID}
+env:
+  # M Pushpalatha (SSCN-000333): one ACT box, serial 70564558404, six packages on ACT.
+  CODE: SSCN-000333
+  NAME: M Pushpalatha
+  # `activate` while the plan is still running; `renew` once it has ended.
+  ACTION: activate
+  # `previewed` while the server keeps ACT's final OK off (ACT_SERVICE_EXTENSION_SUBMIT=false): nothing is
+  # extended and the Expires date must stay as it was. `activated` when it is on: the date must move later.
+  EXPECT: previewed
+tags:
+  - e2e
+  - admin
+  - act
+---
+# Activate (or renew) a set-top box on ACT from the customer page, as the admin does it: the visit dialog that
+# gives the reason, the locked progress window, ACT's offer, the admin's approval, ACT's answer, and the customer's Expires date afterwards.
+# Needs the API and the automation worker running with ACT_AUTOMATION_ENABLED=true. With EXPECT=activated it
+# spends the LCO wallet on ACT: run it on a box you mean to extend.
+- runFlow: ../utils/login-admin.yaml
+- runFlow: ../utils/customers-open.yaml
+- tapOn:
+    id: customer-search-input
+- inputText: ${CODE}
+- extendedWaitUntil:
+    visible: ${NAME}
+    timeout: 20000
+- runFlow: ../utils/hide-keyboard.yaml
+- tapOn: View
+- extendedWaitUntil:
+    visible: Customer Details
+    timeout: 20000
+
+# --- What the customer's line says before ------------------------------------
+- scrollUntilVisible:
+    element:
+      id: customer-expires
+- copyTextFrom:
+    id: customer-expires
+- evalScript: ${output.expiresBefore = maestro.copiedText}
+
+# --- Start: the window locks while ACT works ---------------------------------
+- scrollUntilVisible:
+    element:
+      id: ${ACTION}-at-act
+- tapOn:
+    id: ${ACTION}-at-act
+# No payment is behind this tap, so it asks why first and saves that as a visit; only then does ACT start.
+- extendedWaitUntil:
+    visible:
+      id: act-visit-dialog
+    timeout: 10000
+- tapOn:
+    id: act-visit-reason-office
+- tapOn:
+    id: act-visit-save
+- extendedWaitUntil:
+    visible:
+      id: act-modal
+    timeout: 20000
+# The window cannot be dismissed while the run works: the hardware back does nothing on Android, and
+# there is no close button until the run is over.
+- assertNotVisible:
+    id: act-close
+
+# --- ACT's offer: all six packages, waiting for the admin ---------------------
+- extendedWaitUntil:
+    visible:
+      id: act-offer
+    timeout: 240000
+- assertVisible: '.*ACT_BST_PRE_VIZ.*'
+- assertVisible: '.*ACT ULTIMATE_PRE_VIZ.*'
+- assertVisible: '.*TV9 TELUGU_FTA_PRE_VIZ.*'
+- assertVisible: '.*SAKSHI TV_FTA_PRE_VIZ.*'
+- assertVisible: '.*NTV TELUGU_FTA_PRE_VIZ.*'
+- assertVisible: '.*10TV TELUGU_PRE_VIZ.*'
+- tapOn:
+    id: act-approve
+
+# --- ACT's answer --------------------------------------------------------------
+- extendedWaitUntil:
+    visible:
+      id: act-modal-success
+    timeout: 240000
+- assertNotVisible:
+    id: act-modal-failure
+- runFlow:
+    when:
+      true: ${EXPECT == 'activated'}
+    commands:
+      - assertVisible: 'ACT confirmed it.*'
+- runFlow:
+    when:
+      true: ${EXPECT == 'previewed'}
+    commands:
+      - assertVisible: '.*final OK is switched off.*'
+- tapOn:
+    id: act-close
+- extendedWaitUntil:
+    notVisible:
+      id: act-modal
+    timeout: 10000
+
+# --- The customer's Expires date, as the app now shows it ----------------------
+- scrollUntilVisible:
+    element:
+      id: customer-expires
+- runFlow:
+    when:
+      true: ${EXPECT == 'previewed'}
+    commands:
+      - assertVisible:
+          id: customer-expires
+          text: ${output.expiresBefore}
+- runFlow:
+    when:
+      true: ${EXPECT == 'activated'}
+    commands:
+      # The app refetches the customer once the run has succeeded.
+      - extendedWaitUntil:
+          notVisible:
+            id: customer-expires
+            text: ${output.expiresBefore}
+          timeout: 30000
+      - scrollUntilVisible:
+          element:
+            id: customer-activations
+      - assertVisible: '(?i).*activated.*'

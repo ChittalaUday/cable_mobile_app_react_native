@@ -40,6 +40,9 @@ export type ConsolidatedCustomer = {
   name: string;
   phone: string;
   email?: string;
+  /** Where on the location tree they are, e.g. `Mandapeta / TIDCO Apartments / Group C`. */
+  locationPath?: string;
+  /** Their street address as the provider has it; empty when there is none. */
   address: string;
   status: 'active' | 'inactive' | 'pending';
   connections: ConnectionAccount[];

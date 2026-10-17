@@ -1,5 +1,7 @@
+import type { ActOffer } from './step-done';
 import type { CustomerDetail, CustomerSubscription } from '@/lib/api/types';
 import * as React from 'react';
+import { Switch } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { Card } from '@/components/common/shell';
 import { Input, Pill, Pressable, Text, View } from '@/components/ui';
@@ -18,9 +20,11 @@ import { ChoiceRow, Field, SumRow } from './parts';
  * a line of text — not as a second copy of the table. One place to choose, one
  * place to read back.
  */
-export function StepAmount({ customer, line }: {
+export function StepAmount({ customer, line, actOffers = [] }: {
   customer: CustomerDetail;
   line: CustomerSubscription | null;
+  /** Boxes ACT can be asked to update once this payment is recorded. */
+  actOffers?: ActOffer[];
 }) {
   const charge = useRechargeStore(state => state.charge);
   const target = useRechargeStore(state => state.target);
@@ -28,6 +32,7 @@ export function StepAmount({ customer, line }: {
   const method = useRechargeStore(state => state.method);
   const notes = useRechargeStore(state => state.notes);
   const upiAccountId = useRechargeStore(state => state.upiAccountId);
+  const actOnAct = useRechargeStore(state => state.actOnAct);
   const setField = useRechargeStore(state => state.setField);
 
   const { data: upiAccounts } = useTenantUpiAccounts();
@@ -121,6 +126,29 @@ export function StepAmount({ customer, line }: {
           ))}
         </View>
       </Field>
+
+      {charge === 'subscription' && actOffers.length > 0 && payPaise > 0 && (
+        <Card className="gap-1 border border-border p-4">
+          <View className="flex-row items-center gap-3">
+            <View className="flex-1">
+              <Text className="text-sm font-bold text-foreground">
+                {actOffers[0]!.action === 'renew' ? 'Renew on ACT for the next cycle' : 'Activate on ACT for the next cycle'}
+              </Text>
+              <Text className="text-xs text-muted-foreground">
+                {actOffers[0]!.action === 'renew'
+                  ? 'This box is inactive. After the payment is recorded, ACT is asked to renew the box. You confirm what it offers before anything is spent, and admins are told at both steps.'
+                  : `${line?.endDate == null ? 'This plan ends soon' : `This plan ends ${shortDate(new Date(line.endDate))}`}. After the payment is recorded, ACT is asked to extend the box for the next cycle. You confirm what it offers before anything is spent, and admins are told at both steps.`}
+              </Text>
+            </View>
+            <Switch
+              value={actOnAct}
+              onValueChange={value => setField('actOnAct', value)}
+              accessibilityLabel="Update ACT for the next cycle"
+              testID="recharge-act-on-act"
+            />
+          </View>
+        </Card>
+      )}
 
       {method === 'upi' && <UpiPanel upi={upi} accounts={upiAccounts ?? []} onPick={id => setField('upiAccountId', id)} />}
 

@@ -41,6 +41,7 @@ function ConnectionHeader({
   onPress?: () => void;
 }) {
   const isMulti = connectionsCount > 1;
+  const where = [customer.locationPath, customer.address].filter(Boolean).join(', ');
   return (
     <Pressable
       accessibilityRole="button"
@@ -89,12 +90,12 @@ function ConnectionHeader({
               <ThemedIcon icon={Call02Icon} size={13} colorClassName="text-muted-foreground" />
               <Text className="text-[11px] font-semibold text-muted-foreground">{customer.phone}</Text>
             </View>
-            {customer.address
+            {where
               ? (
                   <View className="flex-row items-center gap-1.5">
                     <ThemedIcon icon={Location01Icon} size={13} colorClassName="text-muted-foreground" />
                     <Text className="text-[11px] font-medium text-muted-foreground" numberOfLines={1}>
-                      {customer.address}
+                      {where}
                     </Text>
                   </View>
                 )

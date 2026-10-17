@@ -17,6 +17,8 @@ export const VISIT_PURPOSE_LABELS: Record<VisitPurpose, string> = {
   payment: 'Bill',
   complaint: 'Complaint',
   installation: 'Installation',
+  activation: 'ACT activation',
+  renewal: 'ACT renewal',
   other: 'Other',
 };
 

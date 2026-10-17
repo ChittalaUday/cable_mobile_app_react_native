@@ -1565,6 +1565,21 @@ export interface paths {
                                 /** Format: date-time */
                                 assignedAt: string;
                                 returnedAt: string | null;
+                                canInstantRefresh: boolean;
+                                canActivateAtAct: boolean;
+                                canRenewAtAct: boolean;
+                            }[];
+                            providerActivations: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** @enum {string} */
+                                status: "activated" | "renewed";
+                                packages: string[];
+                                bill: {
+                                    [key: string]: number | null;
+                                };
                             }[];
                             recentTransactions: {
                                 /** Format: uuid */
@@ -1755,6 +1770,21 @@ export interface paths {
                                 /** Format: date-time */
                                 assignedAt: string;
                                 returnedAt: string | null;
+                                canInstantRefresh: boolean;
+                                canActivateAtAct: boolean;
+                                canRenewAtAct: boolean;
+                            }[];
+                            providerActivations: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** @enum {string} */
+                                status: "activated" | "renewed";
+                                packages: string[];
+                                bill: {
+                                    [key: string]: number | null;
+                                };
                             }[];
                             recentTransactions: {
                                 /** Format: uuid */
@@ -1945,6 +1975,21 @@ export interface paths {
                                 /** Format: date-time */
                                 assignedAt: string;
                                 returnedAt: string | null;
+                                canInstantRefresh: boolean;
+                                canActivateAtAct: boolean;
+                                canRenewAtAct: boolean;
+                            }[];
+                            providerActivations: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** @enum {string} */
+                                status: "activated" | "renewed";
+                                packages: string[];
+                                bill: {
+                                    [key: string]: number | null;
+                                };
                             }[];
                             recentTransactions: {
                                 /** Format: uuid */
@@ -4713,6 +4758,547 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/automations/instant-refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start the ACT dashboard's Instant Refresh for one set-top box a customer has */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        customerEquipmentId: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            run: {
+                                /** Format: uuid */
+                                id: string;
+                                jobName: string;
+                                providerId: string | null;
+                                providerName: string | null;
+                                /** @enum {string} */
+                                status: "queued" | "running" | "succeeded" | "failed" | "cancelled" | "enqueue_failed";
+                                /** @enum {string} */
+                                trigger: "scheduled" | "manual";
+                                progress: number;
+                                progressMessage: string | null;
+                                result: {
+                                    [key: string]: unknown;
+                                } | null;
+                                /** Format: date-time */
+                                queuedAt: string;
+                                startedAt: string | null;
+                                finishedAt: string | null;
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/automations/instant-refresh/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Where one instant refresh stands, for whoever may start one */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            status: "queued" | "running" | "succeeded" | "failed" | "cancelled" | "enqueue_failed";
+                            message: string | null;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/automations/act-activation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start activating a running customer's set-top box on ACT again, or renewing an expired one; the run waits for the person's answer before anything is spent */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        customerEquipmentId: string;
+                        /** @enum {string} */
+                        action?: "activate" | "renew";
+                        /** Format: uuid */
+                        collectionId?: string;
+                        /** Format: uuid */
+                        visitId?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            run: {
+                                /** Format: uuid */
+                                id: string;
+                                jobName: string;
+                                providerId: string | null;
+                                providerName: string | null;
+                                /** @enum {string} */
+                                status: "queued" | "running" | "succeeded" | "failed" | "cancelled" | "enqueue_failed";
+                                /** @enum {string} */
+                                trigger: "scheduled" | "manual";
+                                progress: number;
+                                progressMessage: string | null;
+                                result: {
+                                    [key: string]: unknown;
+                                } | null;
+                                /** Format: date-time */
+                                queuedAt: string;
+                                startedAt: string | null;
+                                finishedAt: string | null;
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/automations/act-activation/{id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve or decline what ACT offered a waiting run; an approval names the amount shown and the worker accepts only that */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        decision: "approve" | "cancel";
+                        approvedTotal?: number;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            status: "queued" | "running" | "succeeded" | "failed" | "cancelled" | "enqueue_failed";
+                            message: string | null;
+                            /** @enum {string} */
+                            action: "activate" | "renew";
+                            progress: number;
+                            step: string | null;
+                            awaitingConfirmation: boolean;
+                            outcome: ("previewed" | "activated" | "renewed") | null;
+                            packages: string[];
+                            bill: {
+                                billAmount: number | null;
+                                taxAmount: number | null;
+                                totalPayable: number | null;
+                                networkCapacityFee: number | null;
+                                msoShare: number | null;
+                                outstanding: number | null;
+                                tax1: number | null;
+                                tax2: number | null;
+                                totalMsoSharePayable: number | null;
+                                availableBalance: number | null;
+                            } | null;
+                            endDate: {
+                                before: string | null;
+                                after: string | null;
+                                extended: boolean | null;
+                            } | null;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/automations/act-activation/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Where an ACT activation or renewal stands: its step, what ACT offered, and the outcome */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            status: "queued" | "running" | "succeeded" | "failed" | "cancelled" | "enqueue_failed";
+                            message: string | null;
+                            /** @enum {string} */
+                            action: "activate" | "renew";
+                            progress: number;
+                            step: string | null;
+                            awaitingConfirmation: boolean;
+                            outcome: ("previewed" | "activated" | "renewed") | null;
+                            packages: string[];
+                            bill: {
+                                billAmount: number | null;
+                                taxAmount: number | null;
+                                totalPayable: number | null;
+                                networkCapacityFee: number | null;
+                                msoShare: number | null;
+                                outstanding: number | null;
+                                tax1: number | null;
+                                tax2: number | null;
+                                totalMsoSharePayable: number | null;
+                                availableBalance: number | null;
+                            } | null;
+                            endDate: {
+                                before: string | null;
+                                after: string | null;
+                                extended: boolean | null;
+                            } | null;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["def-0"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/job-runs": {
         parameters: {
             query?: never;
@@ -6471,7 +7057,7 @@ export interface paths {
                     page: number;
                     limit: number;
                     unreadOnly?: boolean;
-                    category?: "general" | "alert" | "promotional" | "billing" | "service" | "staff";
+                    category?: "general" | "alert" | "promotional" | "billing" | "service" | "staff" | "activation" | "renewal" | "refresh" | "sync" | "activity";
                     /** @description One mode, or several separated by commas. A device that cannot receive push asks for `in_app,both`, since a `both` message would otherwise never reach it. */
                     delivery?: string;
                 };
@@ -6492,7 +7078,7 @@ export interface paths {
                                 /** Format: uuid */
                                 id: string;
                                 /** @enum {string} */
-                                category: "general" | "alert" | "promotional" | "billing" | "service" | "staff";
+                                category: "general" | "alert" | "promotional" | "billing" | "service" | "staff" | "activation" | "renewal" | "refresh" | "sync" | "activity";
                                 /** @enum {string} */
                                 delivery: "notification" | "both" | "in_app";
                                 /** @enum {string} */
@@ -6695,7 +7281,7 @@ export interface paths {
                             /** Format: uuid */
                             id: string;
                             /** @enum {string} */
-                            category: "general" | "alert" | "promotional" | "billing" | "service" | "staff";
+                            category: "general" | "alert" | "promotional" | "billing" | "service" | "staff" | "activation" | "renewal" | "refresh" | "sync" | "activity";
                             /** @enum {string} */
                             delivery: "notification" | "both" | "in_app";
                             /** @enum {string} */
@@ -6789,7 +7375,7 @@ export interface paths {
                 content: {
                     "application/json": {
                         /** @enum {string} */
-                        category?: "general" | "alert" | "promotional" | "billing" | "service" | "staff";
+                        category?: "general" | "alert" | "promotional" | "billing" | "service" | "staff" | "activation" | "renewal" | "refresh" | "sync" | "activity";
                     };
                 };
             };
@@ -6959,7 +7545,7 @@ export interface paths {
                         /** @enum {string} */
                         roleId?: "admin" | "staff" | "customer";
                         /** @enum {string} */
-                        category: "general" | "alert" | "promotional" | "billing" | "service" | "staff";
+                        category: "general" | "alert" | "promotional" | "billing" | "service" | "staff" | "activation" | "renewal" | "refresh" | "sync" | "activity";
                         /** @enum {string} */
                         delivery?: "notification" | "both" | "in_app";
                         type: string;
@@ -14447,7 +15033,7 @@ export interface paths {
                         /** Format: uuid */
                         collectionId?: string;
                         /** @enum {string} */
-                        purpose: "payment" | "complaint" | "installation" | "other";
+                        purpose: "payment" | "complaint" | "installation" | "activation" | "renewal" | "other";
                         /** @enum {string} */
                         outcome: "not_available" | "refused" | "come_later" | "done" | "other";
                         notes?: string;
@@ -14481,7 +15067,7 @@ export interface paths {
                             visitedBy: string;
                             visitorName: string | null;
                             /** @enum {string} */
-                            purpose: "payment" | "complaint" | "installation" | "other";
+                            purpose: "payment" | "complaint" | "installation" | "activation" | "renewal" | "other";
                             /** @enum {string} */
                             outcome: "not_available" | "refused" | "come_later" | "done" | "other";
                             notes: string | null;
@@ -14582,7 +15168,7 @@ export interface paths {
                                 /** @enum {string} */
                                 reason: "complaint" | "expiring" | "follow_up";
                                 /** @enum {string} */
-                                purpose: "payment" | "complaint" | "installation" | "other";
+                                purpose: "payment" | "complaint" | "installation" | "activation" | "renewal" | "other";
                                 action: ("collect_payment" | "resolve_complaint") | null;
                                 /** Format: uuid */
                                 customerId: string;
@@ -14676,7 +15262,7 @@ export interface paths {
                     limit?: unknown;
                     customerId?: string;
                     visitedBy?: string | "me";
-                    purpose?: "payment" | "complaint" | "installation" | "other";
+                    purpose?: "payment" | "complaint" | "installation" | "activation" | "renewal" | "other";
                     outcome?: "not_available" | "refused" | "come_later" | "done" | "other";
                     from?: string;
                     to?: string;
@@ -14708,7 +15294,7 @@ export interface paths {
                                 visitedBy: string;
                                 visitorName: string | null;
                                 /** @enum {string} */
-                                purpose: "payment" | "complaint" | "installation" | "other";
+                                purpose: "payment" | "complaint" | "installation" | "activation" | "renewal" | "other";
                                 /** @enum {string} */
                                 outcome: "not_available" | "refused" | "come_later" | "done" | "other";
                                 notes: string | null;

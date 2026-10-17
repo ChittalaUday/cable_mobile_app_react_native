@@ -16,8 +16,10 @@ import {
 import { Platform } from 'react-native';
 import { client } from '@/lib/api/client';
 import { handleRealtimeSync } from '@/lib/api/query-client';
+import { notificationRoute } from '@/lib/notification-route';
 
 export type { NotificationCategory } from '@/lib/constants/notify';
+export { notificationRoute } from '@/lib/notification-route';
 
 /**
  * Android drops a notification whose channel does not exist, so every category
@@ -32,6 +34,11 @@ const CHANNELS: { id: NotificationCategory; name: string; importance: AndroidImp
   { id: 'billing', name: 'Payments and bills', importance: AndroidImportance.DEFAULT },
   { id: 'service', name: 'Your connection', importance: AndroidImportance.DEFAULT },
   { id: 'staff', name: 'Team messages', importance: AndroidImportance.DEFAULT },
+  { id: 'activation', name: 'Box activations', importance: AndroidImportance.DEFAULT },
+  { id: 'renewal', name: 'Box renewals', importance: AndroidImportance.DEFAULT },
+  { id: 'refresh', name: 'Box refreshes', importance: AndroidImportance.LOW },
+  { id: 'sync', name: 'Data sync', importance: AndroidImportance.LOW },
+  { id: 'activity', name: 'Staff activity', importance: AndroidImportance.DEFAULT },
 ];
 
 /**
@@ -201,8 +208,7 @@ export function onForegroundMessage(handler: (message: RemoteMessage) => void): 
 }
 
 function routeOf(message: RemoteMessage | null): string | null {
-  const route = message?.data?.route;
-  return typeof route === 'string' && route !== '' ? route : null;
+  return notificationRoute({ type: message?.data?.type, data: message?.data });
 }
 
 export function onNotificationOpened(handler: (route: string) => void): () => void {

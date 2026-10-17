@@ -11,12 +11,21 @@ const JPEG_A = '/9j/4AAQ';
 const JPEG_B = '/9j/4AAR';
 
 const mockRefetch = jest.fn();
+type SavedFrame = { uri: string; sequence: number; width: number; height: number; capturedAt: string };
+const mockSavedFrames = new Map<string, SavedFrame[]>();
 let mockDetail: { data?: JobRunDetail; isPending?: boolean; isRefetching?: boolean; error?: Error | null } = {};
 
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn(), back: jest.fn() }) }));
 jest.mock('env', () => ({ __esModule: true, default: { EXPO_PUBLIC_API_URL: 'https://api.test/api/v1' } }));
 jest.mock('@/lib/api/client', () => ({ devHostUrl: (url: string) => url }));
 jest.mock('@/lib/auth/utils', () => ({ getToken: () => ({ access: 'token', refresh: 'r' }), getTenantId: () => 'tenant-a' }));
+// An in-memory stand-in for the device's frame files: the screen is closed and opened again within one test.
+jest.mock('@/lib/automations/live-frame-store', () => ({
+  listLiveFrames: (runId: string) => [...(mockSavedFrames.get(runId) ?? [])],
+  saveLiveFrame: (runId: string, frame: SavedFrame) => {
+    mockSavedFrames.set(runId, [...(mockSavedFrames.get(runId) ?? []), { ...frame, uri: `file:///frames/${runId}/${frame.sequence}.jpg` }]);
+  },
+}));
 jest.mock('@/lib/hooks/api/use-job-runs', () => ({
   jobRunKeys: { detail: (tenant: string | null, id: string) => ['detail', tenant, id] },
   useJobRun: () => ({ isPending: false, isRefetching: false, error: null, refetch: mockRefetch, ...mockDetail }),
@@ -91,6 +100,7 @@ const socket = () => FakeSocket.instances[FakeSocket.instances.length - 1]!;
 
 beforeEach(async () => {
   FakeSocket.instances = [];
+  mockSavedFrames.clear();
   globalThis.WebSocket = FakeSocket as unknown as typeof WebSocket;
   mockRefetch.mockReset();
   mockDetail = { data: detail() };
@@ -185,6 +195,30 @@ describe('an active run', () => {
     expect(screen.getByLabelText('Live picture of the browser running the sync')).toBeTruthy();
   });
 
+  it('keeps every screenshot when you leave the screen and come back, and steps through them', () => {
+    const view = mount();
+    act(() => socket().send({ type: 'ready', status: 'running' }));
+    for (const sequence of [5, 6, 7])
+      act(() => socket().send({ type: 'frame', sequence, capturedAt: `2026-10-02T14:30:0${sequence}.000Z`, contentType: 'image/jpeg', width: 800, height: 600, data: JPEG_A }));
+    // Live: the newest picture follows the browser, with no controls and no "last screenshot" strip.
+    expect(screen.queryByTestId('frame-position')).toBeNull();
+    expect(screen.queryByTestId('live-frame-age')).toBeNull();
+    view.unmount();
+
+    mount();
+
+    expect(frameUri()).toBe(`file:///frames/${RUN}/7.jpg`);
+    expect(screen.getByTestId('live-frame-age')).toHaveTextContent(/^Last screenshot 02 Oct 2026, /);
+    expect(screen.getByTestId('frame-position')).toHaveTextContent('3 / 3');
+    fireEvent.press(screen.getByTestId('frame-prev'));
+    expect(frameUri()).toBe(`file:///frames/${RUN}/6.jpg`);
+    expect(screen.getByTestId('frame-position')).toHaveTextContent('2 / 3');
+    fireEvent.press(screen.getByTestId('frame-back-10'));
+    expect(frameUri()).toBe(`file:///frames/${RUN}/5.jpg`);
+    fireEvent.press(screen.getByTestId('frame-forward-10'));
+    expect(frameUri()).toBe(`file:///frames/${RUN}/7.jpg`);
+  });
+
   it('lists REST activity and live activity once, in order, below the preview and summary', () => {
     mockDetail = { data: detail({ events: [event(1, 'run_queued', { scheduled: false }), event(3, 'portal_login_started')] }) };
     mount();
@@ -233,6 +267,43 @@ describe('an active run', () => {
     expect(screen.getAllByText('Activity recorded')).toHaveLength(2);
     expect(screen.queryByText(/secret/)).toBeNull();
     expect(screen.queryByText(/lots/)).toBeNull();
+  });
+});
+
+describe('a finished run with saved screenshots', () => {
+  const frames = (count: number) => Array.from({ length: count }, (_, index) => ({ uri: `file:///frames/${RUN}/${index + 1}.jpg`, sequence: index + 1, width: 800, height: 600, capturedAt: `2026-10-02T14:33:${String(index).padStart(2, '0')}.000Z` }));
+
+  it('shows the newest screenshot saved on this phone, with when it was taken, opens no socket, and steps back and forward', () => {
+    mockSavedFrames.set(RUN, frames(30));
+    mockDetail = { data: detail({ status: 'succeeded', finishedAt: '2026-10-02T14:33:05' }) };
+
+    mount();
+
+    expect(frameUri()).toBe(`file:///frames/${RUN}/30.jpg`);
+    expect(screen.getByTestId('live-frame-age')).toHaveTextContent(/^Last screenshot /);
+    expect(FakeSocket.instances).toHaveLength(0);
+    expect(screen.getByTestId('frame-position')).toHaveTextContent('30 / 30');
+    expect(screen.getByTestId('frame-next').props.accessibilityState).toMatchObject({ disabled: true });
+
+    fireEvent.press(screen.getByTestId('frame-back-10'));
+    expect(frameUri()).toBe(`file:///frames/${RUN}/20.jpg`);
+    fireEvent.press(screen.getByTestId('frame-back-10'));
+    fireEvent.press(screen.getByTestId('frame-back-10'));
+    // Jumping past the start stops at the first screenshot.
+    expect(frameUri()).toBe(`file:///frames/${RUN}/1.jpg`);
+    expect(screen.getByTestId('frame-prev').props.accessibilityState).toMatchObject({ disabled: true });
+    fireEvent.press(screen.getByTestId('frame-next'));
+    expect(frameUri()).toBe(`file:///frames/${RUN}/2.jpg`);
+  });
+
+  it('offers no stepping when there is only one screenshot', () => {
+    mockSavedFrames.set(RUN, frames(1));
+    mockDetail = { data: detail({ status: 'succeeded', finishedAt: '2026-10-02T14:33:05' }) };
+
+    mount();
+
+    expect(frameUri()).toBe(`file:///frames/${RUN}/1.jpg`);
+    expect(screen.queryByTestId('frame-position')).toBeNull();
   });
 });
 

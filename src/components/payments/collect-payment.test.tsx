@@ -107,6 +107,7 @@ function customer(lines: CustomerDetail['subscriptions']): CustomerDetail {
     notes: null,
     subscriptions: lines,
     equipment: [],
+    providerActivations: [],
     recentTransactions: [],
     summary: {
       subscriptions: lines.length,

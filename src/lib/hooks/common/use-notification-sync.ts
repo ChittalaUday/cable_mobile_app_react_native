@@ -7,6 +7,7 @@ import { queryClient } from '@/lib/api';
 import { handleRealtimeSync } from '@/lib/api/query-client';
 import { useMarkRead, usePendingInApp } from '@/lib/hooks/api/use-notifications';
 import { useAuthStore } from '@/lib/hooks/stores/use-auth-store';
+import { notificationRoute } from '@/lib/notification-route';
 import {
   clearDeliveredNotifications,
   isPushUsable,
@@ -26,17 +27,19 @@ function refreshInbox() {
  * The one place an in-app message is presented, so a foreground push and a
  * pulled in-app message look the same and neither can quietly lose its image.
  */
-function present({ title, body, category, imageUrl }: {
+function present({ title, body, category, imageUrl, route }: {
   title: string | null | undefined;
   body: string | null | undefined;
   category: string | undefined;
   imageUrl?: string | null;
+  route?: string | null;
 }) {
   showMessage({
     message: title ?? 'Satya Cable',
     ...(body != null ? { description: body } : {}),
     type: category === 'alert' ? 'warning' : 'info',
     duration: imageUrl != null && imageUrl !== '' ? 6000 : 4000,
+    ...(route != null ? { onPress: () => router.push(route as never) } : {}),
     ...(imageUrl != null && imageUrl !== ''
       ? { renderAfterContent: () => React.createElement(BannerImage, { uri: imageUrl }) }
       : {}),
@@ -110,6 +113,7 @@ export function useNotificationSync(): void {
           body: message.notification?.body,
           category: typeof category === 'string' ? category : undefined,
           imageUrl: typeof imageUrl === 'string' ? imageUrl : null,
+          route: notificationRoute({ type: message.data?.type, data: message.data }),
         });
       }
 
@@ -171,7 +175,13 @@ function usePendingInAppMessages(signedIn: boolean): void {
       return;
 
     shown.current = next.id;
-    present({ title: next.title, body: next.body, category: next.category, imageUrl: next.imageUrl });
+    present({
+      title: next.title,
+      body: next.body,
+      category: next.category,
+      imageUrl: next.imageUrl,
+      route: notificationRoute({ type: next.type, data: next.data }),
+    });
 
     // Read is what stops it being presented again on the next launch.
     markReadAsync({ id: next.id }).catch(() => {

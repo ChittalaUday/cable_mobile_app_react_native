@@ -43,6 +43,7 @@ const REALTIME_QUERY_KEYS: Record<string, readonly string[]> = {
   customers: ['customers', 'customer', 'staff-dashboard', 'admin-dashboard'],
   inventory: ['inventory', 'customers', 'customer', 'staff-dashboard', 'admin-dashboard'],
   payments: ['payments', 'payment', 'customers', 'customer', 'inventory', 'staff-dashboard', 'admin-dashboard'],
+  visits: ['visits', 'customer-timeline', 'admin-dashboard', 'staff-dashboard'],
 };
 
 /** Marks every view affected by a silent FCM data message stale. */

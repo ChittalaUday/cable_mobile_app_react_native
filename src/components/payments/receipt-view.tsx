@@ -35,7 +35,7 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function ReceiptView({ id }: { id: string }) {
+export function ReceiptView({ id, basePath = '/admin' }: { id: string; basePath?: '/admin' | '/staff' }) {
   const router = useRouter();
   const { t } = useTranslation();
   const { hasScope } = usePermissions();
@@ -77,20 +77,34 @@ export function ReceiptView({ id }: { id: string }) {
     });
   };
 
-  // Both platforms ask for the reason now. This used to branch on `Platform`
-  // because `Alert.prompt` is iOS-only, so Android recorded every reversal
-  // under one canned sentence — an audit trail that said nothing.
+  // One dialog both confirms and asks the reason, so it has to say plainly what a reversal does: it cannot be
+  // taken back, and it never reaches ACT. Both platforms ask for the reason (`Alert.prompt` is iOS-only, so
+  // Android once recorded every reversal under one canned sentence: an audit trail that said nothing).
   const confirmReverse = async () => {
+    const amount = rupees(receipt.totalCollected);
     const reason = await dialogs.prompt({
-      title: 'Reverse this receipt',
-      message: 'The original stays on the record and both are audited. Say why:',
-      confirmLabel: 'Reverse',
+      title: 'Reverse this receipt?',
+      message: [
+        `This takes ${amount} back, as a refund:`,
+        `• ${amount} goes back on the customer's account as unpaid.`,
+        '• Any plan charge on this receipt comes off, and the line\'s cycle returns to where it was.',
+        '• The original stays on record, marked Refunded, next to a new refund entry. Both are audited.',
+        '• It cannot be undone. If this payment already activated or renewed the box on ACT, ACT is not changed.',
+        '',
+        'Say why:',
+      ].join('\n'),
+      confirmLabel: 'Reverse receipt',
+      tone: 'danger',
       prompt: { placeholder: 'Collected twice by mistake' },
     });
 
     if (reason !== null)
       submitReversal(reason);
   };
+
+  const reverseButton = canReverse
+    ? <Button label={isReversing ? 'Reversing…' : 'Reverse this receipt'} variant="outline" disabled={isReversing} onPress={confirmReverse} testID="receipt-reverse" />
+    : undefined;
 
   return (
     <View className="flex-1 bg-surface">
@@ -145,16 +159,11 @@ export function ReceiptView({ id }: { id: string }) {
           </Card>
         )}
 
-        {!isReversed && receipt.outcome !== 'refund' && <Reprint receipt={receipt} />}
+        {!isReversed && receipt.outcome !== 'refund'
+          ? <Reprint receipt={receipt}>{reverseButton}</Reprint>
+          : reverseButton}
 
-        {canReverse && (
-          <Button
-            label={isReversing ? 'Reversing…' : 'Reverse this receipt'}
-            variant="outline"
-            disabled={isReversing}
-            onPress={confirmReverse}
-          />
-        )}
+        <Button label="View customer details" variant="outline" onPress={() => router.push(`${basePath}/customers/${receipt.customerId}`)} testID="receipt-view-customer" />
 
         <Button label="Done" variant="secondary" onPress={() => router.back()} />
       </ScrollView>
@@ -165,9 +174,10 @@ export function ReceiptView({ id }: { id: string }) {
 /**
  * Printing after the round, from the receipt itself. Opened on a tap so merely
  * viewing a receipt never raises the Bluetooth permission prompt; every print
- * after the first is stamped a duplicate.
+ * after the first is stamped a duplicate. `children` (the reverse button) sits beside the print button, and
+ * under the printer panel once that is open.
  */
-function Reprint({ receipt }: { receipt: Collection }) {
+function Reprint({ receipt, children }: { receipt: Collection; children?: React.ReactNode }) {
   const [open, setOpen] = React.useState(false);
   const printer = usePrinter();
   // The receipt names its line, not its plan; the customer's lines say which plan that is.
@@ -178,15 +188,20 @@ function Reprint({ receipt }: { receipt: Collection }) {
 
   if (!open) {
     return (
-      <Button
-        label={printed ? 'Print a duplicate' : 'Print receipt'}
-        variant="outline"
-        onPress={() => {
-          setOpen(true);
-          void printer.refresh();
-        }}
-        testID="receipt-print-open"
-      />
+      <View className="flex-row gap-3">
+        <View className="flex-1">
+          <Button
+            label={printed ? 'Print a duplicate' : 'Print receipt'}
+            variant="outline"
+            onPress={() => {
+              setOpen(true);
+              void printer.refresh();
+            }}
+            testID="receipt-print-open"
+          />
+        </View>
+        {children !== undefined && <View className="flex-1">{children}</View>}
+      </View>
     );
   }
 
@@ -206,6 +221,7 @@ function Reprint({ receipt }: { receipt: Collection }) {
           testID="receipt-print"
         />
       )}
+      {children}
     </View>
   );
 }

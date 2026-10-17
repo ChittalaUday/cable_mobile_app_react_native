@@ -1,13 +1,15 @@
 import type { Collection } from '@/lib/hooks/api/use-payments';
-import { render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import * as React from 'react';
+import { dialogs } from '@/components/common/dialogs';
 import i18n from '@/lib/i18n';
 import { ReceiptView } from './receipt-view';
 
 const mockReverse = jest.fn();
+const mockPush = jest.fn();
 
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn() }),
+  useRouter: () => ({ push: mockPush, replace: jest.fn(), back: jest.fn() }),
 }));
 
 jest.mock('@/lib/hooks/api/use-payments', () => ({
@@ -82,6 +84,7 @@ function mount(row: Collection | undefined, scope: 'ALL' | 'LOCATION' | null = '
 
 beforeEach(async () => {
   mockReverse.mockReset();
+  mockPush.mockReset();
   await i18n.changeLanguage('en');
 });
 
@@ -121,6 +124,54 @@ describe('a receipt', () => {
     mount(receipt(), 'ALL');
 
     expect(screen.getByText('Reverse this receipt')).toBeTruthy();
+  });
+
+  it('puts Print and Reverse side by side, and a button to the customer under them', () => {
+    mount(receipt(), 'ALL');
+
+    expect(screen.getByTestId('receipt-print-open')).toBeTruthy();
+    expect(screen.getByTestId('receipt-reverse')).toBeTruthy();
+    expect(screen.getByTestId('receipt-view-customer')).toBeTruthy();
+  });
+
+  it('explains what a reversal does and asks before reversing, and reverses nothing when it is declined', async () => {
+    const prompt = jest.spyOn(dialogs, 'prompt').mockResolvedValue(null);
+    mount(receipt({ totalCollected: '250.00' }), 'ALL');
+
+    fireEvent.press(screen.getByTestId('receipt-reverse'));
+
+    await waitFor(() => expect(prompt).toHaveBeenCalledTimes(1));
+    expect(prompt).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Reverse this receipt?',
+      tone: 'danger',
+      confirmLabel: 'Reverse receipt',
+      message: expect.stringMatching(/₹250\.00 goes back on the customer's account as unpaid[\s\S]*marked Refunded[\s\S]*cannot be undone[\s\S]*ACT is not changed/) as string,
+    }));
+    expect(mockReverse).not.toHaveBeenCalled();
+    prompt.mockRestore();
+  });
+
+  it('reverses with the reason that was typed once it is confirmed', async () => {
+    const prompt = jest.spyOn(dialogs, 'prompt').mockResolvedValue('Collected twice');
+    mount(receipt(), 'ALL');
+
+    fireEvent.press(screen.getByTestId('receipt-reverse'));
+
+    await waitFor(() => expect(mockReverse).toHaveBeenCalledWith({ id: 'rcp-1', reason: 'Collected twice' }, expect.anything() as never));
+    prompt.mockRestore();
+  });
+
+  it('opens the customer from the receipt, in the admin or the staff area', () => {
+    mount(receipt());
+    fireEvent.press(screen.getByTestId('receipt-view-customer'));
+    expect(mockPush).toHaveBeenCalledWith('/admin/customers/cust-1');
+
+    mockPush.mockReset();
+    screen.unmount();
+    useCollection.mockReturnValue({ data: receipt(), isPending: false, error: null, refetch: jest.fn() });
+    render(<ReceiptView id="rcp-1" basePath="/staff" />);
+    fireEvent.press(screen.getByTestId('receipt-view-customer'));
+    expect(mockPush).toHaveBeenCalledWith('/staff/customers/cust-1');
   });
 
   it('will not reverse one that already has been, even for an admin', () => {

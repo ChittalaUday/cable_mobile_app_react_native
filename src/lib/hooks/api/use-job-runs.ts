@@ -1,4 +1,4 @@
-import type { AutomationProviderList, JobRunDetail, JobRunPage, JobRunQuery, StartCustomerSyncBody, StartCustomerSyncResponse } from '@/lib/api/contracts';
+import type { ActivationDecisionBody, ActivationRunResponse, ActivationStatus, AutomationProviderList, InstantRefreshStatus, JobRunDetail, JobRunPage, JobRunQuery, StartActivationBody, StartCustomerSyncBody, StartCustomerSyncResponse, StartInstantRefreshBody, StartInstantRefreshResponse } from '@/lib/api/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { client } from '@/lib/api/client';
 import { isActiveRun } from '@/lib/automations/job-run-presenter';
@@ -9,7 +9,12 @@ export type JobRunFilters = JobRunQuery;
 /** How often a queued or running run is re-read; the live socket only makes it quicker. */
 export const ACTIVE_POLL_MS = 5000;
 
+/** A step changes every few seconds, and the person is watching it, so an ACT action is read more often than other runs. */
+export const ACTIVATION_POLL_MS = 1500;
+
 const START_PATH = '/automations/customer-sync/runs';
+const REFRESH_PATH = '/automations/instant-refresh';
+const ACTIVATION_PATH = '/automations/act-activation';
 
 /** Every key carries the tenant, so switching tenant can never show another tenant's runs. */
 export const jobRunKeys = {
@@ -81,5 +86,62 @@ export function useStartCustomerSync() {
       void queryClient.invalidateQueries({ queryKey: jobRunKeys.lists(tenantId) });
       void queryClient.invalidateQueries({ queryKey: jobRunKeys.providers(tenantId) });
     },
+  });
+}
+
+/**
+ * Starts the ACT dashboard's Instant Refresh for one box a customer has. Never retried: a lost response
+ * must not become a second refresh of the same box.
+ */
+export function useStartInstantRefresh() {
+  return useMutation<StartInstantRefreshResponse, Error, StartInstantRefreshBody>({
+    retry: false,
+    mutationFn: async body => (await client.post<StartInstantRefreshResponse>(REFRESH_PATH, body)).data,
+  });
+}
+
+/**
+ * Where one refresh stands, for the person who started it (a field engineer cannot read job runs).
+ * Polls until the run is over; a 4xx is an answer, so it is not asked again.
+ */
+export function useInstantRefreshStatus(runId: string | undefined) {
+  const { tenantId, ready } = useReady();
+  return useQuery<InstantRefreshStatus, Error>({
+    queryKey: [...jobRunKeys.all(tenantId), 'instant-refresh', runId ?? ''],
+    queryFn: async ({ signal }) => (await client.get<InstantRefreshStatus>(`${REFRESH_PATH}/${runId}`, { signal })).data,
+    enabled: ready && runId !== undefined && runId !== '',
+    refetchInterval: query => query.state.status === 'error' || !query.state.data || !isActiveRun(query.state.data.status) ? false : ACTIVE_POLL_MS,
+  });
+}
+
+/** Starts activating (or renewing) one box on ACT. The run only reads ACT's offer and waits: it spends nothing until answered. Never retried. */
+export function useStartActivation() {
+  return useMutation<ActivationRunResponse, Error, StartActivationBody>({
+    retry: false,
+    mutationFn: async body => (await client.post<ActivationRunResponse>(ACTIVATION_PATH, body)).data,
+  });
+}
+
+/** Answers what ACT offered a waiting run. An approval may spend the LCO wallet: never retried. */
+export function useDecideActivation(runId: string | undefined) {
+  const queryClient = useQueryClient();
+  const { tenantId } = useReady();
+  return useMutation<ActivationStatus, Error, ActivationDecisionBody>({
+    retry: false,
+    mutationFn: async body => (await client.post<ActivationStatus>(`${ACTIVATION_PATH}/${runId}/decision`, body)).data,
+    onSuccess: (status) => {
+      queryClient.setQueryData([...jobRunKeys.all(tenantId), 'act-activation', runId ?? ''], status);
+    },
+  });
+}
+
+/** Where an activation or renewal stands: its step, what ACT offered, the outcome. Polls until the run is over. */
+export function useActivationStatus(runId: string | undefined) {
+  const { tenantId, ready } = useReady();
+  return useQuery<ActivationStatus, Error>({
+    queryKey: [...jobRunKeys.all(tenantId), 'act-activation', runId ?? ''],
+    queryFn: async ({ signal }) => (await client.get<ActivationStatus>(`${ACTIVATION_PATH}/${runId}`, { signal })).data,
+    enabled: ready && runId !== undefined && runId !== '',
+    refetchInterval: query => query.state.status === 'error' || !query.state.data || !isActiveRun(query.state.data.status) ? false : ACTIVATION_POLL_MS,
   });
 }

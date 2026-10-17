@@ -14,7 +14,7 @@ import {
   Text,
   View,
 } from '@/components/ui';
-import { NOTIFICATION_CATEGORIES, NOTIFICATION_DELIVERIES } from '@/lib/constants/notify';
+import { NOTIFICATION_DELIVERIES, SENDABLE_CATEGORIES } from '@/lib/constants/notify';
 import { useSendNotification } from '@/lib/hooks/api/use-notifications';
 import { useAuthStore } from '@/lib/hooks/stores/use-auth-store';
 
@@ -122,7 +122,7 @@ export function SendNotificationScreen() {
         <Card className="p-3.5">
           <Text className="text-[13px] font-bold text-foreground">Category</Text>
           <Chips
-            values={NOTIFICATION_CATEGORIES}
+            values={SENDABLE_CATEGORIES}
             selected={category}
             labels={{
               general: 'General',
@@ -131,6 +131,11 @@ export function SendNotificationScreen() {
               billing: 'Payment',
               service: 'Connection',
               staff: 'Team',
+              activation: 'Activation',
+              renewal: 'Renewal',
+              refresh: 'Refresh',
+              sync: 'Data sync',
+              activity: 'Activity',
             }}
             onSelect={setCategory}
           />

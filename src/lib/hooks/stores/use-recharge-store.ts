@@ -51,6 +51,8 @@ export type RechargeState = {
   notes: string;
   /** Which of the tenant's handles the QR is drawn from; null takes the default. */
   upiAccountId: string | null;
+  /** Asked for on the amount step: once the money is recorded, renew or activate the box on ACT for the next cycle. */
+  actOnAct: boolean;
 
   /** The receipt the flow produced, once the money is recorded. */
   receiptId: string | null;
@@ -70,7 +72,7 @@ export type RechargeState = {
   setCharge: (charge: ChargeKind) => void;
   setSubscription: (subscriptionId: string) => void;
   setTarget: (target: EquipmentTarget | null) => void;
-  setField: <K extends 'amount' | 'method' | 'notes' | 'upiAccountId'>(
+  setField: <K extends 'amount' | 'method' | 'notes' | 'upiAccountId' | 'actOnAct'>(
     key: K,
     value: RechargeState[K],
   ) => void;
@@ -89,6 +91,7 @@ const BLANK = {
   method: 'cash' as PaymentEntryMethod,
   notes: '',
   upiAccountId: null,
+  actOnAct: false,
   receiptId: null,
   printed: false,
 };
