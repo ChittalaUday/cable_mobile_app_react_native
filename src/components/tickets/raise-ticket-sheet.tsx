@@ -12,6 +12,9 @@ import {
   TICKET_PRIORITY_LABELS,
   useRaiseTicket,
 } from '@/lib/hooks/api/use-tickets';
+import { fixPayload, useCollectionFix } from '@/lib/hooks/common/use-collection-fix';
+import { useAuthStore } from '@/lib/hooks/stores/use-auth-store';
+import { ensureFix } from '@/lib/payments/require-fix';
 
 export type RaiseTicketTarget = {
   customerId: string;
@@ -52,13 +55,19 @@ function Sheet({ target, onClose, onRaised }: {
   const [description, setDescription] = React.useState('');
 
   const { mutate: raise, isPending } = useRaiseTicket();
+  // The office and the field always say where they raised it from; a subscriber complaining from home is not held up by it.
+  const fix = useCollectionFix();
+  const role = useAuthStore(state => state.role);
 
   const finalSubject = subject.trim() === '' ? TICKET_CATEGORY_LABELS[category] : subject.trim();
 
   const submit = () => {
+    if (role !== 'customer' && !ensureFix(fix))
+      return;
     raise({
       payload: {
         customerId: target.customerId,
+        ...(fix.status === 'ready' ? fixPayload(fix) : {}),
         ...(target.subscriptionId === undefined ? {} : { subscriptionId: target.subscriptionId }),
         category,
         priority,

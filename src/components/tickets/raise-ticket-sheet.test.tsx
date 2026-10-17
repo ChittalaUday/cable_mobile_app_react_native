@@ -6,6 +6,15 @@ import { RaiseTicketSheet } from './raise-ticket-sheet';
 
 type Handlers = { onSuccess: (made: { ticketNo: string }) => void; onError: (failure: Error) => void };
 const mockRaise = jest.fn<void, [{ payload: Record<string, unknown> }, Handlers]>();
+let mockRole: string | null = 'admin';
+let mockFix: Record<string, unknown> = { status: 'ready', latitude: 16.8697, longitude: 81.9342, gpsAccuracyM: 8, retry: jest.fn() };
+
+jest.mock('@/lib/hooks/stores/use-auth-store', () => ({ useAuthStore: (select: (state: { role: string | null }) => unknown) => select({ role: mockRole }) }));
+jest.mock('@/lib/hooks/common/use-collection-fix', () => ({
+  useCollectionFix: () => mockFix,
+  fixPayload: (fix: { latitude: number; longitude: number; gpsAccuracyM: number }) => ({ latitude: fix.latitude, longitude: fix.longitude, gpsAccuracyM: fix.gpsAccuracyM }),
+}));
+jest.mock('@/lib/payments/require-fix', () => ({ ensureFix: (fix: { status: string }) => fix.status === 'ready' }));
 
 jest.mock('@/lib/hooks/api/use-tickets', () => ({
   ...jest.requireActual<typeof TicketsModule>('@/lib/hooks/api/use-tickets'),
@@ -25,6 +34,8 @@ function payload() {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockRole = 'admin';
+  mockFix = { status: 'ready', latitude: 16.8697, longitude: 81.9342, gpsAccuracyM: 8, retry: jest.fn() };
 });
 
 describe('raising a complaint', () => {
@@ -45,7 +56,29 @@ describe('raising a complaint', () => {
       category: 'no_signal',
       priority: 'normal',
       subject: 'No signal',
+      latitude: 16.8697,
+      longitude: 81.9342,
+      gpsAccuracyM: 8,
     });
+  });
+
+  it('will not raise a complaint for the office or the field without a location fix', () => {
+    mockFix = { status: 'locating', retry: jest.fn() };
+    render(<RaiseTicketSheet target={TARGET} onClose={jest.fn()} />);
+
+    fireEvent.press(screen.getByTestId('ticket-submit'));
+
+    expect(mockRaise).not.toHaveBeenCalled();
+  });
+
+  it('does not hold a subscriber up for a fix, and sends where they are only when there is one', () => {
+    mockRole = 'customer';
+    mockFix = { status: 'locating', retry: jest.fn() };
+    render(<RaiseTicketSheet target={TARGET} onClose={jest.fn()} />);
+
+    fireEvent.press(screen.getByTestId('ticket-submit'));
+
+    expect(payload()).not.toHaveProperty('latitude');
   });
 
   it('sends what was actually chosen and typed', () => {

@@ -14468,6 +14468,12 @@ export interface paths {
                                 } | null;
                                 resolution: string | null;
                                 resolvedAt: string | null;
+                                latitude: string | null;
+                                longitude: string | null;
+                                gpsAccuracyM: string | null;
+                                resolvedLatitude: string | null;
+                                resolvedLongitude: string | null;
+                                resolvedGpsAccuracyM: string | null;
                                 createdBy: string | null;
                                 /** Format: date-time */
                                 createdAt: string;
@@ -14549,6 +14555,9 @@ export interface paths {
                         description?: string;
                         /** Format: uuid */
                         assignedTo?: string;
+                        latitude?: number;
+                        longitude?: number;
+                        gpsAccuracyM?: number;
                     };
                 };
             };
@@ -14593,6 +14602,12 @@ export interface paths {
                             } | null;
                             resolution: string | null;
                             resolvedAt: string | null;
+                            latitude: string | null;
+                            longitude: string | null;
+                            gpsAccuracyM: string | null;
+                            resolvedLatitude: string | null;
+                            resolvedLongitude: string | null;
+                            resolvedGpsAccuracyM: string | null;
                             createdBy: string | null;
                             /** Format: date-time */
                             createdAt: string;
@@ -14707,6 +14722,12 @@ export interface paths {
                             } | null;
                             resolution: string | null;
                             resolvedAt: string | null;
+                            latitude: string | null;
+                            longitude: string | null;
+                            gpsAccuracyM: string | null;
+                            resolvedLatitude: string | null;
+                            resolvedLongitude: string | null;
+                            resolvedGpsAccuracyM: string | null;
                             createdBy: string | null;
                             /** Format: date-time */
                             createdAt: string;
@@ -14785,6 +14806,9 @@ export interface paths {
                         subject?: string;
                         description?: string;
                         resolution?: string;
+                        latitude?: number;
+                        longitude?: number;
+                        gpsAccuracyM?: number;
                     };
                 };
             };
@@ -14829,6 +14853,12 @@ export interface paths {
                             } | null;
                             resolution: string | null;
                             resolvedAt: string | null;
+                            latitude: string | null;
+                            longitude: string | null;
+                            gpsAccuracyM: string | null;
+                            resolvedLatitude: string | null;
+                            resolvedLongitude: string | null;
+                            resolvedGpsAccuracyM: string | null;
                             createdBy: string | null;
                             /** Format: date-time */
                             createdAt: string;
@@ -14947,6 +14977,12 @@ export interface paths {
                             } | null;
                             resolution: string | null;
                             resolvedAt: string | null;
+                            latitude: string | null;
+                            longitude: string | null;
+                            gpsAccuracyM: string | null;
+                            resolvedLatitude: string | null;
+                            resolvedLongitude: string | null;
+                            resolvedGpsAccuracyM: string | null;
                             createdBy: string | null;
                             /** Format: date-time */
                             createdAt: string;

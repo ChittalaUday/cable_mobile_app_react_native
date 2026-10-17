@@ -15,7 +15,9 @@ import {
   useTickets,
   useUpdateTicket,
 } from '@/lib/hooks/api/use-tickets';
+import { fixPayload, useCollectionFix } from '@/lib/hooks/common/use-collection-fix';
 import { usePermissions } from '@/lib/hooks/common/use-permissions';
+import { ensureFix } from '@/lib/payments/require-fix';
 import { relativeTime } from '@/lib/utils/admin-stats';
 
 type Filter = 'open' | 'mine' | 'all';
@@ -61,6 +63,7 @@ export function TicketsListScreen() {
 
   const { data, isPending, isRefetching, error, refetch } = useTickets({ variables });
   const { mutate: updateTicket } = useUpdateTicket();
+  const fix = useCollectionFix();
   const { can } = usePermissions();
 
   // Handing a complaint to a named engineer is its own grant: an engineer may
@@ -75,6 +78,9 @@ export function TicketsListScreen() {
   // fault standing at the pole, and making them open a detail page first is how
   // tickets stay open for a week after the job was done.
   const resolve = async (ticket: Ticket) => {
+    // Marking a complaint resolved records where the phone is, as the API requires.
+    if (!ensureFix(fix))
+      return;
     const resolution = await dialogs.prompt({
       title: `Resolve ${ticket.ticketNo}?`,
       message: 'What was done? The subscriber is told this.',
@@ -85,7 +91,7 @@ export function TicketsListScreen() {
     if (resolution === null || resolution.trim().length < 3)
       return;
 
-    updateTicket({ id: ticket.id, payload: { status: 'resolved', resolution: resolution.trim() } }, {
+    updateTicket({ id: ticket.id, payload: { status: 'resolved', resolution: resolution.trim(), ...fixPayload(fix) } }, {
       onError: failure => void dialogs.notify('Not resolved', failure.message),
     });
   };

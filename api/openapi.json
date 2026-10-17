@@ -32807,6 +32807,12 @@
                           "assignedTo",
                           "resolution",
                           "resolvedAt",
+                          "latitude",
+                          "longitude",
+                          "gpsAccuracyM",
+                          "resolvedLatitude",
+                          "resolvedLongitude",
+                          "resolvedGpsAccuracyM",
                           "createdBy",
                           "createdAt",
                           "updatedAt"
@@ -33007,6 +33013,66 @@
                               }
                             ]
                           },
+                          "latitude": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "longitude": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "gpsAccuracyM": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "resolvedLatitude": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "resolvedLongitude": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "resolvedGpsAccuracyM": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
                           "createdBy": {
                             "anyOf": [
                               {
@@ -33143,6 +33209,21 @@
                   "assignedTo": {
                     "type": "string",
                     "format": "uuid"
+                  },
+                  "latitude": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  },
+                  "gpsAccuracyM": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100000
                   }
                 },
                 "additionalProperties": false
@@ -33172,6 +33253,12 @@
                     "assignedTo",
                     "resolution",
                     "resolvedAt",
+                    "latitude",
+                    "longitude",
+                    "gpsAccuracyM",
+                    "resolvedLatitude",
+                    "resolvedLongitude",
+                    "resolvedGpsAccuracyM",
                     "createdBy",
                     "createdAt",
                     "updatedAt"
@@ -33366,6 +33453,66 @@
                         {
                           "type": "string",
                           "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "latitude": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "longitude": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "gpsAccuracyM": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "resolvedLatitude": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "resolvedLongitude": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "resolvedGpsAccuracyM": {
+                      "anyOf": [
+                        {
+                          "type": "string"
                         },
                         {
                           "type": "null"
@@ -33479,6 +33626,12 @@
                     "assignedTo",
                     "resolution",
                     "resolvedAt",
+                    "latitude",
+                    "longitude",
+                    "gpsAccuracyM",
+                    "resolvedLatitude",
+                    "resolvedLongitude",
+                    "resolvedGpsAccuracyM",
                     "createdBy",
                     "createdAt",
                     "updatedAt"
@@ -33673,6 +33826,66 @@
                         {
                           "type": "string",
                           "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "latitude": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "longitude": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "gpsAccuracyM": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "resolvedLatitude": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "resolvedLongitude": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "resolvedGpsAccuracyM": {
+                      "anyOf": [
+                        {
+                          "type": "string"
                         },
                         {
                           "type": "null"
@@ -33802,6 +34015,21 @@
                     "type": "string",
                     "minLength": 3,
                     "maxLength": 4000
+                  },
+                  "latitude": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  },
+                  "gpsAccuracyM": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100000
                   }
                 },
                 "additionalProperties": false
@@ -33842,6 +34070,12 @@
                     "assignedTo",
                     "resolution",
                     "resolvedAt",
+                    "latitude",
+                    "longitude",
+                    "gpsAccuracyM",
+                    "resolvedLatitude",
+                    "resolvedLongitude",
+                    "resolvedGpsAccuracyM",
                     "createdBy",
                     "createdAt",
                     "updatedAt"
@@ -34036,6 +34270,66 @@
                         {
                           "type": "string",
                           "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "latitude": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "longitude": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "gpsAccuracyM": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "resolvedLatitude": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "resolvedLongitude": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "resolvedGpsAccuracyM": {
+                      "anyOf": [
+                        {
+                          "type": "string"
                         },
                         {
                           "type": "null"
@@ -34176,6 +34470,12 @@
                     "assignedTo",
                     "resolution",
                     "resolvedAt",
+                    "latitude",
+                    "longitude",
+                    "gpsAccuracyM",
+                    "resolvedLatitude",
+                    "resolvedLongitude",
+                    "resolvedGpsAccuracyM",
                     "createdBy",
                     "createdAt",
                     "updatedAt"
@@ -34370,6 +34670,66 @@
                         {
                           "type": "string",
                           "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "latitude": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "longitude": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "gpsAccuracyM": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "resolvedLatitude": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "resolvedLongitude": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "resolvedGpsAccuracyM": {
+                      "anyOf": [
+                        {
+                          "type": "string"
                         },
                         {
                           "type": "null"

@@ -178,7 +178,7 @@ function Sheet({ dismiss, bottomInset }: { dismiss: () => void; bottomInset: num
     try {
       if (isAction) {
         if (!draft.resolved) {
-          await updateTicket({ id: target.ticketId!, payload: { status: 'resolved', resolution: draft.resolution.trim() } });
+          await updateTicket({ id: target.ticketId!, payload: { status: 'resolved', resolution: draft.resolution.trim(), ...where } });
           patch({ resolved: true });
         }
         await finishWithVisit('done', where);

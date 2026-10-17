@@ -160,7 +160,7 @@ describe('marking a visit', () => {
     fireEvent.press(screen.getByTestId('visit-submit'));
     await waitFor(() => expect(mockRecord).toHaveBeenCalled());
 
-    expect(mockResolve).toHaveBeenCalledWith({ id: 'tkt-1', payload: { status: 'resolved', resolution: 'Replaced the drop wire' } });
+    expect(mockResolve).toHaveBeenCalledWith({ id: 'tkt-1', payload: { status: 'resolved', resolution: 'Replaced the drop wire', latitude: 16.8697, longitude: 81.9342, gpsAccuracyM: 8 } });
     expect(mockRecord).toHaveBeenCalledWith('cust-1', expect.objectContaining({ purpose: 'complaint', outcome: 'done', ticketId: 'tkt-1' }));
     expect(useVisitFlow.getState().active).toBeNull();
   });
