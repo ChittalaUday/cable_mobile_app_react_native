@@ -18,7 +18,26 @@
       },
       "env": {
         "EXPO_PUBLIC_APP_ENV": "production",
-        "NODE_ENV": "production"
+        "NODE_ENV": "production",
+        "EXPO_PUBLIC_API_URL": "https://cable-api.onmog.tech/api/v1"
+      }
+    },
+    "production-apk": {
+      "channel": "production",
+      "autoIncrement": true,
+      "distribution": "internal",
+      "environment": "production",
+      "ios": {
+        "image": "latest"
+      },
+      "android": {
+        "buildType": "apk",
+        "image": "latest"
+      },
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "production",
+        "NODE_ENV": "production",
+        "EXPO_PUBLIC_API_URL": "https://cable-api.onmog.tech/api/v1"
       }
     },
     "preview": {
@@ -33,7 +52,7 @@
       },
       "env": {
         "EXPO_PUBLIC_APP_ENV": "preview",
-        "EXPO_PUBLIC_API_URL": "https://cable-staging.onmog.tech/api/v1",
+        "EXPO_PUBLIC_API_URL": "https://cable-api.onmog.tech/api/v1",
         "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyAktICNxaF1PsI0X7pGYH3clMJTsBJ1aLU",
         "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "cableapp-642c4.firebaseapp.com",
         "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "cableapp-642c4",
